@@ -223,14 +223,14 @@ def export_results(video_id: str, output_format: str = 'json') -> str:
 
 def setup_database() -> None:
     """
-    设置数据库
+    设置数据库（文件系统存储）
     """
     try:
-        logger.info("设置数据库")
-        data_manager.create_tables()
-        logger.info("数据库设置完成")
+        logger.info("设置数据存储系统")
+        # 数据管理器已经自动初始化，无需额外操作
+        logger.info("数据存储系统设置完成")
     except Exception as e:
-        logger.error(f"数据库设置失败: {str(e)}")
+        logger.error(f"数据存储系统设置失败: {str(e)}")
         raise
 
 

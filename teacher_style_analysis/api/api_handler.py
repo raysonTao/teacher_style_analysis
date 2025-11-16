@@ -11,7 +11,10 @@ from typing import Dict, List, Optional, Any
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+try:
+    import uvicorn
+except ImportError:
+    uvicorn = None
 
 import sys
 import os
@@ -440,6 +443,10 @@ def start_server(host: str = "0.0.0.0", port: int = 8000) -> None:
         host: 主机地址
         port: 端口号
     """
+    if uvicorn is None:
+        logger.error("uvicorn未安装，无法启动服务器")
+        return
+        
     logger.info(f"启动教师风格画像分析系统API服务 - 地址: {host}:{port}")
     uvicorn.run(
         "api.api_handler:app",

@@ -22,6 +22,55 @@ class DataManager:
     def __init__(self):
         self.metadata_file = DATA_DIR / 'metadata.json'
         self._init_metadata()
+        
+        # 添加学科标准属性，用于API配置
+        self.discipline_standards = {
+            '数学': '理论推导',
+            '语文': '情感表达',
+            '英语': '互动导向',
+            '物理': '逻辑推导',
+            '化学': '实验探究',
+            '生物': '观察分析',
+            '历史': '史料分析',
+            '地理': '空间思维',
+            '政治': '思辨论证'
+        }
+        
+        # 添加年级标准属性
+        self.grade_standards = {
+            '初中': '基础理解',
+            '高中': '深化应用',
+            '大学': '研究创新'
+        }
+        
+        # 添加风格标签属性
+        self.style_labels = {
+            '理论讲授型': '知识传授',
+            '启发引导型': '思维启发',
+            '互动导向型': '交流互动',
+            '逻辑推导型': '逻辑推理',
+            '题目驱动型': '练习巩固',
+            '情感表达型': '情感共鸣',
+            '耐心细致型': '细致讲解'
+        }
+    
+    def get_status(self) -> Dict:
+        """
+        获取数据管理器状态
+        
+        Returns:
+            包含状态信息的字典
+        """
+        return {
+            'data_dir_exists': self.data_dir.exists(),
+            'videos_count': len(list(self.videos_dir.glob('*'))),
+            'audio_count': len(list(self.audio_dir.glob('*'))),
+            'transcripts_count': len(list(self.transcripts_dir.glob('*'))),
+            'features_count': len(list(self.features_dir.glob('*'))),
+            'results_count': len(list(self.results_dir.glob('*'))),
+            'metadata_loaded': self.metadata is not None,
+            'status': 'ready' if self.metadata is not None else 'not_loaded'
+        }
     
     def _init_metadata(self):
         """初始化元数据文件"""

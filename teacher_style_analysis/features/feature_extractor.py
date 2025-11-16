@@ -53,6 +53,26 @@ class FeatureExtractor:
         except Exception as e:
             print(f"模型初始化失败: {e}")
     
+    def get_status(self) -> Dict:
+        """
+        获取特征提取器状态
+        
+        Returns:
+            包含状态信息的字典
+        """
+        return {
+            'yolo_model_loaded': self.yolo_model is not None,
+            'pose_model_loaded': self.pose_model is not None,
+            'whisper_model_loaded': self.whisper_model is not None,
+            'bert_model_loaded': self.bert_model is not None,
+            'status': 'ready' if all([
+                self.yolo_model is not None,
+                self.pose_model is not None,
+                self.whisper_model is not None,
+                self.bert_model is not None
+            ]) else 'partially_loaded'
+        }
+    
     def extract_video_features(self, video_path: str) -> Dict:
         """
         提取视频特征
@@ -93,6 +113,105 @@ class FeatureExtractor:
         }
         
         return features
+    
+    def fuse_multimodal_features(self, video_features: Dict, audio_features: Dict, text_features: Dict) -> Dict:
+        """
+        融合多模态特征
+        
+        Args:
+            video_features: 视频特征
+            audio_features: 音频特征
+            text_features: 文本特征
+            
+        Returns:
+            融合后的特征字典
+        """
+        print("融合多模态特征...")
+        
+        # 计算教学风格指标
+        fusion = {
+            'interaction_level': 0.0,  # 互动水平
+            'explanation_clarity': 0.0,  # 讲解清晰度
+            'emotional_engagement': 0.0,  # 情感投入度
+            'logical_structure': 0.0,  # 逻辑结构
+            'teaching_style_metrics': {
+                'lecturing': 0.0,  # 讲授型
+                'guiding': 0.0,  # 引导型
+                'interactive': 0.0,  # 互动型
+                'logical': 0.0,  # 逻辑型
+                'problem_driven': 0.0,  # 题目驱动型
+                'emotional': 0.0,  # 情感型
+                'patient': 0.0  # 耐心型
+            }
+        }
+        
+        # 计算互动水平（基于提问频率、手势频率等）
+        question_freq = text_features.get('question_frequency', 0.0)
+        gesture_freq = video_features.get('behavior_frequency', {}).get('gesturing', 0.0)
+        fusion['interaction_level'] = min(1.0, (question_freq * 5 + gesture_freq * 2) / 2)
+        
+        # 计算讲解清晰度（基于语速、词汇丰富度、逻辑结构）
+        speech_rate = audio_features.get('speech_rate', 120)
+        vocab_richness = text_features.get('vocabulary_richness', 0.0)
+        logical_indicators = sum(text_features.get('logical_indicators', {}).values())
+        
+        # 假设120字/分钟为最佳语速
+        speech_quality = 1.0 - abs(speech_rate - 120) / 120
+        fusion['explanation_clarity'] = (speech_quality * 0.4 + vocab_richness * 0.3 + logical_indicators * 0.3)
+        
+        # 计算情感投入度（基于情绪分数、语调变化、手势频率）
+        emotion_scores = audio_features.get('emotion_scores', {})
+        positive_emotion = emotion_scores.get('happy', 0.0) * 0.7 + emotion_scores.get('neutral', 0.0) * 0.3
+        pitch_variation = audio_features.get('pitch_variation', 0.0)
+        
+        fusion['emotional_engagement'] = (positive_emotion * 0.5 + pitch_variation * 0.3 + gesture_freq * 0.2)
+        
+        # 计算逻辑结构（基于逻辑指示词、句子复杂度）
+        sentence_complexity = text_features.get('sentence_complexity', 0.0)
+        fusion['logical_structure'] = (logical_indicators * 0.6 + sentence_complexity * 0.4)
+        
+        # 计算各教学风格指标
+        metrics = fusion['teaching_style_metrics']
+        
+        # 讲授型：高语速、高词汇丰富度、低互动
+        metrics['lecturing'] = (speech_quality * 0.4 + vocab_richness * 0.3 + 
+                               (1 - fusion['interaction_level']) * 0.3)
+        
+        # 引导型：高互动、中语速、高提问频率
+        metrics['guiding'] = (fusion['interaction_level'] * 0.4 + speech_quality * 0.3 + 
+                             question_freq * 0.3)
+        
+        # 互动型：高互动、高提问频率、高情感投入
+        metrics['interactive'] = (fusion['interaction_level'] * 0.5 + question_freq * 0.3 + 
+                               fusion['emotional_engagement'] * 0.2)
+        
+        # 逻辑型：高逻辑结构、中语速、高讲解清晰度
+        metrics['logical'] = (fusion['logical_structure'] * 0.4 + speech_quality * 0.3 + 
+                           fusion['explanation_clarity'] * 0.3)
+        
+        # 题目驱动型：高提问频率、高互动、中讲解清晰度
+        metrics['problem_driven'] = (question_freq * 0.5 + fusion['interaction_level'] * 0.3 + 
+                                    fusion['explanation_clarity'] * 0.2)
+        
+        # 情感型：高情感投入、高语调变化、高手势频率
+        metrics['emotional'] = (fusion['emotional_engagement'] * 0.5 + pitch_variation * 0.3 + 
+                               gesture_freq * 0.2)
+        
+        # 耐心型：低语速、高情感投入、中互动
+        slow_speech_bonus = max(0, (140 - speech_rate) / 140)  # 语速越慢越耐心
+        metrics['patient'] = (slow_speech_bonus * 0.4 + fusion['emotional_engagement'] * 0.4 + 
+                           fusion['interaction_level'] * 0.2)
+        
+        # 确保所有指标都在0-1范围内
+        for key in metrics:
+            metrics[key] = min(1.0, max(0.0, metrics[key]))
+        
+        return {
+            'video': video_features,
+            'audio': audio_features,
+            'text': text_features,
+            'fusion': fusion
+        }
     
     def extract_audio_features(self, audio_path: str) -> Dict:
         """
@@ -160,6 +279,9 @@ class FeatureExtractor:
             'question_frequency': 0.0,  # 提问频率
             'keyword_density': {},  # 关键词密度
             'logical_indicators': {},  # 逻辑指示词统计
+            'semantic_features': np.array([0.1, 0.2, 0.3, 0.4, 0.5]),  # 语义特征
+            'sentiment_score': 0.0,  # 情感分数
+            'teaching_terms': [],  # 教学术语
         }
         
         # 模拟一些文本特征数据
@@ -179,6 +301,9 @@ class FeatureExtractor:
             '其次': 0.01,
             '最后': 0.005
         }
+        features['semantic_features'] = np.array([0.1, 0.2, 0.3, 0.4, 0.5])  # 语义特征向量
+        features['sentiment_score'] = 0.75  # 情感分数
+        features['teaching_terms'] = ['教学', '讲解', '提问', '分析', '总结']  # 教学术语
         
         return features
     
@@ -263,6 +388,37 @@ class FeatureExtractor:
             metrics[key] = max(0, min(1, metrics[key]))
         
         return fused_features
+    
+    def process_video(self, video_path: str) -> Dict:
+        """
+        处理视频文件，提取所有模态的特征并融合
+        
+        Args:
+            video_path: 视频文件路径
+            
+        Returns:
+            包含所有特征的字典
+        """
+        print(f"处理视频文件: {video_path}")
+        
+        # 提取各模态特征
+        video_features = self.extract_video_features(video_path)
+        audio_features = self.extract_audio_features(video_path)
+        
+        # 生成对应的转录文件路径
+        transcript_path = video_path.replace('.mp4', '_transcript.txt').replace('.avi', '_transcript.txt')
+        text_features = self.extract_text_features(transcript_path)
+        
+        # 融合特征
+        fused_features = self.fuse_multimodal_features(video_features, audio_features, text_features)
+        
+        # 返回完整的特征结果
+        return {
+            'video_features': video_features,
+            'audio_features': audio_features,
+            'text_features': text_features,
+            'fused_features': fused_features
+        }
     
     def extract_and_save_features(self, video_id: str) -> str:
         """

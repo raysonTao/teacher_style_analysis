@@ -5,7 +5,11 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from ..config.config import (
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from config.config import (
     MODEL_CONFIG, SYSTEM_CONFIG, 
     VIDEO_DIR, AUDIO_DIR, TEXT_DIR, FEATURES_DIR
 )

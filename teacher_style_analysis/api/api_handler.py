@@ -13,14 +13,18 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from ..config.config import (
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from config.config import (
     SYSTEM_CONFIG, API_CONFIG, DATA_DIR, TEMP_DIR,
     RESULTS_DIR, FEEDBACK_DIR
 )
-from ..data.data_manager import data_manager
-from ..features.feature_extractor import feature_extractor
-from ..models.style_classifier import style_classifier
-from ..feedback.feedback_generator import feedback_generator
+from data.data_manager import data_manager
+from features.feature_extractor import feature_extractor
+from models.style_classifier import style_classifier
+from feedback.feedback_generator import feedback_generator
 
 # 配置日志
 logging.basicConfig(
@@ -438,7 +442,7 @@ def start_server(host: str = "0.0.0.0", port: int = 8000) -> None:
     """
     logger.info(f"启动教师风格画像分析系统API服务 - 地址: {host}:{port}")
     uvicorn.run(
-        "teacher_style_analysis.api.api_handler:app",
+        "api.api_handler:app",
         host=host,
         port=port,
         reload=API_CONFIG.get('debug', False)

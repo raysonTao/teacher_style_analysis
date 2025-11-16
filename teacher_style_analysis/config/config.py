@@ -4,6 +4,19 @@ from pathlib import Path
 
 # 项目根目录
 BASE_DIR = Path(__file__).parent.parent
+PROJECT_ROOT = BASE_DIR
+DATA_DIR = BASE_DIR / 'data'
+
+# 初始化目录函数
+def init_directories():
+    """创建所有必要的目录"""
+    directories = [
+        VIDEO_DIR, AUDIO_DIR, TEXT_DIR, FEATURES_DIR, RESULTS_DIR,
+        BASE_DIR / 'models', BASE_DIR / 'experiments' / 'results',
+        BASE_DIR / 'experiments' / 'visualizations'
+    ]
+    for dir_path in directories:
+        dir_path.mkdir(exist_ok=True, parents=True)
 
 # 数据路径配置
 DATA_DIR = BASE_DIR / 'data'
@@ -12,6 +25,8 @@ AUDIO_DIR = DATA_DIR / 'audio'
 TEXT_DIR = DATA_DIR / 'text'
 FEATURES_DIR = DATA_DIR / 'extracted_features'
 RESULTS_DIR = DATA_DIR / 'results'
+TEMP_DIR = BASE_DIR / 'temp'
+FEEDBACK_DIR = BASE_DIR / 'feedback'
 
 # 创建必要的目录
 for dir_path in [VIDEO_DIR, AUDIO_DIR, TEXT_DIR, FEATURES_DIR, RESULTS_DIR]:
@@ -52,6 +67,7 @@ API_CONFIG = {
     'port': 5000,
     'debug': True,
     'max_upload_size': 100 * 1024 * 1024,  # 100MB
+    'cors_origins': ['*'],
 }
 
 # 数据库配置

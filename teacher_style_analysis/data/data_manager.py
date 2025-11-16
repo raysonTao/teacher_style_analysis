@@ -2,99 +2,48 @@
 import os
 import uuid
 import shutil
+import json
 from datetime import datetime
 from pathlib import Path
-import mysql.connector
-import redis
 from typing import Dict, Optional, Union
 
-from ..config.config import (
-    VIDEO_DIR, AUDIO_DIR, TEXT_DIR, 
-    DB_CONFIG, REDIS_CONFIG
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from config.config import (
+    VIDEO_DIR, AUDIO_DIR, TEXT_DIR, DATA_DIR
 )
 
 
 class DataManager:
-    """数据管理器类"""
+    """数据管理器类 - 使用文件系统存储"""
     
     def __init__(self):
-        self._init_db_connection()
-        self._init_redis_connection()
+        self.metadata_file = DATA_DIR / 'metadata.json'
+        self._init_metadata()
     
-    def _init_db_connection(self):
-        """初始化数据库连接"""
-        try:
-            self.db_conn = mysql.connector.connect(**DB_CONFIG)
-            self.db_cursor = self.db_conn.cursor(dictionary=True)
-            self._create_tables()
-        except Exception as e:
-            print(f"数据库连接失败: {e}")
-            self.db_conn = None
-            self.db_cursor = None
+    def _init_metadata(self):
+        """初始化元数据文件"""
+        if not self.metadata_file.exists():
+            self.metadata = {'videos': {}, 'audios': {}, 'transcripts': {}}
+            self._save_metadata()
+        else:
+            try:
+                with open(self.metadata_file, 'r', encoding='utf-8') as f:
+                    self.metadata = json.load(f)
+            except:
+                self.metadata = {'videos': {}, 'audios': {}, 'transcripts': {}}
     
-    def _init_redis_connection(self):
-        """初始化Redis连接"""
-        try:
-            self.redis_client = redis.Redis(**REDIS_CONFIG)
-            self.redis_client.ping()
-        except Exception as e:
-            print(f"Redis连接失败: {e}")
-            self.redis_client = None
-    
-    def _create_tables(self):
-        """创建必要的数据表"""
-        if not self.db_conn:
-            return
-        
-        # 创建视频数据表
-        create_video_table = """
-        CREATE TABLE IF NOT EXISTS videos (
-            id VARCHAR(36) PRIMARY KEY,
-            filename VARCHAR(255) NOT NULL,
-            filepath VARCHAR(512) NOT NULL,
-            duration FLOAT,
-            upload_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-            status VARCHAR(50) DEFAULT 'uploaded',
-            teacher_id VARCHAR(36),
-            course_id VARCHAR(36)
-        )
-        """
-        
-        # 创建音频数据表
-        create_audio_table = """
-        CREATE TABLE IF NOT EXISTS audios (
-            id VARCHAR(36) PRIMARY KEY,
-            video_id VARCHAR(36),
-            filepath VARCHAR(512) NOT NULL,
-            duration FLOAT,
-            created_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (video_id) REFERENCES videos(id)
-        )
-        """
-        
-        # 创建文本数据表
-        create_text_table = """
-        CREATE TABLE IF NOT EXISTS transcripts (
-            id VARCHAR(36) PRIMARY KEY,
-            video_id VARCHAR(36),
-            filepath VARCHAR(512) NOT NULL,
-            created_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (video_id) REFERENCES videos(id)
-        )
-        """
-        
-        try:
-            self.db_cursor.execute(create_video_table)
-            self.db_cursor.execute(create_audio_table)
-            self.db_cursor.execute(create_text_table)
-            self.db_conn.commit()
-        except Exception as e:
-            print(f"创建数据表失败: {e}")
+    def _save_metadata(self):
+        """保存元数据到文件"""
+        with open(self.metadata_file, 'w', encoding='utf-8') as f:
+            json.dump(self.metadata, f, ensure_ascii=False, indent=2)
     
     def upload_video(self, file_path: str, teacher_id: Optional[str] = None, 
                     course_id: Optional[str] = None) -> Dict:
         """
-        上传视频文件
+        上传视频文件 - 使用文件系统存储
         
         Args:
             file_path: 视频文件路径
@@ -113,31 +62,21 @@ class DataManager:
             dest_path = VIDEO_DIR / f"{video_id}_{filename}"
             shutil.copy2(file_path, dest_path)
             
-            # 保存到数据库
-            if self.db_conn:
-                query = """
-                INSERT INTO videos (id, filename, filepath, teacher_id, course_id)
-                VALUES (%s, %s, %s, %s, %s)
-                """
-                values = (video_id, filename, str(dest_path), teacher_id, course_id)
-                self.db_cursor.execute(query, values)
-                self.db_conn.commit()
-            
-            # 缓存到Redis
-            if self.redis_client:
-                self.redis_client.setex(
-                    f"video:{video_id}",
-                    3600,  # 1小时过期
-                    str(dest_path)
-                )
-            
-            return {
+            # 保存元数据
+            video_info = {
                 'id': video_id,
                 'filename': filename,
                 'filepath': str(dest_path),
                 'upload_time': datetime.now().isoformat(),
-                'status': 'uploaded'
+                'status': 'uploaded',
+                'teacher_id': teacher_id,
+                'course_id': course_id
             }
+            
+            self.metadata['videos'][video_id] = video_info
+            self._save_metadata()
+            
+            return video_info
             
         except Exception as e:
             print(f"视频上传失败: {e}")
@@ -179,6 +118,55 @@ class DataManager:
         except Exception as e:
             print(f"音频保存失败: {e}")
             raise
+    
+    def save_video_info(self, video_info: Dict) -> str:
+        """保存视频信息"""
+        video_id = video_info.get('video_id', str(uuid.uuid4()))
+        self.metadata['videos'][video_id] = video_info
+        self._save_metadata()
+        return video_id
+    
+    def get_video_info(self, video_id: str) -> Optional[Dict]:
+        """获取视频信息"""
+        return self.metadata['videos'].get(video_id)
+    
+    def update_video_status(self, video_id: str, status: str, error_info: str = None):
+        """更新视频状态"""
+        if video_id in self.metadata['videos']:
+            self.metadata['videos'][video_id]['status'] = status
+            if error_info:
+                self.metadata['videos'][video_id]['error'] = error_info
+            self.metadata['videos'][video_id]['updated_time'] = datetime.now().isoformat()
+            self._save_metadata()
+    
+    def list_videos(self, teacher_id: Optional[str] = None, 
+                   discipline: Optional[str] = None,
+                   status: Optional[str] = None,
+                   page: int = 1, page_size: int = 10) -> Dict:
+        """列出视频"""
+        videos = list(self.metadata['videos'].values())
+        
+        # 过滤
+        if teacher_id:
+            videos = [v for v in videos if v.get('teacher_id') == teacher_id]
+        if discipline:
+            videos = [v for v in videos if v.get('discipline') == discipline]
+        if status:
+            videos = [v for v in videos if v.get('status') == status]
+        
+        # 分页
+        total = len(videos)
+        start = (page - 1) * page_size
+        end = start + page_size
+        videos_page = videos[start:end]
+        
+        return {
+            'videos': videos_page,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total + page_size - 1) // page_size
+        }
     
     def save_transcript(self, video_id: str, transcript_content: str) -> Dict:
         """

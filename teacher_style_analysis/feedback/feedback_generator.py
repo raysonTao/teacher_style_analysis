@@ -6,11 +6,15 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from ..config.config import (
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from config.config import (
     SYSTEM_CONFIG, STYLE_LABELS, 
     RESULTS_DIR, FEEDBACK_DIR
 )
-from ..models.style_classifier import style_classifier
+from models.style_classifier import style_classifier
 
 
 class FeedbackGenerator:

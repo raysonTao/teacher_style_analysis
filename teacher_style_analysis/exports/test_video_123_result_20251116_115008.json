@@ -1,0 +1,34 @@
+{
+  "teacher_id": "teacher1",
+  "discipline": "数学",
+  "grade": "高中",
+  "smi": {
+    "score": 85.0
+  },
+  "teaching_style": {
+    "main_styles": [
+      [
+        "analytical",
+        0.8
+      ]
+    ],
+    "detailed_scores": {
+      "analytical": 0.8,
+      "interactive": 0.6,
+      "authoritative": 0.4,
+      "supportive": 0.7
+    }
+  },
+  "improvement_suggestions": [
+    {
+      "area": "互动性",
+      "suggestion": "增加提问"
+    }
+  ],
+  "growth_analysis": {
+    "improved_areas": [
+      "分析能力"
+    ]
+  },
+  "summary": "教学风格分析摘要"
+}

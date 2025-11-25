@@ -103,6 +103,14 @@ class StyleClassifier:
         Returns:
             规则驱动层的输出
         """
+        # 添加调试日志
+        print(f"_apply_rules: features类型: {type(features)}")
+        print(f"_apply_rules: features值: {features}")
+        
+        # 确保features不为None
+        if features is None:
+            features = {}
+            
         rule_output = {}
         rule_weights = self.model['rule_weights']
         
@@ -194,117 +202,55 @@ class StyleClassifier:
         
         return ml_output
     
-    def classify_style(self, features_path: str, raw_data: Dict = None) -> Dict:
-        """
-        分类教学风格
-        
-        Args:
-            features_path: 特征文件路径或numpy数组
-            raw_data: 原始数据（可选）
-            
-        Returns:
-            Dict: 包含风格分类结果的字典
-        """
-        # 如果是numpy数组，直接处理
-        if isinstance(features_path, np.ndarray):
-            # 应用规则驱动层
-            rule_results = self.apply_rule_driven_layer(features_path, raw_data)
-            # 应用机器学习层
-            ml_results = self.apply_ml_layer(features_path)
-            # 融合结果
-            fused_results = self.fuse_outputs(rule_results, ml_results)
-            
-            return {
-                'style_scores': fused_results,
-                'dominant_style': fused_results.get('dominant_style', 'analytical'),
-                'confidence': fused_results.get('confidence', 0.85)
-            }
-        
-        # 如果输入是字符串路径，按原逻辑处理
-        if isinstance(features_path, str):
-            print(f"开始风格分类: {features_path}")
-            
-            # 读取特征文件
-            try:
-                with open(features_path, 'r', encoding='utf-8') as f:
-                    features = json.load(f)
-            except Exception as e:
-                print(f"读取特征文件失败: {e}")
-                raise
-        else:
-            # 直接作为特征数据使用
-            features = features_path
-        
-        # 应用规则驱动层
-        rule_output = self._apply_rules(features)
-        
-        # 应用机器学习层
-        ml_output = self._apply_ml_model(features)
-        
-        # 融合两种输出
-        lambda_weight = self.model['lambda_weight']
-        final_output = {}
-        
-        for style in rule_output.keys():
-            final_output[style] = (
-                lambda_weight * rule_output[style] + 
-                (1 - lambda_weight) * ml_output.get(style, 0.0)
-            )
-        
-        # 映射到论文中的风格标签
-        labeled_output = {}
-        style_mapping = {
-            'lecturing': '理论讲授型',
-            'guiding': '启发引导型',
-            'interactive': '互动导向型',
-            'logical': '逻辑推导型',
-            'problem_driven': '题目驱动型',
-            'emotional': '情感表达型',
-            'patient': '耐心细致型'
-        }
-        
-        for style_key, style_label in style_mapping.items():
-            labeled_output[style_label] = final_output.get(style_key, 0.0)
-        
-        # 计算特征贡献度分析（可解释性）
-        feature_contributions = self._analyze_feature_contributions(features, final_output)
-        
-        # 生成分类结果
-        result = {
-            'style_scores': labeled_output,
-            'top_styles': self._get_top_styles(labeled_output),
-            'rule_based_results': {
-                style_mapping[k]: v for k, v in rule_output.items()
-            },
-            'ml_based_results': {
-                style_mapping[k]: v for k, v in ml_output.items()
-            },
-            'feature_contributions': feature_contributions,
-            'confidence': self._calculate_confidence(final_output),
-            'timestamp': {
-                'analysis_time': '2024-11-12T23:30:00Z'  # 模拟时间戳
-            }
-        }
-        
-        return result
+    def classify_style(self, features_path=None, features=None) -> Dict:
         """
         对特征进行风格分类
         
         Args:
-            features_path: 特征文件路径
+            features_path: 特征文件路径（可选）
+            features: 特征数据（可选，优先使用）
             
         Returns:
             风格分类结果
         """
-        print(f"开始风格分类: {features_path}")
         
-        # 读取特征文件
-        try:
-            with open(features_path, 'r', encoding='utf-8') as f:
-                features = json.load(f)
-        except Exception as e:
-            print(f"读取特征文件失败: {e}")
-            raise
+        # 如果提供了features参数，直接使用它
+        if features is not None:
+            print(f"直接使用提供的特征数据")
+        # 如果提供了features_path参数，尝试从文件读取
+        elif features_path is not None:
+            print(f"开始风格分类: {features_path}")
+            
+            # 如果输入是numpy数组，按论文中的CMAT模型处理
+            if isinstance(features_path, np.ndarray):
+                # 应用规则驱动层
+                rule_results = self.apply_rule_driven_layer(features_path, raw_data=None)
+                # 应用机器学习层
+                ml_results = self.apply_ml_layer(features_path)
+                # 融合结果
+                fused_results = self.fuse_outputs(rule_results, ml_results)
+                
+                return {
+                    'style_scores': fused_results,
+                    'dominant_style': fused_results.get('dominant_style', 'analytical'),
+                    'confidence': fused_results.get('confidence', 0.85)
+                }
+            # 如果输入是字符串路径，按原逻辑处理
+            elif isinstance(features_path, str):
+                # 读取特征文件
+                try:
+                    with open(features_path, 'r', encoding='utf-8') as f:
+                        features = json.load(f)
+                except Exception as e:
+                    print(f"读取特征文件失败: {e}")
+                    raise
+            else:
+                # 直接作为特征数据使用
+                features = features_path or {}  # 确保features不为None
+        else:
+            # 两者都没有提供，使用空特征
+            print(f"未提供特征数据或路径，使用空特征")
+            features = {}
         
         # 应用规则驱动层
         rule_output = self._apply_rules(features)

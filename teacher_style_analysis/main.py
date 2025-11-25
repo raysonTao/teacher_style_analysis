@@ -43,6 +43,7 @@ def run_analysis_pipeline(video_path: str, teacher_id: str,
         
         # 生成视频ID
         import uuid
+        import os  # 确保os模块在函数内部可用
         video_id = str(uuid.uuid4())[:10]
         
         # 1. 保存视频信息
@@ -60,11 +61,61 @@ def run_analysis_pipeline(video_path: str, teacher_id: str,
         
         # 2. 提取特征
         logger.info("步骤2: 提取多模态特征")
-        features_path = feature_extractor.extract_and_save(video_path, video_id)
+        features = feature_extractor.process_video(video_path)
         
         # 3. 风格分类
         logger.info("步骤3: 执行风格分类")
-        result_path = style_classifier.classify_and_save(video_id)
+        # 添加调试信息
+        logger.info(f"特征结构: {type(features)}, keys: {list(features.keys())}")
+        logger.info(f"fused_features类型: {type(features.get('fused_features'))}")
+        if features.get('fused_features'):
+            logger.info(f"fused_features keys: {list(features['fused_features'].keys())}")
+        
+        # 使用完整的特征字典作为参数
+        result = style_classifier.classify_style(None, features)
+        
+        # 保存特征和结果到文件系统
+        logger.info("步骤3.5: 保存特征和结果到文件系统")
+        import json
+        import os
+        import numpy as np
+        
+        # 创建目录（如果不存在）
+        features_dir = os.path.join(PROJECT_ROOT, "data", "extracted_features")
+        results_dir = os.path.join(PROJECT_ROOT, "data", "results")
+        os.makedirs(features_dir, exist_ok=True)
+        os.makedirs(results_dir, exist_ok=True)
+        
+        # 定义JSON序列化器，处理NumPy数组
+        def convert_numpy_to_python(obj):
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.bool_):
+                return bool(obj)
+            elif isinstance(obj, dict):
+                return {k: convert_numpy_to_python(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_numpy_to_python(item) for item in obj]
+            else:
+                return obj
+        
+        # 转换特征数据
+        serializable_features = convert_numpy_to_python(features)
+        serializable_result = convert_numpy_to_python(result)
+        
+        # 保存特征
+        features_file = os.path.join(features_dir, f"{video_id}_features.json")
+        with open(features_file, 'w', encoding='utf-8') as f:
+            json.dump(serializable_features, f, ensure_ascii=False, indent=2)
+        
+        # 保存结果
+        result_file = os.path.join(results_dir, f"{video_id}_style_result.json")
+        with open(result_file, 'w', encoding='utf-8') as f:
+            json.dump(serializable_result, f, ensure_ascii=False, indent=2)
         
         # 4. 生成反馈报告
         logger.info("步骤4: 生成个性化反馈")
@@ -82,8 +133,8 @@ def run_analysis_pipeline(video_path: str, teacher_id: str,
             'video_id': video_id,
             'status': 'completed',
             'feedback': feedback,
-            'features_path': features_path,
-            'result_path': result_path
+            'features': features,
+            'result': result
         }
         
     except Exception as e:

@@ -133,7 +133,7 @@ mkdir -p data/videos data/audio data/text data/results data/extracted_features\m
 
 ```bash
 # 基本用法
-python main.py --video_path path/to/video.mp4 --teacher_id teacher1 --discipline "数学" --grade "高中"
+python main.py --video_path data/videos/2027张宇考研数学\ 基础30讲\ 导学.mp4 --teacher_id zhangyu --discipline "数学" --grade "大学"
 
 # 完整参数示例
 python main.py \  

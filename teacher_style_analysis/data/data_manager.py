@@ -291,27 +291,23 @@ class DataManager:
         
         return None
     
-    def update_video_status(self, video_id: str, status: str) -> bool:
+    def update_video_status(self, video_id: str, status: str, error_info: str = None):
         """
-        更新视频处理状态
+        更新视频状态
         
         Args:
             video_id: 视频ID
             status: 新状态
-            
-        Returns:
-            是否更新成功
+            error_info: 错误信息（可选）
         """
-        try:
-            if self.db_conn:
-                query = "UPDATE videos SET status = %s WHERE id = %s"
-                self.db_cursor.execute(query, (status, video_id))
-                self.db_conn.commit()
-                return True
-            return False
-        except Exception as e:
-            print(f"更新视频状态失败: {e}")
-            return False
+        if video_id in self.metadata['videos']:
+            self.metadata['videos'][video_id]['status'] = status
+            if error_info:
+                self.metadata['videos'][video_id]['error'] = error_info
+            self.metadata['videos'][video_id]['updated_time'] = datetime.now().isoformat()
+            self._save_metadata()
+            return True
+        return False
     
     def __del__(self):
         """清理资源"""

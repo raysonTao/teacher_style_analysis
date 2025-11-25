@@ -41,10 +41,22 @@ def run_analysis_pipeline(video_path: str, teacher_id: str,
     try:
         logger.info(f"开始分析流程: video={video_path}, teacher={teacher_id}")
         
-        # 生成视频ID
-        import uuid
-        import os  # 确保os模块在函数内部可用
-        video_id = str(uuid.uuid4())[:10]
+        # 基于视频文件内容生成唯一标识
+        import os
+        import hashlib
+        
+        def get_file_hash(filepath, block_size=65536):
+            """计算文件的SHA256哈希值"""
+            hasher = hashlib.sha256()
+            with open(filepath, 'rb') as f:
+                for block in iter(lambda: f.read(block_size), b''):
+                    hasher.update(block)
+            return hasher.hexdigest()
+        
+        # 使用文件哈希作为视频的唯一标识
+        file_hash = get_file_hash(video_path)
+        # 使用哈希的前10个字符作为video_id（保持与原来的格式一致）
+        video_id = file_hash[:10]
         
         # 1. 保存视频信息
         logger.info("步骤1: 保存视频信息")

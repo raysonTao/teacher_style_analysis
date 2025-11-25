@@ -1,85 +1,35 @@
 {
   "videos": {
-    "47dc4759-e": {
-      "video_id": "47dc4759-e",
+    
+    "af5bac7f-2": {
+      "video_id": "af5bac7f-2",
       "teacher_id": "zhangyu",
       "discipline": "数学",
       "grade": "大学",
       "filename": "2027张宇考研数学 基础30讲 导学.mp4",
-      "status": "processing",
-      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4"
+      "status": "completed",
+      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4",
+      "updated_time": "2025-11-25T22:40:35.830910"
     },
-    "0bc0294d-a": {
-      "video_id": "0bc0294d-a",
+    "5d615655-c": {
+      "video_id": "5d615655-c",
       "teacher_id": "zhangyu",
       "discipline": "数学",
       "grade": "大学",
       "filename": "2027张宇考研数学 基础30讲 导学.mp4",
-      "status": "processing",
-      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4"
+      "status": "completed",
+      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4",
+      "updated_time": "2025-11-25T22:41:02.918066"
     },
-    "b91757a2-0": {
-      "video_id": "b91757a2-0",
+    "b343161a57": {
+      "video_id": "b343161a57",
       "teacher_id": "zhangyu",
       "discipline": "数学",
       "grade": "大学",
       "filename": "2027张宇考研数学 基础30讲 导学.mp4",
-      "status": "processing",
-      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4"
-    },
-    "e3fb6319-c": {
-      "video_id": "e3fb6319-c",
-      "teacher_id": "zhangyu",
-      "discipline": "数学",
-      "grade": "大学",
-      "filename": "2027张宇考研数学 基础30讲 导学.mp4",
-      "status": "processing",
-      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4"
-    },
-    "76da626e-1": {
-      "video_id": "76da626e-1",
-      "teacher_id": "zhangyu",
-      "discipline": "数学",
-      "grade": "大学",
-      "filename": "2027张宇考研数学 基础30讲 导学.mp4",
-      "status": "processing",
-      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4"
-    },
-    "8ef6d1cb-5": {
-      "video_id": "8ef6d1cb-5",
-      "teacher_id": "zhangyu",
-      "discipline": "数学",
-      "grade": "大学",
-      "filename": "2027张宇考研数学 基础30讲 导学.mp4",
-      "status": "processing",
-      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4"
-    },
-    "31d33f80-6": {
-      "video_id": "31d33f80-6",
-      "teacher_id": "zhangyu",
-      "discipline": "数学",
-      "grade": "大学",
-      "filename": "2027张宇考研数学 基础30讲 导学.mp4",
-      "status": "processing",
-      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4"
-    },
-    "1cc1daf3-1": {
-      "video_id": "1cc1daf3-1",
-      "teacher_id": "zhangyu",
-      "discipline": "数学",
-      "grade": "大学",
-      "filename": "2027张宇考研数学 基础30讲 导学.mp4",
-      "status": "processing",
-      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4"
-    },
-    "c9498429-7": {
-      "video_id": "c9498429-7",
-      "teacher_id": "zhangyu",
-      "discipline": "数学",
-      "grade": "大学",
-      "filename": "2027张宇考研数学 基础30讲 导学.mp4",
-      "status": "processing",
-      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4"
+      "status": "completed",
+      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4",
+      "updated_time": "2025-11-25T22:51:31.019965"
     }
   },
   "audios": {},

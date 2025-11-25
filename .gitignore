@@ -14,6 +14,7 @@ __pycache__/
 /teacher_style_analysis/data/extracted_features/
 /teacher_style_analysis/data/results/
 /teacher_style_analysis/exports/
+/teacher_style_analysis/feedback/
 
 # 模型文件
 /teacher_style_analysis/models/*.pkl

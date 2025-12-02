@@ -51,5 +51,6 @@ dist/
 build/
 *.egg-info/
 activate_env.sh
-teacher_style_analysis/models/weights/yolov8n.pt
-teacher_style_analysis/models/weights/cmat_model.pkl
+
+# 模型权重目录
+/teacher_style_analysis/models/weights/

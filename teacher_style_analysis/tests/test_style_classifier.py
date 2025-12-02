@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from unittest.mock import Mock, patch
-from models.style_classifier import StyleClassifier
+from models.core.style_classifier import StyleClassifier
 
 class TestStyleClassifier(unittest.TestCase):
     def setUp(self):

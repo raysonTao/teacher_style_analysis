@@ -20,7 +20,7 @@ from teacher_style_analysis.config.config import PROJECT_ROOT, DATA_DIR, init_di
 from teacher_style_analysis.api.api_handler import start_server
 from teacher_style_analysis.data.data_manager import data_manager
 from teacher_style_analysis.features.feature_extractor import feature_extractor
-from teacher_style_analysis.models.style_classifier import style_classifier
+from teacher_style_analysis.models.core.style_classifier import style_classifier
 from teacher_style_analysis.feedback.feedback_generator import feedback_generator
 
 

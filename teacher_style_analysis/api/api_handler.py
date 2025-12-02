@@ -26,7 +26,7 @@ from config.config import (
 )
 from data.data_manager import data_manager
 from features.feature_extractor import feature_extractor
-from models.style_classifier import style_classifier
+from models.core.style_classifier import style_classifier
 from feedback.feedback_generator import feedback_generator
 
 # 配置日志

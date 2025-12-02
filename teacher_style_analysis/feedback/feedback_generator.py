@@ -14,7 +14,7 @@ from config.config import (
     SYSTEM_CONFIG, STYLE_LABELS, 
     RESULTS_DIR, FEEDBACK_DIR
 )
-from models.style_classifier import style_classifier
+from models.core.style_classifier import style_classifier
 
 
 class FeedbackGenerator:

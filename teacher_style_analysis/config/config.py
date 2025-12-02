@@ -34,7 +34,7 @@ for dir_path in [VIDEO_DIR, AUDIO_DIR, TEXT_DIR, FEATURES_DIR, RESULTS_DIR]:
 
 # 模型配置
 MODEL_CONFIG = {
-    'yolo_model_path': 'yolov8n.pt',  # 动作检测模型
+    'yolo_model_path': 'models/weights/yolov8n.pt',  # 动作检测模型
     'openpose_model_dir': str(BASE_DIR / 'models/openpose'),  # 姿态估计模型
     'whisper_model': 'base',  # 语音识别模型
     'bert_model': 'bert-base-chinese',  # 文本分析模型

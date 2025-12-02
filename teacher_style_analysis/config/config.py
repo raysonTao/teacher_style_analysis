@@ -38,7 +38,7 @@ MODEL_CONFIG = {
     'openpose_model_dir': str(BASE_DIR / 'models/openpose'),  # 姿态估计模型
     'whisper_model': 'base',  # 语音识别模型
     'bert_model': 'bert-base-chinese',  # 文本分析模型
-    'cmat_model_path': str(BASE_DIR / 'models/cmat_model.pkl'),  # 风格分类模型
+    'cmat_model_path': str(BASE_DIR / 'models/weights/cmat_model.pkl'),  # 风格分类模型
 }
 
 # 风格标签配置

@@ -133,45 +133,38 @@ mkdir -p data/videos data/audio data/text data/results data/extracted_features\m
 
 ```bash
 # 基本用法
-python main.py --video_path data/videos/2027张宇考研数学\ 基础30讲\ 导学.mp4 --teacher_id zhangyu --discipline "数学" --grade "大学"
+python main.py analyze --video data/videos/2027张宇考研数学\ 基础30讲\ 导学.mp4 --teacher zhangyu --discipline "数学" --grade "大学"
 
 # 完整参数示例
-python main.py \  
-  --video_path "data/sample_lesson.mp4" \  
-  --teacher_id "teacher001" \  
+python main.py analyze \  
+  --video "data/sample_lesson.mp4" \  
+  --teacher "teacher001" \  
   --discipline "数学" \  
-  --grade "高中" \  
-  --output_dir "exports/" \  
-  --save_features \  
-  --generate_report
+  --grade "高中"
 ```
 
 参数说明：
-- `--video_path`：教学视频文件路径（必需）
-- `--teacher_id`：教师ID（必需）
+- `--video`：教学视频文件路径（必需）
+- `--teacher`：教师ID（必需）
 - `--discipline`：学科（必需，支持：数学、语文、英语、物理、化学、生物、历史、地理、政治）
 - `--grade`：年级（必需，支持：初中、高中、大学）
-- `--output_dir`：输出目录（可选，默认为"exports/"）
-- `--save_features`：保存提取的特征（可选）
-- `--generate_report`：生成详细分析报告（可选）
 
 #### 1.2 批量视频分析
 
 ```bash
 # 批量处理目录中的所有视频
-python main.py \  
-  --batch_mode \  
-  --directory "data/videos/" \  
-  --teacher_id "teacher001" \  
+python main.py batch \  
+  --dir "data/videos/" \  
+  --teacher "teacher001" \  
   --discipline "数学" \  
-  --grade "高中" \  
-  --output_dir "exports/batch_results/"
+  --grade "高中"
 ```
 
 参数说明：
-- `--batch_mode`：启用批量处理模式
-- `--directory`：包含视频文件的目录路径
-- 其他参数与单个视频分析相同
+- `--dir`：包含视频文件的目录路径（必需）
+- `--teacher`：教师ID（必需）
+- `--discipline`：学科（必需）
+- `--grade`：年级（必需）
 
 ### 2. API 服务使用
 
@@ -409,12 +402,11 @@ python -m experiments.visualizations.paper_visualizations
 ### 步骤3：准备演示案例
 ```bash
 # 使用示例视频生成分析报告
-python main.py \
-  --video_path "data/sample_lesson.mp4" \
-  --teacher_id "demo_teacher" \
+python main.py analyze \
+  --video "data/sample_lesson.mp4" \
+  --teacher "demo_teacher" \
   --discipline "数学" \
-  --grade "高中" \
-  --generate_report
+  --grade "高中"
 ```
 
 ### 步骤4：启动API服务（可选）

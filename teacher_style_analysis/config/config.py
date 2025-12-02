@@ -35,8 +35,8 @@ for dir_path in [VIDEO_DIR, AUDIO_DIR, TEXT_DIR, FEATURES_DIR, RESULTS_DIR]:
 # 模型配置
 MODEL_CONFIG = {
     'yolo_model_path': 'models/weights/yolov8n.pt',  # 动作检测模型
-    'openpose_model_dir': str(BASE_DIR / 'models/openpose'),  # 姿态估计模型
-    'whisper_model': 'base',  # 语音识别模型
+    'openpose_model_dir': str(BASE_DIR / 'models/openpose'),  # 姿态估计模型（已替换为MediaPipe）
+    'whisper_model': 'medium',  # 语音识别模型，使用更大模型提高中文识别率
     'bert_model': 'bert-base-chinese',  # 文本分析模型
     'cmat_model_path': str(BASE_DIR / 'models/weights/cmat_model.pkl'),  # 风格分类模型
 }

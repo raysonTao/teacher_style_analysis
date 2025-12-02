@@ -23,54 +23,103 @@ class FeatureExtractor:
     
     def _init_models(self):
         """初始化各种特征提取模型"""
+        # 初始化所有模型属性为None
+        self.yolo_model = None
+        self.openpose_model = None
+        self.whisper_model = None
+        self.bert_model = None
+        self.bert_tokenizer = None
+        
         try:
             # 初始化特征提取模型
             print("初始化特征提取模型...")
             
             # YOLOv8动作检测模型
-            from ultralytics import YOLO
-            self.yolo_model = YOLO(MODEL_CONFIG['yolo_model_path'])
-            
-            # OpenPose姿态估计模型
             try:
-                import pyopenpose as op
+                from ultralytics import YOLO
+                # 使用绝对路径加载YOLO模型
+                import os
+                import sys
+                # 打印更多调试信息
+                print(f"当前工作目录: {os.getcwd()}")
+                print(f"BASE_DIR: {BASE_DIR}")
+                print(f"YOLO模型配置路径: {MODEL_CONFIG['yolo_model_path']}")
                 
-                # 配置OpenPose参数
-                params = {
-                    "model_folder": MODEL_CONFIG['openpose_model_dir'],
-                    "net_resolution": "-1x368",
-                    "number_people_max": 1,  # 课堂场景通常只有一位教师
-                    "model_pose": "BODY_25",  # 使用BODY_25模型
-                    "render_threshold": 0.1,
-                    "disable_blending": False,
-                }
+                yolo_path = os.path.join(BASE_DIR, MODEL_CONFIG['yolo_model_path'])
+                print(f"YOLO模型绝对路径: {yolo_path}")
+                print(f"文件是否存在: {os.path.exists(yolo_path)}")
+                if os.path.exists(yolo_path):
+                    print(f"文件大小: {os.path.getsize(yolo_path)} 字节")
                 
-                # 初始化OpenPose对象
-                self.openpose_wrapper = op.WrapperPython()
-                self.openpose_wrapper.configure(params)
-                self.openpose_wrapper.start()
+                # 尝试加载模型
+                self.yolo_model = YOLO(yolo_path)
+                print(f"YOLO模型加载成功，路径: {yolo_path}")
+                print(f"模型类型: {type(self.yolo_model)}")
                 
-                # 创建数据结构
-                self.datum = op.Datum()
-                self.openpose_model = self.openpose_wrapper
-                print("OpenPose模型加载成功")
-            except ImportError:
-                print("pyopenpose库未安装，无法加载OpenPose模型")
-                self.openpose_model = None
+                # 测试模型是否能正常工作
+                import numpy as np
+                import cv2
+                # 创建一个简单的测试图像
+                test_img = np.ones((640, 640, 3), dtype=np.uint8) * 255
+                # 测试模型推理
+                try:
+                    results = self.yolo_model(test_img)
+                    print(f"YOLO模型推理测试成功，结果类型: {type(results)}")
+                    print(f"检测到 {len(results[0].boxes)} 个目标")
+                except Exception as infer_e:
+                    print(f"YOLO模型推理测试失败: {infer_e}")
+                    import traceback
+                    traceback.print_exc()
+                    self.yolo_model = None
+                    
             except Exception as e:
-                print(f"OpenPose模型加载失败: {e}")
+                print(f"YOLO模型加载失败: {e}")
+                import traceback
+                traceback.print_exc()
+                self.yolo_model = None
+            
+            # MediaPipe姿态估计模型（替代OpenPose）
+            try:
+                import mediapipe as mp
+                self.mp_pose = mp.solutions.pose
+                self.mp_drawing = mp.solutions.drawing_utils
+                self.pose = self.mp_pose.Pose(
+                    static_image_mode=False,
+                    model_complexity=1,
+                    smooth_landmarks=True,
+                    enable_segmentation=False,
+                    min_detection_confidence=0.5,
+                    min_tracking_confidence=0.5
+                )
+                self.openpose_model = self.pose  # 保持接口兼容
+                self.use_mediapipe = True
+                print("MediaPipe姿态估计模型加载成功")
+            except ImportError:
+                print("mediapipe库未安装，无法加载姿态估计模型")
                 self.openpose_model = None
+                self.use_mediapipe = False
+            except Exception as e:
+                print(f"MediaPipe模型加载失败: {e}")
+                import traceback
+                traceback.print_exc()
+                self.openpose_model = None
+                self.use_mediapipe = False
             
             # Whisper语音识别模型
             try:
                 import whisper
+                print(f"开始加载Whisper模型: {MODEL_CONFIG['whisper_model']}")
                 self.whisper_model = whisper.load_model(MODEL_CONFIG['whisper_model'])
                 print("Whisper模型加载成功")
             except ImportError:
                 print("whisper库未安装，无法加载Whisper模型")
+                import traceback
+                traceback.print_exc()
                 self.whisper_model = None
             except Exception as e:
                 print(f"Whisper模型加载失败: {e}")
+                import traceback
+                traceback.print_exc()
                 self.whisper_model = None
             
             # BERT文本分析模型
@@ -233,91 +282,124 @@ class FeatureExtractor:
                 prev_frame_gray = gray
                 
                 # 使用YOLO模型检测
-                results = self.yolo_model(frame)
-                detected_frames += 1
-                
-                # 解析检测结果
                 has_detections = False
-                for result in results:
-                    boxes = result.boxes
-                    for box in boxes:
-                        # 获取检测类别
-                        cls = int(box.cls[0])
-                        conf = float(box.conf[0])
-                        
-                        # 检查置信度
-                        if conf < 0.5:
-                            continue
-                        
-                        has_detections = True
-                        
-                        # 获取类别名称
-                        cls_name = result.names[cls]
-                        
-                        # 更新动作计数
-                        if cls_name in action_counts:
-                            action_counts[cls_name] += 1
-                        
-                        # 计算物体中心点
-                        x1, y1, x2, y2 = box.xyxy[0]
-                        center_x = (x1 + x2) / 2
-                        center_y = (y1 + y2) / 2
-                        
-                        # 确定空间区域（根据视频画面分区）
-                        frame_height, frame_width = frame.shape[:2]
-                        
-                        # 计算区域边界
-                        front_boundary = int(frame_height * 0.4)
-                        middle_boundary = int(frame_height * 0.7)
-                        
-                        if center_y < front_boundary:
-                            spatial_counts['front'] += 1
-                        elif center_y < middle_boundary:
-                            spatial_counts['middle'] += 1
-                        else:
-                            spatial_counts['side'] += 1
-                        
-                        # 保存动作序列
-                        features['action_sequence'].append({
-                            'frame': frame_count,
-                            'timestamp': frame_count / fps,
-                            'action': cls_name,
-                            'confidence': conf,
-                            'bbox': [float(x1), float(y1), float(x2), float(y2)],
-                            'center': [float(center_x), float(center_y)]
-                        })
-                        
-                        # 使用OpenPose进行姿态估计（如果模型可用）
-                        if self.openpose_model is not None:
-                            try:
-                                import pyopenpose as op
-                                
-                                # 设置图像
-                                self.datum.cvInputData = frame
-                                
-                                # 处理图像
-                                self.openpose_model.emplaceAndPop([self.datum])
-                                
-                                # 获取姿态数据
-                                if self.datum.poseKeypoints is not None:
-                                    pose_keypoints = self.datum.poseKeypoints[0]
-                                    keypoints = pose_keypoints.tolist()
-                                    
-                                    # 计算姿态置信度
-                                    pose_confidence = np.mean(pose_keypoints[:, 2])
-                                    pose_confidence_sum += pose_confidence
-                                    pose_count += 1
-                                    
-                                    features['pose_estimation'].append({
-                                        'frame': frame_count,
-                                        'timestamp': frame_count / fps,
-                                        'keypoints': keypoints,
-                                        'confidence': float(pose_confidence),
-                                        'bbox': [float(x1), float(y1), float(x2), float(y2)]
-                                    })
-                            except Exception as e:
-                                print(f"OpenPose姿态估计失败: {e}")
+                if self.yolo_model is not None:
+                    # 添加调试信息
+                    print(f"检测帧 {frame_count}: 开始YOLO检测")
+                    results = self.yolo_model(frame)
+                    detected_frames += 1
+                    
+                    # 解析检测结果
+                    print(f"检测帧 {frame_count}: YOLO检测完成，结果类型: {type(results)}")
+                    print(f"检测帧 {frame_count}: 结果数量: {len(results)}")
+                    
+                    for result in results:
+                        boxes = result.boxes
+                        print(f"检测帧 {frame_count}: 检测到 {len(boxes)} 个目标")
+                        for box in boxes:
+                            # 获取检测类别
+                            cls = int(box.cls[0])
+                            conf = float(box.conf[0])
+                            
+                            print(f"检测帧 {frame_count}: 目标类别: {cls}, 置信度: {conf}")
+                            
+                            # 降低置信度阈值，提高检测灵敏度
+                            if conf < 0.25:  # 降低阈值到0.25
+                                print(f"检测帧 {frame_count}: 目标置信度过低，跳过")
                                 continue
+                            
+                            has_detections = True
+                            
+                            # 获取类别名称
+                            cls_name = result.names[cls]
+                            print(f"检测帧 {frame_count}: 目标类别名称: {cls_name}")
+                            
+                            # 打印所有可用的类别名称
+                            if frame_count == processing_interval:  # 只在第一帧打印
+                                print(f"所有可用类别: {result.names}")
+                            
+                            # 如果类别不在action_counts中，添加到action_counts
+                            if cls_name not in action_counts:
+                                action_counts[cls_name] = 0
+                                print(f"检测帧 {frame_count}: 添加新类别到action_counts: {cls_name}")
+                            
+                            # 更新动作计数
+                            action_counts[cls_name] += 1
+                            
+                            # 计算物体中心点
+                            x1, y1, x2, y2 = box.xyxy[0]
+                            center_x = (x1 + x2) / 2
+                            center_y = (y1 + y2) / 2
+                            
+                            # 确定空间区域（根据视频画面分区）
+                            frame_height, frame_width = frame.shape[:2]
+                            
+                            # 计算区域边界
+                            front_boundary = int(frame_height * 0.4)
+                            middle_boundary = int(frame_height * 0.7)
+                            
+                            if center_y < front_boundary:
+                                spatial_counts['front'] += 1
+                            elif center_y < middle_boundary:
+                                spatial_counts['middle'] += 1
+                            else:
+                                spatial_counts['side'] += 1
+                            
+                            # 保存动作序列
+                            features['action_sequence'].append({
+                                'frame': frame_count,
+                                'timestamp': frame_count / fps,
+                                'action': cls_name,
+                                'confidence': conf,
+                                'bbox': [float(x1), float(y1), float(x2), float(y2)],
+                                'center': [float(center_x), float(center_y)]
+                            })
+                            print(f"检测帧 {frame_count}: 已保存动作序列")
+                            
+                            # 使用MediaPipe进行姿态估计（如果模型可用）
+                            if self.openpose_model is not None and self.use_mediapipe:
+                                try:
+                                    import cv2
+                                    import mediapipe as mp
+                                    
+                                    # 转换图像为RGB（MediaPipe要求）
+                                    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                                    
+                                    # 处理图像
+                                    mp_results = self.openpose_model.process(rgb_frame)
+                                    
+                                    # 获取姿态数据
+                                    if mp_results.pose_landmarks:
+                                        # 提取关键点数据
+                                        pose_keypoints = []
+                                        for landmark in mp_results.pose_landmarks.landmark:
+                                            # 保存关键点坐标和置信度
+                                            pose_keypoints.append([
+                                                landmark.x * frame.shape[1],  # 转换为像素坐标
+                                                landmark.y * frame.shape[0],
+                                                landmark.visibility
+                                            ])
+                                        
+                                        # 计算姿态置信度
+                                        pose_confidence = np.mean([kp[2] for kp in pose_keypoints])
+                                        pose_confidence_sum += pose_confidence
+                                        pose_count += 1
+                                        
+                                        features['pose_estimation'].append({
+                                            'frame': frame_count,
+                                            'timestamp': frame_count / fps,
+                                            'keypoints': pose_keypoints,
+                                            'confidence': float(pose_confidence),
+                                            'bbox': [float(x1), float(y1), float(x2), float(y2)]
+                                        })
+                                        print(f"检测帧 {frame_count}: 已保存姿态估计数据")
+                                except Exception as e:
+                                    print(f"MediaPipe姿态估计失败: {e}")
+                                    import traceback
+                                    traceback.print_exc()
+                            # 兼容旧版OpenPose代码（如果需要）
+                            elif self.openpose_model is not None and not self.use_mediapipe:
+                                print("不支持的姿态估计模型类型")
                 
                 # 如果没有检测到任何物体，记录为空白帧
                 if not has_detections:
@@ -606,8 +688,11 @@ class FeatureExtractor:
             # 使用Whisper模型进行语音识别
             if self.whisper_model is not None:
                 try:
+                    print(f"开始使用Whisper进行语音识别，音频路径: {audio_file_path}")
+                    
                     # 准备输入音频
                     if y is not None:
+                        print(f"使用降噪后的音频，长度: {len(y)/sr:.2f}秒，采样率: {sr}Hz")
                         # 保存降噪后的音频用于转录
                         import tempfile
                         import soundfile as sf
@@ -618,15 +703,37 @@ class FeatureExtractor:
                         # 保存降噪后的音频
                         sf.write(temp_audio_path, y, sr)
                         
-                        # 使用降噪后的音频进行转录
-                        result = self.whisper_model.transcribe(temp_audio_path)
+                        # 使用降噪后的音频进行转录，优化中文识别参数
+                        result = self.whisper_model.transcribe(
+                            temp_audio_path,
+                            language='zh',  # 明确指定中文
+                            beam_size=5,      # 增加beam size提高识别准确率
+                            best_of=5,        # 生成多个候选结果，选择最优
+                            fp16=False        # 在CPU上运行时设置为False
+                        )
                         
                         # 删除临时文件
                         import os
                         os.unlink(temp_audio_path)
+                        print(f"已处理临时音频文件")
                     else:
+                        print(f"使用原始音频文件进行转录")
                         # 如果无法加载音频，使用原始音频文件
-                        result = self.whisper_model.transcribe(audio_file_path)
+                        result = self.whisper_model.transcribe(
+                            audio_file_path,
+                            language='zh',  # 明确指定中文
+                            beam_size=5,    # 增加beam size提高识别准确率
+                            best_of=5,      # 生成多个候选结果，选择最优
+                            fp16=False      # 在CPU上运行时设置为False
+                        )
+                    
+                    # 打印调试信息
+                    print(f"Whisper识别结果: 语言={result.get('language')}, 文本长度={len(result.get('text', ''))}字符")
+                    print(f"识别片段数量: {len(result.get('segments', []))}")
+                    if len(result.get('text', '')) > 50:
+                        print(f"转录文本前50字符: {result.get('text', '')[:50]}...")
+                    else:
+                        print(f"完整转录文本: {result.get('text', '')}")
                     
                     features['transcript'] = result.get('text', '')
                     features['segments'] = result.get('segments', [])
@@ -637,6 +744,7 @@ class FeatureExtractor:
                     total_duration = sum(segment['end'] - segment['start'] for segment in features['segments']) if features['segments'] else 0
                     if total_duration > 0:
                         features['speech_rate'] = (total_words / total_duration) * 60
+                        print(f"计算语速: {total_words}字 / {total_duration:.2f}秒 = {features['speech_rate']:.2f}字/分钟")
                     
                     # 如果没有通过VAD计算沉默比例，使用Whisper转录结果计算
                     if 'silence_ratio' not in features or features['silence_ratio'] == 0.0:
@@ -650,9 +758,12 @@ class FeatureExtractor:
                                     silence_duration += silence
                                 previous_end = segment['end']
                             features['silence_ratio'] = silence_duration / total_duration
+                            print(f"计算沉默比例: {silence_duration:.2f}秒沉默 / {total_duration:.2f}秒总时长 = {features['silence_ratio']:.3f}")
                     
                 except Exception as e:
                     print(f"Whisper语音识别失败: {e}")
+                    import traceback
+                    traceback.print_exc()
             
             # 模拟情绪分数（实际应用中需要使用专门的情绪识别模型）
             features['emotion_scores'] = {
@@ -695,14 +806,27 @@ class FeatureExtractor:
             # 创建临时音频文件
             temp_audio_file = tempfile.mktemp(suffix='.wav')
             
-            # 使用moviepy提取音频
+            print(f"正在从视频中提取音频: {video_path}")
+            # 使用moviepy提取高质量音频
             video = VideoFileClip(video_path)
             audio = video.audio
-            audio.write_audiofile(temp_audio_file, codec='pcm_s16le', ffmpeg_params=['-ar', '16000'])
+            # 设置更高的音频质量参数
+            audio.write_audiofile(
+                temp_audio_file, 
+                codec='pcm_s16le', 
+                ffmpeg_params=[
+                    '-ar', '16000',  # 16kHz采样率
+                    '-ac', '1',       # 单声道
+                    '-b:a', '192k'    # 192kbps比特率
+                ]
+            )
             audio.close()
             video.close()
             
             print(f"已从视频中提取音频: {temp_audio_file}")
+            # 验证音频文件大小
+            if os.path.getsize(temp_audio_file) < 1024:  # 小于1KB的音频文件可能无效
+                print(f"警告：提取的音频文件太小 ({os.path.getsize(temp_audio_file)} 字节)，可能无效")
             return temp_audio_file
             
         except ImportError:
@@ -710,6 +834,8 @@ class FeatureExtractor:
             return video_path
         except Exception as e:
             print(f"从视频中提取音频失败: {e}")
+            import traceback
+            traceback.print_exc()
             return video_path
     
     def extract_text_features(self, transcript_path: str) -> Dict:

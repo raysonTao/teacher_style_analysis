@@ -803,19 +803,29 @@ class FeatureExtractor:
         """
         try:
             import os
-            import tempfile
             from moviepy.editor import VideoFileClip
+            from teacher_style_analysis.config.config import AUDIO_DIR
             
-            # 创建临时音频文件
-            temp_audio_file = tempfile.mktemp(suffix='.wav')
+            # 从视频路径提取文件名（不含扩展名）
+            video_filename = os.path.basename(video_path)
+            video_name_without_ext = os.path.splitext(video_filename)[0]
+            
+            # 创建与视频同名的音频文件路径
+            audio_filename = f"{video_name_without_ext}.wav"
+            audio_file_path = os.path.join(AUDIO_DIR, audio_filename)
+            
+            # 确保音频目录存在
+            os.makedirs(AUDIO_DIR, exist_ok=True)
             
             print(f"正在从视频中提取音频: {video_path}")
+            print(f"音频将保存到: {audio_file_path}")
+            
             # 使用moviepy提取高质量音频
             video = VideoFileClip(video_path)
             audio = video.audio
             # 设置更高的音频质量参数
             audio.write_audiofile(
-                temp_audio_file, 
+                audio_file_path, 
                 codec='pcm_s16le', 
                 ffmpeg_params=[
                     '-ar', '16000',  # 16kHz采样率
@@ -826,20 +836,33 @@ class FeatureExtractor:
             audio.close()
             video.close()
             
-            print(f"已从视频中提取音频: {temp_audio_file}")
+            print(f"已从视频中提取音频: {audio_file_path}")
             # 验证音频文件大小
-            if os.path.getsize(temp_audio_file) < 1024:  # 小于1KB的音频文件可能无效
-                print(f"警告：提取的音频文件太小 ({os.path.getsize(temp_audio_file)} 字节)，可能无效")
-            return temp_audio_file
+            if os.path.getsize(audio_file_path) < 1024:  # 小于1KB的音频文件可能无效
+                print(f"警告：提取的音频文件太小 ({os.path.getsize(audio_file_path)} 字节)，可能无效")
+            return audio_file_path
             
         except ImportError:
             print("moviepy库未安装，无法从视频中提取音频")
-            return video_path
+            # 即使库未安装，也返回预期的音频路径，保持一致性
+            video_filename = os.path.basename(video_path)
+            video_name_without_ext = os.path.splitext(video_filename)[0]
+            audio_filename = f"{video_name_without_ext}.wav"
+            expected_audio_path = os.path.join(AUDIO_DIR, audio_filename)
+            return expected_audio_path
         except Exception as e:
             print(f"从视频中提取音频失败: {e}")
             import traceback
             traceback.print_exc()
-            return video_path
+            
+            # 即使提取失败，也返回预期的音频路径，而不是原始视频路径
+            # 这样后续处理可以更一致地处理音频文件路径
+            video_filename = os.path.basename(video_path)
+            video_name_without_ext = os.path.splitext(video_filename)[0]
+            audio_filename = f"{video_name_without_ext}.wav"
+            expected_audio_path = os.path.join(AUDIO_DIR, audio_filename)
+            print(f"返回预期的音频路径: {expected_audio_path}")
+            return expected_audio_path
     
     def extract_text_features(self, transcript_path: str) -> Dict:
         """

@@ -98,7 +98,58 @@ cd /Users/rayson/Documents/毕业大论文/05_code/teacher_style_analysis
 pip install -r requirements.txt
 ```
 
-#### 2.3 预训练模型下载
+#### 2.3 安装FFmpeg
+
+FFmpeg是本项目音频处理的必要依赖，用于从视频中提取音频和音频格式转换。请根据您的操作系统选择安装方式：
+
+##### macOS
+```bash
+# 使用 Homebrew 安装（推荐）
+brew install ffmpeg
+
+# 或者使用 MacPorts
+port install ffmpeg
+```
+
+##### Linux（Ubuntu/Debian）
+```bash
+# 更新软件源
+sudo apt-get update
+
+# 安装FFmpeg
+sudo apt-get install ffmpeg
+```
+
+##### Linux（CentOS/RHEL）
+```bash
+# 安装EPEL仓库
+sudo yum install epel-release
+
+# 安装Nux Dextop仓库
+sudo rpm -Uvh http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-5.el7.nux.noarch.rpm
+
+# 安装FFmpeg
+sudo yum install ffmpeg ffmpeg-devel
+```
+
+##### Windows
+
+1. 访问FFmpeg官方网站：https://ffmpeg.org/download.html
+2. 下载Windows版本的FFmpeg
+3. 解压文件并将bin目录添加到系统环境变量PATH中
+4. 重启命令提示符或终端
+
+##### 验证安装
+
+安装完成后，您可以通过以下命令验证FFmpeg是否正确安装：
+
+```bash
+ffmpeg -version
+```
+
+如果安装成功，您将看到FFmpeg的版本信息。
+
+#### 2.4 预训练模型下载
 
 系统使用了以下预训练模型，会在首次运行时自动下载：
 

@@ -313,10 +313,11 @@ def check_system_status() -> dict:
         
         # 检查依赖
         from importlib import import_module
+        # 注意：这里使用的是模块名，不是包名
         required_packages = [
             'numpy', 'pandas', 'matplotlib', 'seaborn',
-            'opencv-python', 'torch', 'transformers',
-            'fastapi', 'uvicorn', 'scikit-learn'
+            'cv2', 'torch', 'transformers',
+            'fastapi', 'uvicorn', 'sklearn'
         ]
         
         missing_packages = []

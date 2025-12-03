@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.config import (
-    MODEL_CONFIG, SYSTEM_CONFIG, 
+    BASE_DIR, MODEL_CONFIG, SYSTEM_CONFIG, 
     VIDEO_DIR, AUDIO_DIR, TEXT_DIR, FEATURES_DIR
 )
 

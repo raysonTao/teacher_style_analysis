@@ -80,6 +80,9 @@ class FeatureExtractor:
             
             # MediaPipe姿态估计模型（替代OpenPose）
             try:
+                # 初始化Abseil日志系统，解决MediaPipe的日志警告
+                import absl.logging
+                absl.logging.use_absl_handler()
                 import mediapipe as mp
                 self.mp_pose = mp.solutions.pose
                 self.mp_drawing = mp.solutions.drawing_utils

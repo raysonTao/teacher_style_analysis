@@ -54,3 +54,7 @@ activate_env.sh
 
 # 模型权重目录
 /teacher_style_analysis/models/weights/
+
+# 模型分析文档
+CLAUDE.md
+IFLOW.md

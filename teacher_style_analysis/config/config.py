@@ -67,7 +67,7 @@ AUDIO_CONFIG = {
     'n_fft': 2048,
     'hop_length': 512,
     'n_mels': 128,
-    'whisper_model_path': 'models/weights/whisper_medium.pt',  # Whisper模型路径
+    'whisper_model_path': 'models/weights/medium.pt',  # Whisper模型路径
     'whisper_model_size': 'medium'  # Whisper模型大小
 }
 

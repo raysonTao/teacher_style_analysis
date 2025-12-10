@@ -34,10 +34,15 @@ class AudioFeatureExtractor:
             
             if os.path.exists(whisper_path):
                 print(f"文件大小: {os.path.getsize(whisper_path)} 字节")
+                # 使用本地模型文件
+                self.whisper_model = whisper.load_model(whisper_path)
+                print(f"Whisper模型加载成功，使用本地文件: {whisper_path}")
+            else:
+                # 回退到默认加载方式
+                print("本地模型文件不存在，尝试从网络加载...")
+                self.whisper_model = whisper.load_model(AUDIO_CONFIG['whisper_model_size'])
+                print(f"Whisper模型加载成功，大小: {AUDIO_CONFIG['whisper_model_size']}")
                 
-            # 尝试加载模型
-            self.whisper_model = whisper.load_model(AUDIO_CONFIG['whisper_model_size'])
-            print(f"Whisper模型加载成功，大小: {AUDIO_CONFIG['whisper_model_size']}")
             print(f"模型类型: {type(self.whisper_model)}")
             
         except Exception as e:

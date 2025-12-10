@@ -65,8 +65,7 @@ class MediaPipePoseEstimator:
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
         # 进行姿态估计
-        with self.pose as pose:
-            results = pose.process(rgb_frame)
+        results = self.pose.process(rgb_frame)
         
         # 如果没有检测到姿态关键点
         if not results.pose_landmarks:

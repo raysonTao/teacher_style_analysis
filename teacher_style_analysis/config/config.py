@@ -51,7 +51,12 @@ VIDEO_CONFIG = {
     'frame_width': 640,
     'frame_height': 480,
     'fps': 30,
-    'max_frames': 1000
+    'max_frames': 1000,
+    'motion_energy_frame_interval': 10,
+    'detection_frame_interval': 30,
+    'detection_confidence_threshold': 0.5,
+    'test_mode': False,
+    'test_frame_limit': 100
 }
 
 # 动作配置

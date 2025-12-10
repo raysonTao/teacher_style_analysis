@@ -3,11 +3,12 @@
     "b343161a57": {
       "video_id": "b343161a57",
       "teacher_id": "zhangyu",
-      "discipline": "数学",
-      "grade": "大学",
+      "discipline": "math",
+      "grade": "postgraduate",
       "filename": "2027张宇考研数学 基础30讲 导学.mp4",
-      "status": "processing",
-      "file_path": "teacher_style_analysis/data/videos/2027张宇考研数学 基础30讲 导学.mp4"
+      "status": "completed",
+      "file_path": "data/videos/2027张宇考研数学 基础30讲 导学.mp4",
+      "updated_time": "2025-12-10T22:53:19.540676"
     }
   },
   "audios": {},

@@ -9,7 +9,7 @@ import cv2
 # 添加项目根目录到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.config import BASE_DIR, OUTPUT_CONFIG
+from config.config import BASE_DIR, FEATURES_DIR
 from .video_feature_extractor import VideoFeatureExtractor
 from .audio_feature_extractor import AudioFeatureExtractor
 from .text_feature_extractor import TextFeatureExtractor
@@ -46,7 +46,7 @@ class FeatureExtractor:
         print(f"开始处理视频: {video_path}")
         
         # 确保输出目录存在
-        output_dir = os.path.join(BASE_DIR, OUTPUT_CONFIG['output_dir'])
+        output_dir = str(FEATURES_DIR)
         os.makedirs(output_dir, exist_ok=True)
         
         # 1. 提取视频特征
@@ -160,8 +160,7 @@ class FeatureExtractor:
             video_name = os.path.basename(video_path)
             video_name_without_ext = os.path.splitext(video_name)[0]
             output_path = os.path.join(
-                BASE_DIR, 
-                OUTPUT_CONFIG['output_dir'],
+                str(FEATURES_DIR),
                 f"{video_name_without_ext}_features.json"
             )
         
@@ -208,3 +207,6 @@ class FeatureExtractor:
             融合后的多模态特征字典
         """
         return self.features
+
+# 创建特征提取器实例
+feature_extractor = FeatureExtractor()

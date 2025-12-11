@@ -16,12 +16,12 @@ logger = logging.getLogger('teacher_style_analysis')
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from teacher_style_analysis.config.config import PROJECT_ROOT, DATA_DIR, init_directories
-from teacher_style_analysis.api.api_handler import start_server
-from teacher_style_analysis.data.data_manager import data_manager
-from teacher_style_analysis.features.feature_extractor import feature_extractor
-from teacher_style_analysis.models.core.style_classifier import style_classifier
-from teacher_style_analysis.feedback.feedback_generator import feedback_generator
+from src.config.config import PROJECT_ROOT, DATA_DIR, init_directories
+from src.api.api_handler import start_server
+from src.data.data_manager import data_manager
+from src.features.feature_extractor import feature_extractor
+from src.models.core.style_classifier import style_classifier
+from src.feedback.feedback_generator import feedback_generator
 
 
 def run_analysis_pipeline(video_path: str, teacher_id: str, 
@@ -222,7 +222,7 @@ def export_results(video_id: str, output_format: str = 'json') -> str:
         导出文件路径
     """
     try:
-        from teacher_style_analysis.config.config import RESULTS_DIR, FEEDBACK_DIR
+        from src.config.config import RESULTS_DIR, FEEDBACK_DIR
         import json
         import pandas as pd
         from datetime import datetime

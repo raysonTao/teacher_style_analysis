@@ -7,6 +7,7 @@ __pycache__/
 
 # pytest缓存
 /teacher_style_analysis/.pytest_cache/
+/src/.pytest_cache/
 
 # 数据文件
 /teacher_style_analysis/data/audio/
@@ -16,12 +17,20 @@ __pycache__/
 /teacher_style_analysis/exports/
 /teacher_style_analysis/feedback/
 
+
+/src/data/audio/
+/src/data/videos/
+/src/data/extracted_features/
+/src/data/results/
+/src/exports/
+/src/feedback/
+
 # 模型文件
 /teacher_style_analysis/models/*.pkl
-
+/src/models/*.pkl
 # 可视化结果
 /teacher_style_analysis/visualization/
-
+/src/visualization/
 # IDE和编辑器配置
 .idea/
 .vscode/
@@ -54,7 +63,7 @@ activate_env.sh
 
 # 模型权重目录
 /teacher_style_analysis/models/weights/
-
+/src/models/weights/
 # 模型分析文档
 CLAUDE.md
 IFLOW.md

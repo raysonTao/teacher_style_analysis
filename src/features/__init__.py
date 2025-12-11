@@ -53,7 +53,7 @@ __doc__ = """教学风格分析特征提取模块
 4. 多模态特征融合（教学风格评估）
 
 使用示例：
-from teacher_style_analysis.features import FeatureExtractor
+from src.features import FeatureExtractor
 
 # 初始化特征提取器
 extractor = FeatureExtractor()

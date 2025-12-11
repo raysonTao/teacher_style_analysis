@@ -125,7 +125,7 @@ class TestMain(unittest.TestCase):
     def test_export_results(self):
         # 创建临时反馈文件用于测试
         import json
-        from teacher_style_analysis.config.config import FEEDBACK_DIR
+        from src.config.config import FEEDBACK_DIR
         
         # 确保反馈目录存在
         FEEDBACK_DIR.mkdir(parents=True, exist_ok=True)

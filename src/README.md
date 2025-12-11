@@ -27,7 +27,7 @@
 ## 目录结构
 
 ```
-teacher_style_analysis/
+src/
 ├── features/            # 特征提取模块
 │   └── feature_extractor.py  # 多模态特征提取器，处理音频、文本和教学行为特征
 ├── models/              # 模型模块
@@ -94,7 +94,7 @@ tteacher_style_env\Scripts\activate  # Windows
 #### 2.2 安装依赖包
 
 ```bash
-cd /Users/rayson/Documents/毕业大论文/05_code/teacher_style_analysis
+cd /path/to/your/project
 pip install -r requirements.txt
 ```
 
@@ -437,7 +437,7 @@ conda create -n teacher_style python=3.9
 conda activate teacher_style
 
 # 安装依赖
-cd /Users/rayson/Documents/毕业大论文/05_code/teacher_style_analysis
+cd /path/to/your/project
 pip install -r requirements.txt
 ```
 

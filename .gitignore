@@ -28,9 +28,12 @@ __pycache__/
 # 模型文件
 /teacher_style_analysis/models/*.pkl
 /src/models/*.pkl
+/models/
+
 # 可视化结果
 /teacher_style_analysis/visualization/
 /src/visualization/
+
 # IDE和编辑器配置
 .idea/
 .vscode/

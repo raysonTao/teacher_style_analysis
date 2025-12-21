@@ -149,15 +149,6 @@ class DataManager:
             
             shutil.copy2(audio_path, dest_path)
             
-            if self.db_conn:
-                query = """
-                INSERT INTO audios (id, video_id, filepath)
-                VALUES (%s, %s, %s)
-                """
-                values = (audio_id, video_id, str(dest_path))
-                self.db_cursor.execute(query, values)
-                self.db_conn.commit()
-            
             return {
                 'id': audio_id,
                 'video_id': video_id,
@@ -235,15 +226,6 @@ class DataManager:
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(transcript_content)
             
-            if self.db_conn:
-                query = """
-                INSERT INTO transcripts (id, video_id, filepath)
-                VALUES (%s, %s, %s)
-                """
-                values = (transcript_id, video_id, str(filepath))
-                self.db_cursor.execute(query, values)
-                self.db_conn.commit()
-            
             return {
                 'id': transcript_id,
                 'video_id': video_id,
@@ -264,32 +246,7 @@ class DataManager:
         Returns:
             视频信息字典，如果不存在则返回None
         """
-        # 先从Redis缓存获取
-        if self.redis_client:
-            cached_path = self.redis_client.get(f"video:{video_id}")
-            if cached_path:
-                return {
-                    'id': video_id,
-                    'filepath': cached_path.decode('utf-8')
-                }
-        
-        # 从数据库获取
-        if self.db_conn:
-            query = "SELECT * FROM videos WHERE id = %s"
-            self.db_cursor.execute(query, (video_id,))
-            result = self.db_cursor.fetchone()
-            
-            # 更新缓存
-            if result and self.redis_client:
-                self.redis_client.setex(
-                    f"video:{video_id}",
-                    3600,
-                    result['filepath']
-                )
-            
-            return result
-        
-        return None
+        return self.metadata['videos'].get(video_id)
     
     def update_video_status(self, video_id: str, status: str, error_info: str = None):
         """
@@ -309,12 +266,7 @@ class DataManager:
             return True
         return False
     
-    def __del__(self):
-        """清理资源"""
-        if hasattr(self, 'db_cursor') and self.db_cursor:
-            self.db_cursor.close()
-        if hasattr(self, 'db_conn') and self.db_conn:
-            self.db_conn.close()
+
 
 
 # 创建数据管理器实例

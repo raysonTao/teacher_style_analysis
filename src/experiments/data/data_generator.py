@@ -6,6 +6,9 @@ import random
 from sklearn.model_selection import train_test_split
 from pathlib import Path
 
+# 导入全局logger
+from ...config.config import logger
+
 from ..configs.experiment_config import EXPERIMENTS_CONFIG, STYLE_LABELS, SIMULATION_CONFIG, DISCIPLINES, GRADES
 
 class ExperimentDataGenerator:
@@ -38,7 +41,7 @@ class ExperimentDataGenerator:
         if sample_size is None:
             sample_size = self.simulation_config['sample_size']
         
-        print(f"正在生成{sample_size}条合成实验数据...")
+        logger.info(f"正在生成{sample_size}条合成实验数据...")
         
         data = []
         style_labels = list(STYLE_LABELS.keys())
@@ -94,7 +97,7 @@ class ExperimentDataGenerator:
             data.append(record)
         
         df = pd.DataFrame(data)
-        print(f"合成数据生成完成，共{len(df)}条记录")
+        logger.info(f"合成数据生成完成，共{len(df)}条记录")
         return df
     
     def _generate_modality_features(self, modality, style_id):
@@ -186,17 +189,17 @@ class ExperimentDataGenerator:
             stratify=temp_data['style_id']
         )
         
-        print(f"数据集分割完成：")
-        print(f"- 训练集: {len(train_data)}条 ({len(train_data)/len(data)*100:.1f}%)")
-        print(f"- 验证集: {len(val_data)}条 ({len(val_data)/len(data)*100:.1f}%)")
-        print(f"- 测试集: {len(test_data)}条 ({len(test_data)/len(data)*100:.1f}%)")
+        logger.info(f"数据集分割完成：")
+        logger.info(f"- 训练集: {len(train_data)}条 ({len(train_data)/len(data)*100:.1f}%)")
+        logger.info(f"- 验证集: {len(val_data)}条 ({len(val_data)/len(data)*100:.1f}%)")
+        logger.info(f"- 测试集: {len(test_data)}条 ({len(test_data)/len(data)*100:.1f}%)")
         
         # 保存数据集
         if save:
             train_data.to_csv(self.data_dir / 'train_data.csv', index=False, encoding='utf-8')
             val_data.to_csv(self.data_dir / 'val_data.csv', index=False, encoding='utf-8')
             test_data.to_csv(self.data_dir / 'test_data.csv', index=False, encoding='utf-8')
-            print(f"数据集已保存到: {self.data_dir}")
+            logger.info(f"数据集已保存到: {self.data_dir}")
         
         return train_data, val_data, test_data
     
@@ -212,19 +215,19 @@ class ExperimentDataGenerator:
         test_path = self.data_dir / 'test_data.csv'
         
         if not (train_path.exists() and val_path.exists() and test_path.exists()):
-            print("数据集文件不存在，正在生成新的合成数据...")
+            logger.info("数据集文件不存在，正在生成新的合成数据...")
             data = self.generate_synthetic_data()
             return self.split_dataset(data)
         
-        print(f"正在加载数据集...")
+        logger.info(f"正在加载数据集...")
         train_data = pd.read_csv(train_path, encoding='utf-8')
         val_data = pd.read_csv(val_path, encoding='utf-8')
         test_data = pd.read_csv(test_path, encoding='utf-8')
         
-        print(f"数据集加载完成：")
-        print(f"- 训练集: {len(train_data)}条")
-        print(f"- 验证集: {len(val_data)}条")
-        print(f"- 测试集: {len(test_data)}条")
+        logger.info(f"数据集加载完成：")
+        logger.info(f"- 训练集: {len(train_data)}条")
+        logger.info(f"- 验证集: {len(val_data)}条")
+        logger.info(f"- 测试集: {len(test_data)}条")
         
         return train_data, val_data, test_data
     
@@ -235,13 +238,13 @@ class ExperimentDataGenerator:
         Returns:
             dict: 按学科分类的数据集
         """
-        print("生成跨学科实验数据...")
+        logger.info("生成跨学科实验数据...")
         
         discipline_data = {}
         samples_per_discipline = 200  # 每个学科的样本数
         
         for discipline in DISCIPLINES:
-            print(f"生成{discipline}学科数据...")
+            logger.info(f"生成{discipline}学科数据...")
             
             data = []
             style_labels = list(STYLE_LABELS.keys())
@@ -304,7 +307,7 @@ class ExperimentDataGenerator:
         for discipline, df in discipline_data.items():
             df.to_csv(cross_discipline_dir / f'{discipline}_data.csv', index=False, encoding='utf-8')
         
-        print(f"跨学科数据生成完成，共{DISCIPLINES}个学科")
+        logger.info(f"跨学科数据生成完成，共{DISCIPLINES}个学科")
         return discipline_data
     
     def generate_smi_validation_data(self):
@@ -314,7 +317,7 @@ class ExperimentDataGenerator:
         Returns:
             pd.DataFrame: SMI验证数据
         """
-        print("生成SMI验证实验数据...")
+        logger.info("生成SMI验证实验数据...")
         
         data = []
         samples_per_style = 100
@@ -370,7 +373,7 @@ class ExperimentDataGenerator:
         smi_dir.mkdir(exist_ok=True)
         df.to_csv(smi_dir / 'smi_validation_data.csv', index=False, encoding='utf-8')
         
-        print(f"SMI验证数据生成完成，共{len(df)}条记录")
+        logger.info(f"SMI验证数据生成完成，共{len(df)}条记录")
         return df
 
 # 数据生成器实例

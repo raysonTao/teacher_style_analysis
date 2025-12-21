@@ -12,6 +12,7 @@ import seaborn as sns
 
 from ...experiments.configs.experiment_config import EXPERIMENTS_CONFIG, STYLE_LABELS
 from ...experiments.data.data_generator import data_generator
+from ...config.config import logger
 
 class SMIVerificationExperiment:
     """SMI验证实验类"""
@@ -118,12 +119,12 @@ class SMIVerificationExperiment:
         Returns:
             dict: 验证结果
         """
-        print(f"\n{'='*60}")
-        print(f"开始风格匹配度指数(SMI)验证实验")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"开始风格匹配度指数(SMI)验证实验")
+        logger.info(f"{'='*60}")
         
         # 计算每个样本的SMI
-        print("计算样本的SMI值...")
+        logger.info("计算样本的SMI值...")
         true_match_degrees = []
         calculated_smis = []
         style_ids = []
@@ -131,7 +132,7 @@ class SMIVerificationExperiment:
         start_time = time.time()
         for idx, row in self.smi_data.iterrows():
             if idx % 100 == 0 and idx > 0:
-                print(f"已处理{idx}个样本...")
+                logger.debug(f"已处理{idx}个样本...")
             
             # 计算SMI
             smi = self.calculate_smi(row, row['style_id'])
@@ -142,7 +143,7 @@ class SMIVerificationExperiment:
             style_ids.append(row['style_id'])
         
         calculation_time = time.time() - start_time
-        print(f"SMI计算完成，耗时: {calculation_time:.2f}秒")
+        logger.info(f"SMI计算完成，耗时: {calculation_time:.2f}秒")
         
         # 添加计算的SMI到数据中
         self.smi_data['calculated_smi'] = calculated_smis
@@ -168,11 +169,11 @@ class SMIVerificationExperiment:
             'sample_count': len(self.smi_data)
         }
         
-        print(f"\n整体验证结果:")
-        print(f"- Pearson相关系数: {pearson_corr:.4f} (p值: {pearson_p:.4e})")
-        print(f"- Spearman相关系数: {spearman_corr:.4f} (p值: {spearman_p:.4e})")
-        print(f"- 均方误差 (MSE): {mse:.4f}")
-        print(f"- 平均绝对误差 (MAE): {mae:.4f}")
+        logger.info(f"\n整体验证结果:")
+        logger.info(f"- Pearson相关系数: {pearson_corr:.4f} (p值: {pearson_p:.4e})")
+        logger.info(f"- Spearman相关系数: {spearman_corr:.4f} (p值: {spearman_p:.4e})")
+        logger.info(f"- 均方误差 (MSE): {mse:.4f}")
+        logger.info(f"- 平均绝对误差 (MAE): {mae:.4f}")
         
         # 按风格分类统计
         style_results = {}
@@ -204,9 +205,9 @@ class SMIVerificationExperiment:
             self._save_results()
             self._visualize_results(true_match_degrees, calculated_smis, style_ids)
         
-        print(f"\n{'='*60}")
-        print(f"SMI验证实验完成")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"SMI验证实验完成")
+        logger.info(f"{'='*60}")
         
         return self.results
     
@@ -220,7 +221,7 @@ class SMIVerificationExperiment:
         Returns:
             dict: 阈值分析结果
         """
-        print(f"\n分析不同SMI阈值下的准确率...")
+        logger.info(f"\n分析不同SMI阈值下的准确率...")
         
         thresholds = np.arange(0.1, 1.0, 0.05)
         true_positive_rates = []
@@ -279,7 +280,7 @@ class SMIVerificationExperiment:
         best_threshold = thresholds[best_threshold_idx]
         best_accuracy = accuracy_scores[best_threshold_idx]
         
-        print(f"最佳SMI阈值: {best_threshold:.2f} (准确率: {best_accuracy:.4f})")
+        logger.info(f"最佳SMI阈值: {best_threshold:.2f} (准确率: {best_accuracy:.4f})")
         
         # 记录阈值分析结果
         threshold_results = {
@@ -328,7 +329,7 @@ class SMIVerificationExperiment:
         smi_data_file = self.results_dir / f"smi_verification_data_{timestamp}.csv"
         self.smi_data.to_csv(smi_data_file, index=False, encoding='utf-8')
         
-        print(f"\nSMI验证结果已保存")
+        logger.info(f"\nSMI验证结果已保存")
     
     def _visualize_results(self, true_match_degrees, calculated_smis, style_ids):
         """

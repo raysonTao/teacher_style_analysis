@@ -23,6 +23,7 @@ import seaborn as sns
 
 from ..configs.experiment_config import EXPERIMENTS_CONFIG, STYLE_LABELS, ID_TO_STYLE
 from ..data.data_generator import data_generator
+from ...config.config import logger
 
 class ModelComparator:
     """模型比较器类"""
@@ -70,7 +71,7 @@ class ModelComparator:
             cmat_model = StyleClassifier()
             return cmat_model
         except Exception as e:
-            print(f"导入CMAT模型失败: {e}")
+            logger.error(f"导入CMAT模型失败: {e}")
             # 使用XGBoost作为替代
             return XGBClassifier(random_state=42, n_jobs=-1)
     
@@ -112,9 +113,9 @@ class ModelComparator:
         Returns:
             dict: 模型性能比较结果
         """
-        print(f"\n{'='*60}")
-        print(f"开始模型性能比较实验 (特征类型: {feature_type})")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"开始模型性能比较实验 (特征类型: {feature_type})")
+        logger.info(f"{'='*60}")
         
         # 提取特征
         X_train, y_train = self._extract_features(self.train_data, feature_type)
@@ -133,7 +134,7 @@ class ModelComparator:
         
         # 比较各个模型
         for model_name, model in self.models.items():
-            print(f"\n训练模型: {model_name}")
+            logger.info(f"\n训练模型: {model_name}")
             start_time = time.time()
             
             try:
@@ -145,7 +146,7 @@ class ModelComparator:
                     model.fit(X_train, y_train)
                 
                 train_time = time.time() - start_time
-                print(f"训练时间: {train_time:.2f}秒")
+                logger.info(f"训练时间: {train_time:.2f}秒")
                 
                 # 预测
                 if model_name == 'cmat':
@@ -190,20 +191,20 @@ class ModelComparator:
                 if save_results:
                     model_path = self.models_dir / f"{model_name}_{feature_type}.joblib"
                     joblib.dump(model, model_path)
-                    print(f"模型已保存到: {model_path}")
+                    logger.info(f"模型已保存到: {model_path}")
                 
                 # 记录结果
                 self.results[model_name] = metrics
                 
                 # 打印性能摘要
-                print(f"性能摘要:")
-                print(f"- 训练集准确率: {metrics['train_accuracy']:.4f}")
-                print(f"- 验证集准确率: {metrics['val_accuracy']:.4f}")
-                print(f"- 测试集准确率: {metrics['test_accuracy']:.4f}")
-                print(f"- 测试集F1分数: {metrics['test_f1']:.4f}")
+                logger.info(f"性能摘要:")
+                logger.info(f"- 训练集准确率: {metrics['train_accuracy']:.4f}")
+                logger.info(f"- 验证集准确率: {metrics['val_accuracy']:.4f}")
+                logger.info(f"- 测试集准确率: {metrics['test_accuracy']:.4f}")
+                logger.info(f"- 测试集F1分数: {metrics['test_f1']:.4f}")
                 
             except Exception as e:
-                print(f"训练{model_name}时出错: {e}")
+                logger.error(f"训练{model_name}时出错: {e}")
                 self.results[model_name] = {'error': str(e)}
         
         # 保存比较结果
@@ -211,9 +212,9 @@ class ModelComparator:
             self._save_comparison_results(feature_type)
             self._visualize_comparison_results(feature_type)
         
-        print(f"\n{'='*60}")
-        print(f"模型性能比较实验完成")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"模型性能比较实验完成")
+        logger.info(f"{'='*60}")
         
         return self.results
     
@@ -227,9 +228,9 @@ class ModelComparator:
         Returns:
             dict: 模态比较结果
         """
-        print(f"\n{'='*60}")
-        print(f"开始多模态特征融合效果实验")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"开始多模态特征融合效果实验")
+        logger.info(f"{'='*60}")
         
         modalities = ['video', 'audio', 'text', 'fusion']
         modality_results = {}
@@ -238,7 +239,7 @@ class ModelComparator:
         best_model_name = 'xgboost'
         
         for modality in modalities:
-            print(f"\n使用{modality}特征进行实验")
+            logger.info(f"\n使用{modality}特征进行实验")
             
             # 提取特征
             X_train, y_train = self._extract_features(self.train_data, modality)
@@ -271,21 +272,21 @@ class ModelComparator:
             
             modality_results[modality] = metrics
             
-            print(f"性能: 准确率={metrics['accuracy']:.4f}, F1={metrics['f1']:.4f}")
+            logger.info(f"性能: 准确率={metrics['accuracy']:.4f}, F1={metrics['f1']:.4f}")
         
         # 保存和可视化结果
         if save_results:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             results_path = self.results_dir / f"modality_comparison_{timestamp}.json"
             pd.Series(modality_results).to_json(results_path)
-            print(f"模态比较结果已保存到: {results_path}")
+            logger.info(f"模态比较结果已保存到: {results_path}")
             
             # 可视化
             self._visualize_modality_comparison(modality_results)
         
-        print(f"\n{'='*60}")
-        print(f"多模态特征融合效果实验完成")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"多模态特征融合效果实验完成")
+        logger.info(f"{'='*60}")
         
         return modality_results
     
@@ -301,9 +302,9 @@ class ModelComparator:
         Returns:
             dict: 交叉验证结果
         """
-        print(f"\n{'='*60}")
-        print(f"对{model_name}模型执行{cv}折交叉验证 (特征: {feature_type})")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"对{model_name}模型执行{cv}折交叉验证 (特征: {feature_type})")
+        logger.info(f"{'='*60}")
         
         # 合并训练集和验证集进行交叉验证
         combined_data = pd.concat([self.train_data, self.val_data])
@@ -328,7 +329,7 @@ class ModelComparator:
         
         fold = 1
         for train_idx, val_idx in skf.split(X, y):
-            print(f"\n折 {fold}/{cv}:")
+            logger.info(f"\n折 {fold}/{cv}:")
             
             X_fold_train, X_fold_val = X[train_idx], X[val_idx]
             y_fold_train, y_fold_val = y[train_idx], y[val_idx]
@@ -352,7 +353,7 @@ class ModelComparator:
             cv_results['recall'].append(rec)
             cv_results['f1'].append(f1)
             
-            print(f"准确率: {acc:.4f}, F1: {f1:.4f}")
+            logger.info(f"准确率: {acc:.4f}, F1: {f1:.4f}")
             fold += 1
         
         # 计算平均值和标准差
@@ -360,9 +361,9 @@ class ModelComparator:
             cv_results[f'{metric}_mean'] = np.mean(cv_results[metric])
             cv_results[f'{metric}_std'] = np.std(cv_results[metric])
         
-        print(f"\n交叉验证结果:")
-        print(f"准确率: {cv_results['accuracy_mean']:.4f} ± {cv_results['accuracy_std']:.4f}")
-        print(f"F1分数: {cv_results['f1_mean']:.4f} ± {cv_results['f1_std']:.4f}")
+        logger.info(f"\n交叉验证结果:")
+        logger.info(f"准确率: {cv_results['accuracy_mean']:.4f} ± {cv_results['accuracy_std']:.4f}")
+        logger.info(f"F1分数: {cv_results['f1_mean']:.4f} ± {cv_results['f1_std']:.4f}")
         
         return cv_results
     
@@ -390,7 +391,7 @@ class ModelComparator:
         # 保存为CSV
         df = pd.DataFrame(metrics_data)
         df.to_csv(results_file, index=False, encoding='utf-8')
-        print(f"\n比较结果已保存到: {results_file}")
+        logger.info(f"\n比较结果已保存到: {results_file}")
         
         # 保存完整结果
         full_results_file = self.results_dir / f"model_comparison_full_{feature_type}_{timestamp}.json"
@@ -449,7 +450,7 @@ class ModelComparator:
         
         plt.tight_layout()
         plt.savefig(self.visualizations_dir / f"model_comparison_{feature_type}_{timestamp}.png", dpi=300)
-        print(f"可视化结果已保存")
+        logger.info(f"可视化结果已保存")
         plt.close()
     
     def _visualize_modality_comparison(self, modality_results):
@@ -481,7 +482,7 @@ class ModelComparator:
         plt.title('不同模态特征的性能比较')
         plt.tight_layout()
         plt.savefig(self.visualizations_dir / f"modality_comparison_{timestamp}.png", dpi=300)
-        print(f"模态比较可视化已保存")
+        logger.info(f"模态比较可视化已保存")
         plt.close()
 
 # 模型比较器实例

@@ -16,6 +16,7 @@ import seaborn as sns
 
 from ...experiments.configs.experiment_config import EXPERIMENTS_CONFIG, STYLE_LABELS
 from ...experiments.data.data_generator import data_generator
+from ...config.config import logger
 
 class RuleMLFusionExperiment:
     """规则与机器学习融合实验类"""
@@ -171,22 +172,22 @@ class RuleMLFusionExperiment:
         Returns:
             dict: 实验结果
         """
-        print(f"\n{'='*60}")
-        print(f"开始规则与机器学习融合效果实验")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"开始规则与机器学习融合效果实验")
+        logger.info(f"{'='*60}")
         
         # 模拟规则系统预测
-        print("模拟基于规则的分类系统...")
+        logger.info("模拟基于规则的分类系统...")
         rule_pred_train, rule_prob_train = self._simulate_rule_based_system(self.X_train, self.y_train)
         rule_pred_test, rule_prob_test = self._simulate_rule_based_system(self.X_test, self.y_test)
         
         # 计算规则系统性能
         rule_accuracy = accuracy_score(self.y_test, rule_pred_test)
         rule_f1 = f1_score(self.y_test, rule_pred_test, average='weighted')
-        print(f"规则系统性能: 准确率={rule_accuracy:.4f}, F1={rule_f1:.4f}")
+        logger.info(f"规则系统性能: 准确率={rule_accuracy:.4f}, F1={rule_f1:.4f}")
         
         # 模拟机器学习系统预测
-        print("模拟机器学习分类系统...")
+        logger.info("模拟机器学习分类系统...")
         ml_pred_test, ml_prob_test = self._simulate_machine_learning_system(
             self.X_test, self.y_train, self.X_train
         )
@@ -194,13 +195,13 @@ class RuleMLFusionExperiment:
         # 计算机器学习系统性能
         ml_accuracy = accuracy_score(self.y_test, ml_pred_test)
         ml_f1 = f1_score(self.y_test, ml_pred_test, average='weighted')
-        print(f"机器学习系统性能: 准确率={ml_accuracy:.4f}, F1={ml_f1:.4f}")
+        logger.info(f"机器学习系统性能: 准确率={ml_accuracy:.4f}, F1={ml_f1:.4f}")
         
         # 测试不同的lambda权重
-        print(f"\n测试不同的lambda权重 ({self.lambda_weights}):")
+        logger.info(f"\n测试不同的lambda权重 ({self.lambda_weights}):")
         
         for lambda_weight in self.lambda_weights:
-            print(f"\nLambda权重: {lambda_weight}")
+            logger.info(f"\nLambda权重: {lambda_weight}")
             
             # 融合预测
             fused_pred, fused_prob = self._fuse_predictions(
@@ -224,7 +225,7 @@ class RuleMLFusionExperiment:
             # 记录结果
             self.results[lambda_weight] = metrics
             
-            print(f"融合系统性能: 准确率={metrics['accuracy']:.4f}, F1={metrics['f1']:.4f}")
+            logger.info(f"融合系统性能: 准确率={metrics['accuracy']:.4f}, F1={metrics['f1']:.4f}")
         
         # 添加单系统结果作为参考
         self.results['rule_only'] = {
@@ -251,10 +252,10 @@ class RuleMLFusionExperiment:
                 best_accuracy = self.results[lambda_weight]['accuracy']
                 best_lambda = lambda_weight
         
-        print(f"\n{'='*60}")
-        print(f"实验完成")
-        print(f"最佳Lambda权重: {best_lambda} (准确率: {best_accuracy:.4f})")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"实验完成")
+        logger.info(f"最佳Lambda权重: {best_lambda} (准确率: {best_accuracy:.4f})")
+        logger.info(f"{'='*60}")
         
         return self.results
     
@@ -302,7 +303,7 @@ class RuleMLFusionExperiment:
         # 保存为CSV
         df = pd.DataFrame(data)
         df.to_csv(results_file, index=False, encoding='utf-8')
-        print(f"\n融合实验结果已保存到: {results_file}")
+        logger.info(f"\n融合实验结果已保存到: {results_file}")
         
         # 保存完整结果
         full_results_file = self.results_dir / f"rule_ml_fusion_full_{timestamp}.json"
@@ -359,7 +360,7 @@ class RuleMLFusionExperiment:
         
         plt.tight_layout()
         plt.savefig(self.visualizations_dir / f"rule_ml_fusion_{timestamp}.png", dpi=300)
-        print(f"可视化结果已保存")
+        logger.info(f"可视化结果已保存")
         plt.close()
         
         # 绘制热力图比较不同权重下的各类别性能
@@ -393,7 +394,7 @@ class RuleMLFusionExperiment:
         plt.title('不同Lambda权重下各类别的F1分数')
         plt.tight_layout()
         plt.savefig(self.visualizations_dir / f"category_performance_heatmap_{timestamp}.png", dpi=300)
-        print(f"类别性能热力图已保存")
+        logger.info(f"类别性能热力图已保存")
         plt.close()
 
 # 融合实验实例

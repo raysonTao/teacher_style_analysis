@@ -11,6 +11,9 @@ import argparse
 from pathlib import Path
 from typing import Dict, List
 
+# 导入全局logger
+from ..config.config import logger
+
 # 项目根目录
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / 'data'
@@ -87,7 +90,7 @@ class DataCollectionTool:
         """
         video_path = Path(video_path)
         if not video_path.exists():
-            print(f"视频文件不存在: {video_path}")
+            logger.error(f"视频文件不存在: {video_path}")
             return
         
         # 生成视频ID（基于文件名）
@@ -98,7 +101,7 @@ class DataCollectionTool:
         
         # 检查标注文件是否已存在
         if annotation_file.exists():
-            print(f"标注文件已存在: {annotation_file}")
+            logger.info(f"标注文件已存在: {annotation_file}")
             return
         
         # 生成样本标注
@@ -108,7 +111,7 @@ class DataCollectionTool:
         with open(annotation_file, 'w', encoding='utf-8') as f:
             json.dump(sample_annotation, f, ensure_ascii=False, indent=2)
         
-        print(f"标注文件已创建: {annotation_file}")
+        logger.info(f"标注文件已创建: {annotation_file}")
     
     def batch_create_annotation_files(self, videos_dir: str):
         """
@@ -119,7 +122,7 @@ class DataCollectionTool:
         """
         videos_dir = Path(videos_dir)
         if not videos_dir.exists():
-            print(f"视频目录不存在: {videos_dir}")
+            logger.error(f"视频目录不存在: {videos_dir}")
             return
         
         # 支持的视频格式
@@ -133,14 +136,14 @@ class DataCollectionTool:
                     video_path = Path(root) / file
                     video_files.append(video_path)
         
-        print(f"发现 {len(video_files)} 个视频文件")
+        logger.info(f"发现 {len(video_files)} 个视频文件")
         
         # 批量创建标注文件
         for i, video_path in enumerate(video_files, 1):
-            print(f"处理视频 {i}/{len(video_files)}: {video_path}")
+            logger.info(f"处理视频 {i}/{len(video_files)}: {video_path}")
             self.create_annotation_file(video_path)
         
-        print(f"批量处理完成，共创建 {len(video_files)} 个标注文件")
+        logger.info(f"批量处理完成，共创建 {len(video_files)} 个标注文件")
     
     def generate_data_collection_guide(self):
         """
@@ -269,7 +272,7 @@ python data_collection_tool.py validate --dir /path/to/annotations
         with open(guide_file, 'w', encoding='utf-8') as f:
             f.write(guide_content)
         
-        print(f"数据收集指南已生成: {guide_file}")
+        logger.info(f"数据收集指南已生成: {guide_file}")
     
     def validate_annotation(self, annotation_file: str) -> bool:
         """
@@ -283,7 +286,7 @@ python data_collection_tool.py validate --dir /path/to/annotations
         """
         annotation_file = Path(annotation_file)
         if not annotation_file.exists():
-            print(f"标注文件不存在: {annotation_file}")
+            logger.error(f"标注文件不存在: {annotation_file}")
             return False
         
         try:
@@ -298,24 +301,24 @@ python data_collection_tool.py validate --dir /path/to/annotations
             
             for field in required_fields:
                 if field not in annotation:
-                    print(f"标注文件缺少必要字段: {field}")
+                    logger.error(f"标注文件缺少必要字段: {field}")
                     return False
             
             # 检查风格分数字段
             style_scores = annotation['annotations']['global_style']['style_scores']
             for label in STYLE_LABELS:
                 if label not in style_scores:
-                    print(f"风格分数缺少字段: {label}")
+                    logger.error(f"风格分数缺少字段: {label}")
                     return False
             
-            print(f"标注文件格式验证通过: {annotation_file}")
+            logger.info(f"标注文件格式验证通过: {annotation_file}")
             return True
             
         except json.JSONDecodeError as e:
-            print(f"标注文件JSON格式错误: {e}")
+            logger.error(f"标注文件JSON格式错误: {e}")
             return False
         except Exception as e:
-            print(f"验证标注文件时出错: {e}")
+            logger.error(f"验证标注文件时出错: {e}")
             return False
     
     def validate_annotations_dir(self, annotations_dir: str):
@@ -327,13 +330,13 @@ python data_collection_tool.py validate --dir /path/to/annotations
         """
         annotations_dir = Path(annotations_dir)
         if not annotations_dir.exists():
-            print(f"标注目录不存在: {annotations_dir}")
+            logger.error(f"标注目录不存在: {annotations_dir}")
             return
         
         # 获取所有标注文件
         annotation_files = list(annotations_dir.glob("*_annotation.json"))
         
-        print(f"开始验证 {len(annotation_files)} 个标注文件")
+        logger.info(f"开始验证 {len(annotation_files)} 个标注文件")
         
         valid_count = 0
         invalid_count = 0
@@ -344,7 +347,7 @@ python data_collection_tool.py validate --dir /path/to/annotations
             else:
                 invalid_count += 1
         
-        print(f"验证完成: 有效文件 {valid_count} 个，无效文件 {invalid_count} 个")
+        logger.info(f"验证完成: 有效文件 {valid_count} 个，无效文件 {invalid_count} 个")
 
 def main():
     """主函数"""
@@ -384,7 +387,7 @@ def main():
         elif args.dir:
             tool.validate_annotations_dir(args.dir)
         else:
-            print("请指定--file或--dir参数")
+            logger.error("请指定--file或--dir参数")
     else:
         parser.print_help()
 

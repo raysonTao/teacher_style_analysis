@@ -7,7 +7,7 @@ import numpy as np
 # 添加项目根目录到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.config import ACTION_CONFIG
+from config.config import ACTION_CONFIG, logger
 
 class PoseActionRecognizer:
     """基于姿态的动作识别类，用于识别教师的动作"""
@@ -133,7 +133,7 @@ class PoseActionRecognizer:
             return action_name, confidence
             
         except Exception as e:
-            print(f"动作识别失败: {e}")
+            logger.error(f"动作识别失败: {e}")
             import traceback
             traceback.print_exc()
             return 'unknown', 0.0

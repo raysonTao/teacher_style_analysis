@@ -11,6 +11,12 @@ import os
 import argparse
 from datetime import datetime
 
+# 导入logger
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from src.config.config import logger
+
 # 添加项目根目录到Python路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -35,9 +41,9 @@ def run_all_tests(verbosity=2):
     Returns:
         unittest.TextTestResult: 测试结果对象
     """
-    print("=" * 70)
-    print(f"开始运行教师风格分析系统所有测试 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 70)
+    logger.info("=" * 70)
+    logger.info(f"开始运行教师风格分析系统所有测试 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info("=" * 70)
     
     # 创建测试加载器和测试套件
     loader = unittest.TestLoader()
@@ -53,34 +59,34 @@ def run_all_tests(verbosity=2):
             # 加载测试用例
             test_cases = loader.loadTestsFromModule(module)
             suite.addTests(test_cases)
-            print(f"✓ 成功加载测试文件: {test_file}")
+            logger.info(f"✓ 成功加载测试文件: {test_file}")
         except Exception as e:
-            print(f"✗ 加载测试文件失败: {test_file}")
-            print(f"  错误信息: {str(e)}")
+            logger.error(f"✗ 加载测试文件失败: {test_file}")
+            logger.error(f"  错误信息: {str(e)}")
     
-    print("=" * 70)
-    print(f"总共加载了 {suite.countTestCases()} 个测试用例")
-    print("=" * 70)
+    logger.info("=" * 70)
+    logger.info(f"总共加载了 {suite.countTestCases()} 个测试用例")
+    logger.info("=" * 70)
     
     # 运行测试
     runner = unittest.TextTestRunner(verbosity=verbosity)
     result = runner.run(suite)
     
     # 打印测试摘要
-    print("\n" + "=" * 70)
-    print("测试运行摘要")
-    print("=" * 70)
-    print(f"运行测试总数: {result.testsRun}")
-    print(f"失败测试数: {len(result.failures)}")
-    print(f"错误测试数: {len(result.errors)}")
-    print(f"跳过测试数: {len(result.skipped)}")
+    logger.info("\n" + "=" * 70)
+    logger.info("测试运行摘要")
+    logger.info("=" * 70)
+    logger.info(f"运行测试总数: {result.testsRun}")
+    logger.info(f"失败测试数: {len(result.failures)}")
+    logger.info(f"错误测试数: {len(result.errors)}")
+    logger.info(f"跳过测试数: {len(result.skipped)}")
     
     if result.wasSuccessful():
-        print("\n✅ 所有测试通过!")
+        logger.info("\n✅ 所有测试通过!")
     else:
-        print("\n❌ 测试运行失败!")
+        logger.error("\n❌ 测试运行失败!")
     
-    print("=" * 70)
+    logger.info("=" * 70)
     return result
 
 
@@ -95,9 +101,9 @@ def run_specific_test(test_file, verbosity=2):
     Returns:
         unittest.TextTestResult: 测试结果对象
     """
-    print("=" * 70)
-    print(f"开始运行测试文件: {test_file} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 70)
+    logger.info("=" * 70)
+    logger.info(f"开始运行测试文件: {test_file} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info("=" * 70)
     
     try:
         # 从文件名导入模块
@@ -108,33 +114,33 @@ def run_specific_test(test_file, verbosity=2):
         loader = unittest.TestLoader()
         suite = loader.loadTestsFromModule(module)
         
-        print(f"✓ 成功加载测试文件: {test_file}")
-        print(f"总共加载了 {suite.countTestCases()} 个测试用例")
-        print("=" * 70)
+        logger.info(f"✓ 成功加载测试文件: {test_file}")
+        logger.info(f"总共加载了 {suite.countTestCases()} 个测试用例")
+        logger.info("=" * 70)
         
         runner = unittest.TextTestRunner(verbosity=verbosity)
         result = runner.run(suite)
         
         # 打印测试摘要
-        print("\n" + "=" * 70)
-        print(f"测试文件 {test_file} 运行摘要")
-        print("=" * 70)
-        print(f"运行测试总数: {result.testsRun}")
-        print(f"失败测试数: {len(result.failures)}")
-        print(f"错误测试数: {len(result.errors)}")
-        print(f"跳过测试数: {len(result.skipped)}")
+        logger.info("\n" + "=" * 70)
+        logger.info(f"测试文件 {test_file} 运行摘要")
+        logger.info("=" * 70)
+        logger.info(f"运行测试总数: {result.testsRun}")
+        logger.info(f"失败测试数: {len(result.failures)}")
+        logger.info(f"错误测试数: {len(result.errors)}")
+        logger.info(f"跳过测试数: {len(result.skipped)}")
         
         if result.wasSuccessful():
-            print("\n✅ 测试通过!")
+            logger.info("\n✅ 测试通过!")
         else:
-            print("\n❌ 测试失败!")
+            logger.error("\n❌ 测试失败!")
         
-        print("=" * 70)
+        logger.info("=" * 70)
         return result
     
     except Exception as e:
-        print(f"✗ 运行测试文件失败: {test_file}")
-        print(f"  错误信息: {str(e)}")
+        logger.error(f"✗ 运行测试文件失败: {test_file}")
+        logger.error(f"  错误信息: {str(e)}")
         # 返回失败的结果对象
         class FailedResult(unittest.TestResult):
             def __init__(self):
@@ -196,9 +202,9 @@ def generate_test_report(result, output_file=None):
     if output_file:
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(report)
-        print(f"测试报告已保存至: {output_file}")
+        logger.info(f"测试报告已保存至: {output_file}")
     else:
-        print(report)
+        logger.info(report)
 
 
 if __name__ == '__main__':
@@ -216,8 +222,8 @@ if __name__ == '__main__':
         if args.file in TEST_FILES:
             result = run_specific_test(args.file, args.verbosity)
         else:
-            print(f"错误: 测试文件 '{args.file}' 不存在")
-            print(f"可用的测试文件: {', '.join(TEST_FILES)}")
+            logger.error(f"错误: 测试文件 '{args.file}' 不存在")
+            logger.error(f"可用的测试文件: {', '.join(TEST_FILES)}")
             sys.exit(1)
     else:
         # 运行所有测试

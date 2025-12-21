@@ -12,7 +12,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.config import (
-    VIDEO_DIR, AUDIO_DIR, TEXT_DIR, DATA_DIR
+    VIDEO_DIR, AUDIO_DIR, TEXT_DIR, DATA_DIR, logger
 )
 
 
@@ -128,7 +128,7 @@ class DataManager:
             return video_info
             
         except Exception as e:
-            print(f"视频上传失败: {e}")
+            logger.error(f"视频上传失败: {e}")
             raise
     
     def save_audio(self, video_id: str, audio_path: str) -> Dict:
@@ -156,7 +156,7 @@ class DataManager:
             }
             
         except Exception as e:
-            print(f"音频保存失败: {e}")
+            logger.error(f"音频保存失败: {e}")
             raise
     
     def save_video_info(self, video_info: Dict) -> str:
@@ -233,7 +233,7 @@ class DataManager:
             }
             
         except Exception as e:
-            print(f"转录文本保存失败: {e}")
+            logger.error(f"转录文本保存失败: {e}")
             raise
     
     def get_video_info(self, video_id: str) -> Optional[Dict]:

@@ -21,6 +21,7 @@ from itertools import combinations
 
 from ...experiments.configs.experiment_config import EXPERIMENTS_CONFIG, STYLE_LABELS
 from ...experiments.data.data_generator import data_generator
+from ...config.config import logger
 
 class MultimodalFusionExperiment:
     """多模态融合效果实验类"""
@@ -160,9 +161,9 @@ class MultimodalFusionExperiment:
             dict: 评估指标
         """
         modalities_str = '+'.join(modalities)
-        print(f"\n{'='*60}")
-        print(f"评估模态组合: {modalities_str}，使用模型: {model_name}")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"评估模态组合: {modalities_str}，使用模型: {model_name}")
+        logger.info(f"{'='*60}")
         
         # 提取特征
         X, y = self._extract_features(modalities)
@@ -198,12 +199,12 @@ class MultimodalFusionExperiment:
             joblib.dump(scaler, scaler_path)
         
         # 打印结果
-        print(f"\n模态组合 {modalities_str} 评估结果:")
-        print(f"- 特征维度: {X.shape[1]}")
-        print(f"- 训练时间: {metrics['train_time']:.2f}秒")
-        print(f"- 测试集准确率: {metrics['accuracy']:.4f}")
-        print(f"- 交叉验证平均准确率: {metrics['cv_accuracy']:.4f} ± {metrics['cv_std']:.4f}")
-        print(f"- F1分数: {metrics['f1']:.4f}")
+        logger.info(f"\n模态组合 {modalities_str} 评估结果:")
+        logger.info(f"- 特征维度: {X.shape[1]}")
+        logger.info(f"- 训练时间: {metrics['train_time']:.2f}秒")
+        logger.info(f"- 测试集准确率: {metrics['accuracy']:.4f}")
+        logger.info(f"- 交叉验证平均准确率: {metrics['cv_accuracy']:.4f} ± {metrics['cv_std']:.4f}")
+        logger.info(f"- F1分数: {metrics['f1']:.4f}")
         
         return metrics
     
@@ -218,9 +219,9 @@ class MultimodalFusionExperiment:
         Returns:
             dict: 所有组合的评估结果
         """
-        print(f"\n{'='*60}")
-        print(f"开始多模态融合实验，使用模型: {model_name}")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"开始多模态融合实验，使用模型: {model_name}")
+        logger.info(f"{'='*60}")
         
         combination_results = {}
         
@@ -245,11 +246,11 @@ class MultimodalFusionExperiment:
             key=lambda x: (x[1]['accuracy'], x[1]['f1'])
         )
         
-        print(f"\n{'='*60}")
-        print(f"最佳模态组合: {best_combination[0]}")
-        print(f"- 准确率: {best_combination[1]['accuracy']:.4f}")
-        print(f"- F1分数: {best_combination[1]['f1']:.4f}")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"最佳模态组合: {best_combination[0]}")
+        logger.info(f"- 准确率: {best_combination[1]['accuracy']:.4f}")
+        logger.info(f"- F1分数: {best_combination[1]['f1']:.4f}")
+        logger.info(f"{'='*60}")
         
         return combination_results
     
@@ -263,9 +264,9 @@ class MultimodalFusionExperiment:
         Returns:
             dict: 模态贡献分析结果
         """
-        print(f"\n{'='*60}")
-        print(f"分析各模态对最终性能的贡献，使用模型: {model_name}")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"分析各模态对最终性能的贡献，使用模型: {model_name}")
+        logger.info(f"{'='*60}")
         
         if 'modality_combinations' not in self.results:
             self.run_all_combinations(model_name, save_results=False)
@@ -335,18 +336,18 @@ class MultimodalFusionExperiment:
         }
         
         # 打印模态贡献分析
-        print(f"\n模态组合性能增益分析:")
+        logger.info(f"\n模态组合性能增益分析:")
         for modality, stats in contributions.items():
-            print(f"\n{modality}:")
-            print(f"- 准确率: {stats['accuracy']:.4f}")
+            logger.info(f"\n{modality}:")
+            logger.info(f"- 准确率: {stats['accuracy']:.4f}")
             if 'avg_single_accuracy' in stats:
-                print(f"- 两单模态平均准确率: {stats['avg_single_accuracy']:.4f}")
+                logger.info(f"- 两单模态平均准确率: {stats['avg_single_accuracy']:.4f}")
             elif 'max_dual_accuracy' in stats:
-                print(f"- 双模态最高准确率: {stats['max_dual_accuracy']:.4f}")
+                logger.info(f"- 双模态最高准确率: {stats['max_dual_accuracy']:.4f}")
             elif 'triple_accuracy' in stats:
-                print(f"- 三模态准确率: {stats['triple_accuracy']:.4f}")
-            print(f"- 增益准确率: {stats['gain_accuracy']:.4f}")
-            print(f"- 增益百分比: {stats['gain_percentage']:.2f}%")
+                logger.info(f"- 三模态准确率: {stats['triple_accuracy']:.4f}")
+            logger.info(f"- 增益准确率: {stats['gain_accuracy']:.4f}")
+            logger.info(f"- 增益百分比: {stats['gain_percentage']:.2f}%")
         
         # 记录模态贡献结果
         self.results['modality_contributions'] = contributions
@@ -367,9 +368,9 @@ class MultimodalFusionExperiment:
         Returns:
             dict: 消融实验结果
         """
-        print(f"\n{'='*60}")
-        print(f"开始消融实验，使用模型: {model_name}")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"开始消融实验，使用模型: {model_name}")
+        logger.info(f"{'='*60}")
         
         # 定义消融实验的模态组合
         ablation_combinations = [
@@ -419,23 +420,23 @@ class MultimodalFusionExperiment:
                 }
         
         # 打印消融实验结果
-        print(f"\n消融实验结果:")
-        print(f"完整模型准确率: {full_model_results['accuracy']:.4f}")
+        logger.info(f"\n消融实验结果:")
+        logger.info(f"完整模型准确率: {full_model_results['accuracy']:.4f}")
         
         for modality, impact in ablation_impact.items():
-            print(f"\n移除{modality}模态:")
-            print(f"- 剩余模态: {impact['remaining_modalities']}")
-            print(f"- 准确率: {impact['accuracy_without']:.4f}")
-            print(f"- 准确率下降: {impact['accuracy_drop']:.4f} ({impact['accuracy_drop_percentage']:.2f}%)")
-            print(f"- F1下降: {impact['f1_drop']:.4f}")
+            logger.info(f"\n移除{modality}模态:")
+            logger.info(f"- 剩余模态: {impact['remaining_modalities']}")
+            logger.info(f"- 准确率: {impact['accuracy_without']:.4f}")
+            logger.info(f"- 准确率下降: {impact['accuracy_drop']:.4f} ({impact['accuracy_drop_percentage']:.2f}%)")
+            logger.info(f"- F1下降: {impact['f1_drop']:.4f}")
         
         # 确定最关键的模态（准确率下降最大）
         most_critical_modality = max(ablation_impact.items(), key=lambda x: x[1]['accuracy_drop'])
         
-        print(f"\n{'='*60}")
-        print(f"最关键模态: {most_critical_modality[0]}")
-        print(f"- 准确率下降: {most_critical_modality[1]['accuracy_drop']:.4f} ({most_critical_modality[1]['accuracy_drop_percentage']:.2f}%)")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"最关键模态: {most_critical_modality[0]}")
+        logger.info(f"- 准确率下降: {most_critical_modality[1]['accuracy_drop']:.4f} ({most_critical_modality[1]['accuracy_drop_percentage']:.2f}%)")
+        logger.info(f"{'='*60}")
         
         # 记录消融实验结果
         self.results['ablation_study'] = {
@@ -479,7 +480,7 @@ class MultimodalFusionExperiment:
         df = pd.DataFrame(data)
         df.to_csv(fusion_file, index=False, encoding='utf-8')
         
-        print(f"多模态融合实验结果已保存")
+        logger.info(f"多模态融合实验结果已保存")
     
     def _save_ablation_results(self):
         """
@@ -499,7 +500,7 @@ class MultimodalFusionExperiment:
         df = pd.DataFrame(data)
         df.to_csv(ablation_file, index=False, encoding='utf-8')
         
-        print(f"消融实验结果已保存")
+        logger.info(f"消融实验结果已保存")
     
     def _visualize_results(self):
         """
@@ -558,7 +559,7 @@ class MultimodalFusionExperiment:
         
         plt.tight_layout()
         plt.savefig(self.visualizations_dir / f"multimodal_fusion_comparison_{timestamp}.png", dpi=300)
-        print(f"多模态融合对比可视化已保存")
+        logger.info(f"多模态融合对比可视化已保存")
         plt.close()
     
     def _visualize_modality_contributions(self):
@@ -613,7 +614,7 @@ class MultimodalFusionExperiment:
         
         plt.tight_layout()
         plt.savefig(self.visualizations_dir / f"modality_contributions_{timestamp}.png", dpi=300)
-        print(f"模态贡献可视化已保存")
+        logger.info(f"模态贡献可视化已保存")
         plt.close()
     
     def _visualize_ablation_results(self):
@@ -676,7 +677,7 @@ class MultimodalFusionExperiment:
         
         plt.tight_layout()
         plt.savefig(self.visualizations_dir / f"ablation_study_{timestamp}.png", dpi=300)
-        print(f"消融实验可视化已保存")
+        logger.info(f"消融实验可视化已保存")
         plt.close()
 
 # 多模态融合实验实例

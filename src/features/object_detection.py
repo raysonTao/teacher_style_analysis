@@ -8,7 +8,7 @@ import cv2
 # 添加项目根目录到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.config import BASE_DIR, MODEL_CONFIG
+from config.config import BASE_DIR, MODEL_CONFIG, logger
 
 class YOLOObjectDetector:
     """YOLO目标检测类，用于检测视频中的目标对象"""
@@ -22,35 +22,35 @@ class YOLOObjectDetector:
         """加载YOLO模型"""
         try:
             from ultralytics import YOLO
-            print("初始化YOLO模型...")
+            logger.info("初始化YOLO模型...")
             
             # 使用绝对路径加载YOLO模型
             yolo_path = os.path.join(BASE_DIR, MODEL_CONFIG['yolo_model_path'])
-            print(f"YOLO模型绝对路径: {yolo_path}")
-            print(f"文件是否存在: {os.path.exists(yolo_path)}")
+            logger.debug(f"YOLO模型绝对路径: {yolo_path}")
+            logger.debug(f"文件是否存在: {os.path.exists(yolo_path)}")
             
             if os.path.exists(yolo_path):
-                print(f"文件大小: {os.path.getsize(yolo_path)} 字节")
+                logger.debug(f"文件大小: {os.path.getsize(yolo_path)} 字节")
             
             # 尝试加载模型
             self.model = YOLO(yolo_path)
-            print(f"YOLO模型加载成功，路径: {yolo_path}")
-            print(f"模型类型: {type(self.model)}")
+            logger.info(f"YOLO模型加载成功，路径: {yolo_path}")
+            logger.debug(f"模型类型: {type(self.model)}")
             
             # 测试模型是否能正常工作
             test_img = np.ones((640, 640, 3), dtype=np.uint8) * 255
             try:
                 results = self.model(test_img)
-                print(f"YOLO模型推理测试成功，结果类型: {type(results)}")
-                print(f"检测到 {len(results[0].boxes)} 个目标")
+                logger.debug(f"YOLO模型推理测试成功，结果类型: {type(results)}")
+                logger.debug(f"检测到 {len(results[0].boxes)} 个目标")
             except Exception as infer_e:
-                print(f"YOLO模型推理测试失败: {infer_e}")
+                logger.warning(f"YOLO模型推理测试失败: {infer_e}")
                 import traceback
                 traceback.print_exc()
                 self.model = None
                 
         except Exception as e:
-            print(f"YOLO模型加载失败: {e}")
+            logger.error(f"YOLO模型加载失败: {e}")
             import traceback
             traceback.print_exc()
             self.model = None

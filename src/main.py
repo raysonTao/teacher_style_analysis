@@ -10,43 +10,14 @@ from datetime import datetime
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.config.config import PROJECT_ROOT, DATA_DIR, init_directories, LOG_DIR
+# 从config.py导入全局配置和logger
+from src.config.config import PROJECT_ROOT, DATA_DIR, init_directories, LOG_DIR, logger
 
-# 配置日志
-logger = logging.getLogger('teacher_style_analysis')
-logger.setLevel(logging.INFO)
-
-# 创建日志格式器
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-# 创建控制台处理器
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(formatter)
-
-# 创建文件处理器，日志文件按日期命名
-log_filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log')
-log_filepath = LOG_DIR / log_filename
-file_handler = logging.FileHandler(log_filepath, encoding='utf-8')
-file_handler.setFormatter(formatter)
-
-# 移除默认的处理器（如果有）
-for handler in logger.handlers[:]:
-    logger.removeHandler(handler)
-
-# 添加处理器
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
-
-# 设置根日志器的级别和处理器
-root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
-for handler in root_logger.handlers[:]:
-    root_logger.removeHandler(handler)
-root_logger.addHandler(console_handler)
-root_logger.addHandler(file_handler)
+# 标准输出和错误已经在config.py中被重定向到日志
 
 logger.info("系统启动，日志配置完成")
-logger.info(f"日志文件路径: {log_filepath}")
+from src.config.config import logger
+logger.info(f"日志文件路径: {logger.handlers[0].baseFilename}")
 
 from src.api.api_handler import start_server
 from src.data.data_manager import data_manager
@@ -422,70 +393,70 @@ def main() -> None:
     
     if args.command == 'server':
         # 启动API服务器
-        print(f"启动教师风格画像分析系统API服务...")
-        print(f"服务地址: http://{args.host}:{args.port}")
-        print(f"API文档: http://{args.host}:{args.port}/docs")
+        logger.info(f"启动教师风格画像分析系统API服务...")
+        logger.info(f"服务地址: http://{args.host}:{args.port}")
+        logger.info(f"API文档: http://{args.host}:{args.port}/docs")
         start_server(host=args.host, port=args.port)
     
     elif args.command == 'analyze':
         # 分析单个视频
-        print(f"开始分析视频: {args.video}")
-        print(f"教师ID: {args.teacher}, 学科: {args.discipline}, 年级: {args.grade}")
+        logger.info(f"开始分析视频: {args.video}")
+        logger.info(f"教师ID: {args.teacher}, 学科: {args.discipline}, 年级: {args.grade}")
         
         result = run_analysis_pipeline(args.video, args.teacher, args.discipline, args.grade)
         
-        print("\n分析完成!")
-        print(f"视频ID: {result['video_id']}")
-        print(f"SMI分数: {result['feedback']['smi']['score']}")
-        print(f"主要风格: {result['feedback']['teaching_style']['main_styles'][0][0]}")
+        logger.info("\n分析完成!")
+        logger.info(f"视频ID: {result['video_id']}")
+        logger.info(f"SMI分数: {result['feedback']['smi']['score']}")
+        logger.info(f"主要风格: {result['feedback']['teaching_style']['main_styles'][0][0]}")
     
     elif args.command == 'batch':
         # 批量分析
-        print(f"开始批量分析视频目录: {args.dir}")
-        print(f"教师ID: {args.teacher}, 学科: {args.discipline}, 年级: {args.grade}")
+        logger.info(f"开始批量分析视频目录: {args.dir}")
+        logger.info(f"教师ID: {args.teacher}, 学科: {args.discipline}, 年级: {args.grade}")
         
         results = batch_analysis(args.dir, args.teacher, args.discipline, args.grade)
         
-        print("\n批量分析完成!")
-        print(f"总视频数: {len(results)}")
-        print(f"成功: {sum(1 for r in results if r['success'])}")
-        print(f"失败: {sum(1 for r in results if not r['success'])}")
+        logger.info("\n批量分析完成!")
+        logger.info(f"总视频数: {len(results)}")
+        logger.info(f"成功: {sum(1 for r in results if r['success'])}")
+        logger.info(f"失败: {sum(1 for r in results if not r['success'])}")
     
     elif args.command == 'export':
         # 导出结果
-        print(f"导出视频ID {args.video_id} 的分析结果...")
+        logger.info(f"导出视频ID {args.video_id} 的分析结果...")
         
         output_path = export_results(args.video_id, args.format)
         
-        print(f"结果已导出到: {output_path}")
+        logger.info(f"结果已导出到: {output_path}")
     
     elif args.command == 'setup':
         # 设置系统
-        print("开始设置系统...")
+        logger.info("开始设置系统...")
         
         # 初始化目录
-        print("初始化目录结构...")
+        logger.info("初始化目录结构...")
         init_directories()
         
         # 初始化数据库
         if args.init_db:
             setup_database()
         
-        print("系统设置完成!")
+        logger.info("系统设置完成!")
     
     elif args.command == 'status':
         # 检查系统状态
-        print("检查系统状态...")
+        logger.info("检查系统状态...")
         
         status = check_system_status()
         
-        print(f"系统状态: {status['status']}")
-        print(f"数据目录: {status['directories']['data']}")
-        print(f"导出目录: {status['directories']['exports']}")
+        logger.info(f"系统状态: {status['status']}")
+        logger.info(f"数据目录: {status['directories']['data']}")
+        logger.info(f"导出目录: {status['directories']['exports']}")
         
         if status['missing_packages']:
-            print(f"\n缺少的依赖包: {', '.join(status['missing_packages'])}")
-            print("建议运行: pip install " + ' '.join(status['missing_packages']))
+            logger.info(f"\n缺少的依赖包: {', '.join(status['missing_packages'])}")
+            logger.info("建议运行: pip install " + ' '.join(status['missing_packages']))
     
     else:
         parser.print_help()

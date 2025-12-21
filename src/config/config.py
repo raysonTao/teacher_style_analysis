@@ -1,5 +1,7 @@
 """系统配置文件"""
 import os
+import logging
+import sys
 from pathlib import Path
 
 # 项目根目录
@@ -31,6 +33,55 @@ def init_directories():
 # 创建必要的目录
 for dir_path in [VIDEO_DIR, AUDIO_DIR, TEXT_DIR, FEATURES_DIR, RESULTS_DIR, LOG_DIR]:
     dir_path.mkdir(exist_ok=True, parents=True)
+
+# 自定义类将stdout和stderr重定向到logger
+class StdoutToLogging:
+    def __init__(self, logger, level=logging.INFO):
+        self.logger = logger
+        self.level = level
+        self.buffer = ''
+    
+    def write(self, message):
+        self.buffer += message
+        while '\n' in self.buffer:
+            line, self.buffer = self.buffer.split('\n', 1)
+            if line:
+                self.logger.log(self.level, line)
+    
+    def flush(self):
+        if self.buffer:
+            self.logger.log(self.level, self.buffer)
+            self.buffer = ''
+
+# 配置全局logger
+logger = logging.getLogger('teacher_style_analysis')
+logger.setLevel(logging.INFO)
+logger.propagate = False  # 防止日志传播到父日志器
+
+# 确保logger只有一个处理器
+if not logger.handlers:
+    # 创建日志格式器
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    
+    # 创建文件处理器
+    from datetime import datetime
+    log_filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log')
+    log_filepath = LOG_DIR / log_filename
+    file_handler = logging.FileHandler(log_filepath, encoding='utf-8')
+    file_handler.setFormatter(formatter)
+    
+    # 创建控制台处理器
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    
+    # 添加处理器
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+# 重定向stdout和stderr到logger
+sys.stdout = StdoutToLogging(logger, logging.INFO)
+sys.stderr = StdoutToLogging(logger, logging.ERROR)
+
 
 # 模型配置
 MODEL_CONFIG = {

@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.config import (
     MODEL_CONFIG, SYSTEM_CONFIG, STYLE_LABELS,
-    FEATURES_DIR, RESULTS_DIR
+    FEATURES_DIR, RESULTS_DIR, logger
 )
 
 
@@ -40,7 +40,7 @@ class StyleClassifier:
     def _init_model(self):
         """初始化风格分类模型"""
         try:
-            print("初始化风格分类模型...")
+            logger.info("初始化风格分类模型...")
             
             # 这里我们模拟CMAT模型（Combined Multi-modal Attention-based Teaching style model）
             # 实际使用时，这里应该加载预训练的XGBoost或RandomForest模型
@@ -49,20 +49,20 @@ class StyleClassifier:
             if os.path.exists(MODEL_CONFIG['cmat_model_path']):
                 with open(MODEL_CONFIG['cmat_model_path'], 'rb') as f:
                     self.model = pickle.load(f)
-                print("预训练模型加载成功")
+                logger.info("预训练模型加载成功")
             else:
                 # 创建模拟模型
                 self.model = self._create_mock_model()
-                print("创建模拟模型成功")
+                logger.info("创建模拟模型成功")
                 
                 # 保存模拟模型
                 os.makedirs(os.path.dirname(MODEL_CONFIG['cmat_model_path']), exist_ok=True)
                 with open(MODEL_CONFIG['cmat_model_path'], 'wb') as f:
                     pickle.dump(self.model, f)
-                print(f"模拟模型已保存到: {MODEL_CONFIG['cmat_model_path']}")
+                logger.info(f"模拟模型已保存到: {MODEL_CONFIG['cmat_model_path']}")
                 
         except Exception as e:
-            print(f"模型初始化失败: {e}")
+            logger.error(f"模型初始化失败: {e}")
             self.model = self._create_mock_model()
     
     def _create_mock_model(self) -> Dict:
@@ -104,8 +104,8 @@ class StyleClassifier:
             规则驱动层的输出
         """
         # 添加调试日志
-        print(f"_apply_rules: features类型: {type(features)}")
-        print(f"_apply_rules: features值: {features}")
+        logger.debug(f"_apply_rules: features类型: {type(features)}")
+        logger.debug(f"_apply_rules: features值: {features}")
         
         # 确保features不为None
         if features is None:
@@ -216,10 +216,10 @@ class StyleClassifier:
         
         # 如果提供了features参数，直接使用它
         if features is not None:
-            print(f"直接使用提供的特征数据")
+            logger.info(f"直接使用提供的特征数据")
         # 如果提供了features_path参数，尝试从文件读取
         elif features_path is not None:
-            print(f"开始风格分类: {features_path}")
+            logger.info(f"开始风格分类: {features_path}")
             
             # 如果输入是numpy数组，按论文中的CMAT模型处理
             if isinstance(features_path, np.ndarray):
@@ -242,14 +242,14 @@ class StyleClassifier:
                     with open(features_path, 'r', encoding='utf-8') as f:
                         features = json.load(f)
                 except Exception as e:
-                    print(f"读取特征文件失败: {e}")
+                    logger.error(f"读取特征文件失败: {e}")
                     raise
             else:
                 # 直接作为特征数据使用
                 features = features_path or {}  # 确保features不为None
         else:
             # 两者都没有提供，使用空特征
-            print(f"未提供特征数据或路径，使用空特征")
+            logger.warning(f"未提供特征数据或路径，使用空特征")
             features = {}
         
         # 应用规则驱动层
@@ -517,11 +517,11 @@ class StyleClassifier:
             with open(result_file, 'w', encoding='utf-8') as f:
                 json.dump(result, f, ensure_ascii=False, indent=2)
             
-            print(f"分类结果已保存到: {result_file}")
+            logger.info(f"分类结果已保存到: {result_file}")
             return str(result_file)
             
         except Exception as e:
-            print(f"分类过程失败: {e}")
+            logger.error(f"分类过程失败: {e}")
             raise
 
 

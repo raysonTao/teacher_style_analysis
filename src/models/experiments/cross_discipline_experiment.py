@@ -18,6 +18,7 @@ import seaborn as sns
 
 from ...experiments.configs.experiment_config import EXPERIMENTS_CONFIG, STYLE_LABELS, DISCIPLINES
 from ...experiments.data.data_generator import data_generator
+from ...config.config import logger
 
 class CrossDisciplineExperiment:
     """跨学科适应性实验类"""
@@ -66,12 +67,12 @@ class CrossDisciplineExperiment:
         Returns:
             dict: 评估结果
         """
-        print(f"\n{'='*60}")
-        print(f"评估模型在{discipline}学科上的性能")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"评估模型在{discipline}学科上的性能")
+        logger.info(f"{'='*60}")
         
         if discipline not in self.discipline_data:
-            print(f"错误: 找不到{discipline}学科的数据")
+            logger.error(f"错误: 找不到{discipline}学科的数据")
             return None
         
         # 获取该学科数据
@@ -125,19 +126,19 @@ class CrossDisciplineExperiment:
             joblib.dump(scaler, scaler_path)
         
         # 打印结果
-        print(f"\n{discipline}学科评估结果:")
-        print(f"- 样本数量: {len(data)}")
-        print(f"- 训练时间: {train_time:.2f}秒")
-        print(f"- 准确率: {metrics['accuracy']:.4f}")
-        print(f"- F1分数: {metrics['f1']:.4f}")
+        logger.info(f"\n{discipline}学科评估结果:")
+        logger.info(f"- 样本数量: {len(data)}")
+        logger.info(f"- 训练时间: {train_time:.2f}秒")
+        logger.info(f"- 准确率: {metrics['accuracy']:.4f}")
+        logger.info(f"- F1分数: {metrics['f1']:.4f}")
         
         # 按风格类别显示性能
-        print(f"\n各风格类别的准确率:")
+        logger.info(f"\n各风格类别的准确率:")
         for style_name, style_id in STYLE_LABELS.items():
             style_mask = y_test == style_id
             if np.sum(style_mask) > 0:
                 style_acc = accuracy_score(y_test[style_mask], y_pred[style_mask])
-                print(f"  - {style_name}: {style_acc:.4f} ({np.sum(style_mask)}个样本)")
+                logger.info(f"  - {style_name}: {style_acc:.4f} ({np.sum(style_mask)}个样本)")
         
         return metrics
     
@@ -151,9 +152,9 @@ class CrossDisciplineExperiment:
         Returns:
             dict: 跨学科评估结果
         """
-        print(f"\n{'='*60}")
-        print(f"开始跨学科适应性实验")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"开始跨学科适应性实验")
+        logger.info(f"{'='*60}")
         
         discipline_results = {}
         
@@ -173,11 +174,11 @@ class CrossDisciplineExperiment:
             'std_f1': np.std([r['f1'] for r in discipline_results.values()])
         }
         
-        print(f"\n{'='*60}")
-        print(f"跨学科评估汇总结果:")
-        print(f"- 平均准确率: {avg_metrics['accuracy']:.4f} ± {avg_metrics['std_accuracy']:.4f}")
-        print(f"- 平均F1分数: {avg_metrics['f1']:.4f} ± {avg_metrics['std_f1']:.4f}")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"跨学科评估汇总结果:")
+        logger.info(f"- 平均准确率: {avg_metrics['accuracy']:.4f} ± {avg_metrics['std_accuracy']:.4f}")
+        logger.info(f"- 平均F1分数: {avg_metrics['f1']:.4f} ± {avg_metrics['std_f1']:.4f}")
+        logger.info(f"{'='*60}")
         
         # 记录结果
         self.results['by_discipline'] = discipline_results
@@ -202,12 +203,12 @@ class CrossDisciplineExperiment:
         Returns:
             dict: 迁移学习结果
         """
-        print(f"\n{'='*60}")
-        print(f"开始迁移学习实验: 从{source_discipline}迁移到其他学科")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"开始迁移学习实验: 从{source_discipline}迁移到其他学科")
+        logger.info(f"{'='*60}")
         
         if source_discipline not in self.discipline_data:
-            print(f"错误: 找不到{source_discipline}学科的数据")
+            logger.error(f"错误: 找不到{source_discipline}学科的数据")
             return None
         
         # 如果未指定目标学科，使用所有其他学科
@@ -230,7 +231,7 @@ class CrossDisciplineExperiment:
         
         # 在每个目标学科上测试
         for target_discipline in target_disciplines:
-            print(f"\n迁移到{target_discipline}学科:")
+            logger.info(f"\n迁移到{target_discipline}学科:")
             
             target_data = self.discipline_data[target_discipline]
             X_target, y_target = self._extract_features(target_data)
@@ -261,9 +262,9 @@ class CrossDisciplineExperiment:
             
             transfer_results[target_discipline] = transfer_metrics
             
-            print(f"- 迁移准确率: {transfer_metrics['transfer_accuracy']:.4f}")
-            print(f"- 目标学科本地准确率: {transfer_metrics['native_accuracy']:.4f}")
-            print(f"- 迁移效率: {transfer_metrics['transfer_efficiency']:.4f}")
+            logger.info(f"- 迁移准确率: {transfer_metrics['transfer_accuracy']:.4f}")
+            logger.info(f"- 目标学科本地准确率: {transfer_metrics['native_accuracy']:.4f}")
+            logger.info(f"- 迁移效率: {transfer_metrics['transfer_efficiency']:.4f}")
         
         # 记录迁移学习结果
         self.results['transfer_learning'] = {
@@ -285,9 +286,9 @@ class CrossDisciplineExperiment:
         Returns:
             dict: 风格分布分析结果
         """
-        print(f"\n{'='*60}")
-        print(f"分析不同学科中风格分布的差异")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"分析不同学科中风格分布的差异")
+        logger.info(f"{'='*60}")
         
         # 统计每个学科的风格分布
         style_distributions = {}
@@ -302,9 +303,9 @@ class CrossDisciplineExperiment:
                 'total_samples': len(data)
             }
             
-            print(f"\n{discipline}学科风格分布:")
+            logger.info(f"\n{discipline}学科风格分布:")
             for style, percentage in style_percentages.items():
-                print(f"  - {style}: {percentage:.1f}%")
+                logger.info(f"  - {style}: {percentage:.1f}%")
         
         # 记录风格分布结果
         self.results['style_distributions'] = style_distributions
@@ -342,7 +343,7 @@ class CrossDisciplineExperiment:
         avg_df = pd.DataFrame([self.results['average']])
         avg_df.to_csv(avg_file, index=False, encoding='utf-8')
         
-        print(f"\n跨学科评估结果已保存")
+        logger.info(f"\n跨学科评估结果已保存")
     
     def _save_transfer_results(self):
         """
@@ -367,7 +368,7 @@ class CrossDisciplineExperiment:
         transfer_file = self.results_dir / f"transfer_learning_{source_discipline}_{timestamp}.csv"
         transfer_df.to_csv(transfer_file, index=False, encoding='utf-8')
         
-        print(f"\n迁移学习结果已保存")
+        logger.info(f"\n迁移学习结果已保存")
     
     def _visualize_results(self):
         """
@@ -427,7 +428,7 @@ class CrossDisciplineExperiment:
         
         plt.tight_layout()
         plt.savefig(self.visualizations_dir / f"cross_discipline_comparison_{timestamp}.png", dpi=300)
-        print(f"跨学科对比可视化已保存")
+        logger.info(f"跨学科对比可视化已保存")
         plt.close()
     
     def _visualize_transfer_results(self):
@@ -490,7 +491,7 @@ class CrossDisciplineExperiment:
         
         plt.tight_layout()
         plt.savefig(self.visualizations_dir / f"transfer_learning_{source_discipline}_{timestamp}.png", dpi=300)
-        print(f"迁移学习可视化已保存")
+        logger.info(f"迁移学习可视化已保存")
         plt.close()
     
     def _visualize_style_distributions(self):
@@ -530,7 +531,7 @@ class CrossDisciplineExperiment:
         plt.title('不同学科的风格分布')
         plt.tight_layout()
         plt.savefig(self.visualizations_dir / f"style_distribution_heatmap_{timestamp}.png", dpi=300)
-        print(f"风格分布热力图已保存")
+        logger.info(f"风格分布热力图已保存")
         plt.close()
 
 # 跨学科实验实例

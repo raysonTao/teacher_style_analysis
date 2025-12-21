@@ -12,6 +12,8 @@ import seaborn as sns
 from scipy import stats
 
 from ..configs.experiment_config import EXPERIMENTS_CONFIG
+# 导入全局logger
+from ...config.config import logger
 
 class ResultAnalyzer:
     """实验结果分析器类"""
@@ -59,12 +61,12 @@ class ResultAnalyzer:
         result_files = sorted(list(self.results_dir.glob(file_pattern)), reverse=True)
         
         if not result_files:
-            print(f"未找到模型比较结果文件: {file_pattern}")
+            logger.error(f"未找到模型比较结果文件: {file_pattern}")
             return None
         
         # 加载最新的结果文件
         latest_file = result_files[0]
-        print(f"加载模型比较结果: {latest_file.name}")
+        logger.info(f"加载模型比较结果: {latest_file.name}")
         
         df = pd.read_csv(latest_file)
         self.all_results['model_comparison'] = df
@@ -88,12 +90,12 @@ class ResultAnalyzer:
         result_files = sorted(list(self.results_dir.glob(file_pattern)), reverse=True)
         
         if not result_files:
-            print(f"未找到多模态融合结果文件: {file_pattern}")
+            logger.error(f"未找到多模态融合结果文件: {file_pattern}")
             return None
         
         # 加载最新的结果文件
         latest_file = result_files[0]
-        print(f"加载多模态融合结果: {latest_file.name}")
+        logger.info(f"加载多模态融合结果: {latest_file.name}")
         
         df = pd.read_csv(latest_file)
         self.all_results['multimodal_fusion'] = df
@@ -117,12 +119,12 @@ class ResultAnalyzer:
         result_files = sorted(list(self.results_dir.glob(file_pattern)), reverse=True)
         
         if not result_files:
-            print(f"未找到规则与机器学习融合结果文件: {file_pattern}")
+            logger.error(f"未找到规则与机器学习融合结果文件: {file_pattern}")
             return None
         
         # 加载最新的结果文件
         latest_file = result_files[0]
-        print(f"加载规则与机器学习融合结果: {latest_file.name}")
+        logger.info(f"加载规则与机器学习融合结果: {latest_file.name}")
         
         df = pd.read_csv(latest_file)
         self.all_results['rule_ml_fusion'] = df
@@ -146,12 +148,12 @@ class ResultAnalyzer:
         result_files = sorted(list(self.results_dir.glob(file_pattern)), reverse=True)
         
         if not result_files:
-            print(f"未找到SMI验证结果文件: {file_pattern}")
+            logger.error(f"未找到SMI验证结果文件: {file_pattern}")
             return None
         
         # 加载最新的结果文件
         latest_file = result_files[0]
-        print(f"加载SMI验证结果: {latest_file.name}")
+        logger.info(f"加载SMI验证结果: {latest_file.name}")
         
         df = pd.read_csv(latest_file)
         self.all_results['smi_validation'] = df
@@ -175,12 +177,12 @@ class ResultAnalyzer:
         result_files = sorted(list(self.results_dir.glob(file_pattern)), reverse=True)
         
         if not result_files:
-            print(f"未找到跨学科评估结果文件: {file_pattern}")
+            logger.error(f"未找到跨学科评估结果文件: {file_pattern}")
             return None
         
         # 加载最新的结果文件
         latest_file = result_files[0]
-        print(f"加载跨学科评估结果: {latest_file.name}")
+        logger.info(f"加载跨学科评估结果: {latest_file.name}")
         
         df = pd.read_csv(latest_file)
         self.all_results['cross_discipline'] = df
@@ -194,9 +196,9 @@ class ResultAnalyzer:
         Returns:
             dict: 所有实验结果
         """
-        print(f"\n{'='*60}")
-        print(f"加载所有实验结果")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"加载所有实验结果")
+        logger.info(f"{'='*60}")
         
         self.load_model_comparison_results()
         self.load_multimodal_fusion_results()
@@ -206,7 +208,7 @@ class ResultAnalyzer:
         
         # 计算已加载结果数量
         loaded_count = sum(1 for r in self.all_results.values() if r is not None)
-        print(f"\n已加载 {loaded_count}/5 组实验结果")
+        logger.info(f"\n已加载 {loaded_count}/5 组实验结果")
         
         return self.all_results
     
@@ -221,7 +223,7 @@ class ResultAnalyzer:
             matplotlib.figure.Figure: 图表对象
         """
         if self.all_results['model_comparison'] is None:
-            print("未加载模型比较结果，请先调用load_model_comparison_results")
+            logger.error("未加载模型比较结果，请先调用load_model_comparison_results")
             return None
         
         df = self.all_results['model_comparison']
@@ -265,7 +267,7 @@ class ResultAnalyzer:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             fig_path = self.visualizations_dir / f"model_comparison_summary_{timestamp}.png"
             plt.savefig(fig_path, dpi=300, bbox_inches='tight')
-            print(f"模型比较汇总可视化已保存: {fig_path.name}")
+            logger.info(f"模型比较汇总可视化已保存: {fig_path.name}")
         
         return fig
     
@@ -280,7 +282,7 @@ class ResultAnalyzer:
             matplotlib.figure.Figure: 图表对象
         """
         if self.all_results['multimodal_fusion'] is None:
-            print("未加载多模态融合结果，请先调用load_multimodal_fusion_results")
+            logger.error("未加载多模态融合结果，请先调用load_multimodal_fusion_results")
             return None
         
         df = self.all_results['multimodal_fusion']
@@ -323,7 +325,7 @@ class ResultAnalyzer:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             fig_path = self.visualizations_dir / f"multimodal_fusion_summary_{timestamp}.png"
             plt.savefig(fig_path, dpi=300, bbox_inches='tight')
-            print(f"多模态融合汇总可视化已保存: {fig_path.name}")
+            logger.info(f"多模态融合汇总可视化已保存: {fig_path.name}")
         
         return fig
     
@@ -338,7 +340,7 @@ class ResultAnalyzer:
             matplotlib.figure.Figure: 图表对象
         """
         if self.all_results['rule_ml_fusion'] is None:
-            print("未加载规则与机器学习融合结果，请先调用load_rule_ml_fusion_results")
+            logger.error("未加载规则与机器学习融合结果，请先调用load_rule_ml_fusion_results")
             return None
         
         df = self.all_results['rule_ml_fusion']
@@ -378,7 +380,7 @@ class ResultAnalyzer:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             fig_path = self.visualizations_dir / f"rule_ml_fusion_summary_{timestamp}.png"
             plt.savefig(fig_path, dpi=300, bbox_inches='tight')
-            print(f"规则与机器学习融合汇总可视化已保存: {fig_path.name}")
+            logger.info(f"规则与机器学习融合汇总可视化已保存: {fig_path.name}")
         
         return fig
     
@@ -393,7 +395,7 @@ class ResultAnalyzer:
             matplotlib.figure.Figure: 图表对象
         """
         if self.all_results['smi_validation'] is None:
-            print("未加载SMI验证结果，请先调用load_smi_validation_results")
+            logger.error("未加载SMI验证结果，请先调用load_smi_validation_results")
             return None
         
         df = self.all_results['smi_validation']
@@ -461,7 +463,7 @@ class ResultAnalyzer:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             fig_path = self.visualizations_dir / f"smi_validation_summary_{timestamp}.png"
             plt.savefig(fig_path, dpi=300, bbox_inches='tight')
-            print(f"SMI验证汇总可视化已保存: {fig_path.name}")
+            logger.info(f"SMI验证汇总可视化已保存: {fig_path.name}")
         
         return fig
     
@@ -476,7 +478,7 @@ class ResultAnalyzer:
             matplotlib.figure.Figure: 图表对象
         """
         if self.all_results['cross_discipline'] is None:
-            print("未加载跨学科评估结果，请先调用load_cross_discipline_results")
+            logger.error("未加载跨学科评估结果，请先调用load_cross_discipline_results")
             return None
         
         df = self.all_results['cross_discipline']
@@ -528,7 +530,7 @@ class ResultAnalyzer:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             fig_path = self.visualizations_dir / f"cross_discipline_summary_{timestamp}.png"
             plt.savefig(fig_path, dpi=300, bbox_inches='tight')
-            print(f"跨学科评估汇总可视化已保存: {fig_path.name}")
+            logger.info(f"跨学科评估汇总可视化已保存: {fig_path.name}")
         
         return fig
     
@@ -544,7 +546,7 @@ class ResultAnalyzer:
         """
         # 检查是否有已加载的结果
         if not any(self.all_results.values()):
-            print("未加载任何实验结果，请先调用load_all_results")
+            logger.error("未加载任何实验结果，请先调用load_all_results")
             return None
         
         # 创建一个大的图表
@@ -640,7 +642,7 @@ class ResultAnalyzer:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             fig_path = self.visualizations_dir / f"experiment_summary_dashboard_{timestamp}.png"
             plt.savefig(fig_path, dpi=300, bbox_inches='tight')
-            print(f"实验结果汇总仪表盘已保存: {fig_path.name}")
+            logger.info(f"实验结果汇总仪表盘已保存: {fig_path.name}")
         
         return fig
     
@@ -651,9 +653,9 @@ class ResultAnalyzer:
         Returns:
             dict: 综合统计结果
         """
-        print(f"\n{'='*60}")
-        print(f"生成综合统计报告")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"生成综合统计报告")
+        logger.info(f"{'='*60}")
         
         combined_stats = {}
         
@@ -673,9 +675,9 @@ class ResultAnalyzer:
                 'std_accuracy': df['accuracy'].std()
             }
             
-            print(f"\n最佳分类器: {best_model['model_name']}")
-            print(f"- 准确率: {best_model['accuracy']:.4f}")
-            print(f"- F1分数: {best_model['f1']:.4f}")
+            logger.info(f"\n最佳分类器: {best_model['model_name']}")
+            logger.info(f"- 准确率: {best_model['accuracy']:.4f}")
+            logger.info(f"- F1分数: {best_model['f1']:.4f}")
         
         # 多模态融合统计
         if self.all_results['multimodal_fusion'] is not None:
@@ -692,9 +694,9 @@ class ResultAnalyzer:
                 'std_accuracy': df['accuracy'].std()
             }
             
-            print(f"\n最佳模态组合: {best_fusion['modality_combination']}")
-            print(f"- 准确率: {best_fusion['accuracy']:.4f}")
-            print(f"- 特征维度: {best_fusion['feature_dimension']}")
+            logger.info(f"\n最佳模态组合: {best_fusion['modality_combination']}")
+            logger.info(f"- 准确率: {best_fusion['accuracy']:.4f}")
+            logger.info(f"- 特征维度: {best_fusion['feature_dimension']}")
         
         # 规则与机器学习融合统计
         if self.all_results['rule_ml_fusion'] is not None:
@@ -710,9 +712,9 @@ class ResultAnalyzer:
                 'ml_confidence': best_lambda['ml_confidence']
             }
             
-            print(f"\n最佳规则-ML融合权重: λ={best_lambda['lambda_weight']}")
-            print(f"- 准确率: {best_lambda['accuracy']:.4f}")
-            print(f"- F1分数: {best_lambda['f1']:.4f}")
+            logger.info(f"\n最佳规则-ML融合权重: λ={best_lambda['lambda_weight']}")
+            logger.info(f"- 准确率: {best_lambda['accuracy']:.4f}")
+            logger.info(f"- F1分数: {best_lambda['f1']:.4f}")
         
         # SMI验证统计
         if self.all_results['smi_validation'] is not None:
@@ -728,8 +730,8 @@ class ResultAnalyzer:
                 'recall': best_threshold['recall']
             }
             
-            print(f"\n最佳SMI阈值: {best_threshold['smi_threshold']}")
-            print(f"- 准确率: {best_threshold['accuracy']:.4f}")
+            logger.info(f"\n最佳SMI阈值: {best_threshold['smi_threshold']}")
+            logger.info(f"- 准确率: {best_threshold['accuracy']:.4f}")
         
         # 跨学科评估统计
         if self.all_results['cross_discipline'] is not None:
@@ -743,10 +745,10 @@ class ResultAnalyzer:
                 'total_samples': df['sample_count'].sum()
             }
             
-            print(f"\n跨学科评估汇总:")
-            print(f"- 平均准确率: {df['accuracy'].mean():.4f} ± {df['accuracy'].std():.4f}")
-            print(f"- 最大准确率: {df['accuracy'].max():.4f}")
-            print(f"- 最小准确率: {df['accuracy'].min():.4f}")
+            logger.info(f"\n跨学科评估汇总:")
+            logger.info(f"- 平均准确率: {df['accuracy'].mean():.4f} ± {df['accuracy'].std():.4f}")
+            logger.info(f"- 最大准确率: {df['accuracy'].max():.4f}")
+            logger.info(f"- 最小准确率: {df['accuracy'].min():.4f}")
         
         # 计算整体最佳性能
         all_accuracies = []
@@ -772,11 +774,11 @@ class ResultAnalyzer:
                 'std_accuracy': np.std(all_accuracies)
             }
             
-            print(f"\n{'='*60}")
-            print(f"系统整体性能:")
-            print(f"- 最佳准确率: {max(all_accuracies):.4f}")
-            print(f"- 最佳F1分数: {max(all_f1_scores):.4f}")
-            print(f"{'='*60}")
+            logger.info(f"\n{'='*60}")
+            logger.info(f"系统整体性能:")
+            logger.info(f"- 最佳准确率: {max(all_accuracies):.4f}")
+            logger.info(f"- 最佳F1分数: {max(all_f1_scores):.4f}")
+            logger.info(f"{'='*60}")
         
         # 保存综合统计结果
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -785,7 +787,7 @@ class ResultAnalyzer:
         with open(stats_file, 'w', encoding='utf-8') as f:
             json.dump(combined_stats, f, ensure_ascii=False, indent=2)
         
-        print(f"\n综合统计报告已保存: {stats_file.name}")
+        logger.info(f"\n综合统计报告已保存: {stats_file.name}")
         
         return combined_stats
     
@@ -801,9 +803,9 @@ class ResultAnalyzer:
         Returns:
             dict: 分析结果
         """
-        print(f"\n{'='*60}")
-        print(f"开始完整的实验结果分析")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"开始完整的实验结果分析")
+        logger.info(f"{'='*60}")
         
         # 加载所有结果
         if load_results:
@@ -823,9 +825,9 @@ class ResultAnalyzer:
         # 生成综合统计报告
         combined_stats = self.generate_combined_statistics()
         
-        print(f"\n{'='*60}")
-        print(f"实验结果分析完成")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"实验结果分析完成")
+        logger.info(f"{'='*60}")
         
         return {
             'results': self.all_results,

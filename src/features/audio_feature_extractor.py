@@ -11,7 +11,7 @@ from collections import defaultdict
 # 添加项目根目录到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.config import BASE_DIR, AUDIO_CONFIG
+from config.config import BASE_DIR, AUDIO_CONFIG, logger
 
 class AudioFeatureExtractor:
     """音频特征提取类，用于提取音频中的特征"""
@@ -25,28 +25,28 @@ class AudioFeatureExtractor:
         """加载Whisper模型"""
         try:
             import whisper
-            print("初始化Whisper模型...")
+            logger.info("初始化Whisper模型...")
             
             # 使用绝对路径加载Whisper模型
             whisper_path = os.path.join(BASE_DIR, AUDIO_CONFIG['whisper_model_path'])
-            print(f"Whisper模型路径: {whisper_path}")
-            print(f"文件是否存在: {os.path.exists(whisper_path)}")
+            logger.debug(f"Whisper模型路径: {whisper_path}")
+            logger.debug(f"文件是否存在: {os.path.exists(whisper_path)}")
             
             if os.path.exists(whisper_path):
-                print(f"文件大小: {os.path.getsize(whisper_path)} 字节")
+                logger.debug(f"文件大小: {os.path.getsize(whisper_path)} 字节")
                 # 使用本地模型文件
                 self.whisper_model = whisper.load_model(whisper_path)
-                print(f"Whisper模型加载成功，使用本地文件: {whisper_path}")
+                logger.info(f"Whisper模型加载成功，使用本地文件: {whisper_path}")
             else:
                 # 回退到默认加载方式
-                print("本地模型文件不存在，尝试从网络加载...")
+                logger.warning("本地模型文件不存在，尝试从网络加载...")
                 self.whisper_model = whisper.load_model(AUDIO_CONFIG['whisper_model_size'])
-                print(f"Whisper模型加载成功，大小: {AUDIO_CONFIG['whisper_model_size']}")
+                logger.info(f"Whisper模型加载成功，大小: {AUDIO_CONFIG['whisper_model_size']}")
                 
-            print(f"模型类型: {type(self.whisper_model)}")
+            logger.debug(f"模型类型: {type(self.whisper_model)}")
             
         except Exception as e:
-            print(f"Whisper模型加载失败: {e}")
+            logger.error(f"Whisper模型加载失败: {e}")
             import traceback
             traceback.print_exc()
             self.whisper_model = None
@@ -95,7 +95,7 @@ class AudioFeatureExtractor:
                     else:
                         features["pitch"].append(0.0)
             except Exception as e:
-                print(f"语调计算失败: {e}")
+                logger.warning(f"语调计算失败: {e}")
                 features["pitch"] = [0.0] * len(features["volume"])
             
             # 语音活动检测
@@ -106,7 +106,7 @@ class AudioFeatureExtractor:
             
             # 语音识别
             if self.whisper_model is not None:
-                print("使用Whisper模型进行语音识别...")
+                logger.info("使用Whisper模型进行语音识别...")
                 try:
                     # 加载原始音频
                     audio = whisper.load_audio(audio_path)
@@ -121,10 +121,10 @@ class AudioFeatureExtractor:
                     
                     transcription = result.text
                     features["transcription"] = transcription
-                    print(f"语音识别结果: {transcription}")
+                    logger.info(f"语音识别结果: {transcription}")
                     
                 except Exception as e:
-                    print(f"Whisper语音识别失败: {e}")
+                    logger.error(f"Whisper语音识别失败: {e}")
                     import traceback
                     traceback.print_exc()
             
@@ -146,7 +146,7 @@ class AudioFeatureExtractor:
             }
             
         except Exception as e:
-            print(f"音频特征提取失败: {e}")
+            logger.error(f"音频特征提取失败: {e}")
             import traceback
             traceback.print_exc()
         
@@ -179,7 +179,7 @@ class AudioFeatureExtractor:
             return temp_audio_path
             
         except Exception as e:
-            print(f"从视频提取音频失败: {e}")
+            logger.error(f"从视频提取音频失败: {e}")
             import traceback
             traceback.print_exc()
             return None

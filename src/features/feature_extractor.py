@@ -9,7 +9,7 @@ import cv2
 # 添加项目根目录到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.config import BASE_DIR, FEATURES_DIR
+from config.config import BASE_DIR, FEATURES_DIR, logger
 from .video_feature_extractor import VideoFeatureExtractor
 from .audio_feature_extractor import AudioFeatureExtractor
 from .text_feature_extractor import TextFeatureExtractor
@@ -20,7 +20,7 @@ class FeatureExtractor:
     
     def __init__(self):
         """初始化主特征提取器"""
-        print("初始化主特征提取器...")
+        logger.info("初始化主特征提取器...")
         
         # 初始化各个子模块
         self.video_extractor = VideoFeatureExtractor()
@@ -31,7 +31,7 @@ class FeatureExtractor:
         # 初始化特征变量
         self.features = None
         
-        print("主特征提取器初始化完成")
+        logger.info("主特征提取器初始化完成")
     
     def process_video(self, video_path: str) -> Dict:
         """
@@ -43,25 +43,25 @@ class FeatureExtractor:
         Returns:
             融合后的多模态特征字典
         """
-        print(f"开始处理视频: {video_path}")
+        logger.info(f"开始处理视频: {video_path}")
         
         # 确保输出目录存在
         output_dir = str(FEATURES_DIR)
         os.makedirs(output_dir, exist_ok=True)
         
         # 1. 提取视频特征
-        print("开始提取视频特征...")
+        logger.info("开始提取视频特征...")
         video_features = self.video_extractor.extract_features(video_path)
-        print("视频特征提取完成")
+        logger.info("视频特征提取完成")
         
         # 2. 提取音频特征
-        print("开始提取音频特征...")
+        logger.info("开始提取音频特征...")
         try:
             # 从视频中提取音频
             temp_audio_path = self.audio_extractor.extract_audio_from_video(video_path)
             
             if temp_audio_path and os.path.exists(temp_audio_path):
-                print(f"临时音频文件已创建: {temp_audio_path}")
+                logger.info(f"临时音频文件已创建: {temp_audio_path}")
                 
                 # 提取音频特征
                 audio_features = self.audio_extractor.extract_features(temp_audio_path)
@@ -69,35 +69,35 @@ class FeatureExtractor:
                 # 删除临时音频文件
                 try:
                     os.remove(temp_audio_path)
-                    print("临时音频文件已删除")
+                    logger.info("临时音频文件已删除")
                 except Exception as e:
-                    print(f"删除临时音频文件失败: {e}")
+                    logger.warning(f"删除临时音频文件失败: {e}")
             else:
-                print("无法提取音频，使用默认音频特征")
+                logger.warning("无法提取音频，使用默认音频特征")
                 audio_features = self.audio_extractor.extract_features(" ")
                 
         except Exception as e:
-            print(f"音频处理失败: {e}")
+            logger.error(f"音频处理失败: {e}")
             import traceback
             traceback.print_exc()
             audio_features = self.audio_extractor.extract_features(" ")
         
-        print("音频特征提取完成")
+        logger.info("音频特征提取完成")
         
         # 3. 提取文本特征
-        print("开始提取文本特征...")
+        logger.info("开始提取文本特征...")
         transcription = audio_features.get("transcription", "")
         text_features = self.text_extractor.extract_features(transcription)
-        print("文本特征提取完成")
+        logger.info("文本特征提取完成")
         
         # 4. 融合多模态特征
-        print("开始融合多模态特征...")
+        logger.info("开始融合多模态特征...")
         self.features = self.multimodal_fusion.fuse_features(
             video_features, 
             audio_features, 
             text_features
         )
-        print("多模态特征融合完成")
+        logger.info("多模态特征融合完成")
         
         # 添加视频元信息
         self.features["video_path"] = video_path
@@ -190,10 +190,10 @@ class FeatureExtractor:
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(serializable_features, f, ensure_ascii=False, indent=4)
             
-            print(f"特征已保存到: {output_path}")
+            logger.info(f"特征已保存到: {output_path}")
             
         except Exception as e:
-            print(f"保存特征失败: {e}")
+            logger.error(f"保存特征失败: {e}")
             import traceback
             traceback.print_exc()
         

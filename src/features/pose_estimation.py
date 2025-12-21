@@ -8,7 +8,7 @@ import cv2
 # 添加项目根目录到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.config import BASE_DIR, MODEL_CONFIG
+from config.config import BASE_DIR, MODEL_CONFIG, logger
 
 class MediaPipePoseEstimator:
     """MediaPipe姿态估计类，用于检测人体姿态关键点"""
@@ -22,7 +22,7 @@ class MediaPipePoseEstimator:
         """加载MediaPipe Pose模型"""
         try:
             import mediapipe as mp
-            print("初始化MediaPipe Pose模型...")
+            logger.info("初始化MediaPipe Pose模型...")
             
             mp_pose = mp.solutions.pose
             
@@ -36,10 +36,10 @@ class MediaPipePoseEstimator:
                 min_tracking_confidence=MODEL_CONFIG['mediapipe_min_tracking_confidence']
             )
             
-            print("MediaPipe Pose模型初始化成功")
+            logger.info("MediaPipe Pose模型初始化成功")
             
         except Exception as e:
-            print(f"MediaPipe Pose模型初始化失败: {e}")
+            logger.error(f"MediaPipe Pose模型初始化失败: {e}")
             import traceback
             traceback.print_exc()
             self.pose = None

@@ -9,7 +9,7 @@ from collections import defaultdict
 # 添加项目根目录到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.config import VIDEO_CONFIG
+from config.config import VIDEO_CONFIG, logger
 from .object_detection import YOLOObjectDetector
 from .pose_estimation import MediaPipePoseEstimator
 from .action_recognition import PoseActionRecognizer
@@ -121,7 +121,7 @@ class VideoFeatureExtractor:
         # 打开视频文件
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
-            print(f"无法打开视频文件: {video_path}")
+            logger.error(f"无法打开视频文件: {video_path}")
             return features
         
         # 获取视频信息
@@ -131,7 +131,7 @@ class VideoFeatureExtractor:
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         duration = total_frames / fps if fps > 0 else 0
         
-        print(f"视频信息: FPS={fps}, 总帧数={total_frames}, 宽度={width}, 高度={height}, 时长={duration:.2f}秒")
+        logger.info(f"视频信息: FPS={fps}, 总帧数={total_frames}, 宽度={width}, 高度={height}, 时长={duration:.2f}秒")
         
         features["total_frames"] = total_frames
         features["video_duration"] = duration
@@ -139,7 +139,7 @@ class VideoFeatureExtractor:
         # 初始化前一帧
         ret, prev_frame = cap.read()
         if not ret:
-            print("无法读取视频帧")
+            logger.error("无法读取视频帧")
             cap.release()
             return features
         
@@ -158,7 +158,7 @@ class VideoFeatureExtractor:
             
             # 每隔几帧进行一次检测
             if frame_count % VIDEO_CONFIG["detection_frame_interval"] == 0:
-                print(f"处理第 {frame_count} 帧")
+                logger.debug(f"处理第 {frame_count} 帧")
                 
                 # 目标检测（只检测人）
                 detections = self.object_detector.detect(
@@ -175,7 +175,7 @@ class VideoFeatureExtractor:
                     
                     # 只处理person类别
                     if class_name != "person":
-                        print("非人物目标，跳过")
+                        logger.debug("非人物目标，跳过")
                         continue
                     
                     # 姿态估计
@@ -243,7 +243,7 @@ class VideoFeatureExtractor:
             
             # 限制处理帧数用于测试
             if VIDEO_CONFIG["test_mode"] and frame_count > VIDEO_CONFIG["test_frame_limit"]:
-                print("测试模式，提前结束")
+                logger.info("测试模式，提前结束")
                 break
         
         # 释放视频资源

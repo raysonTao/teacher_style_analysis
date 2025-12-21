@@ -8,7 +8,7 @@ import torch
 # 添加项目根目录到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.config import TEXT_CONFIG
+from config.config import TEXT_CONFIG, logger
 
 class TextFeatureExtractor:
     """文本特征提取类，用于提取文本中的特征"""
@@ -23,18 +23,18 @@ class TextFeatureExtractor:
         """加载BERT模型"""
         try:
             from transformers import BertTokenizer, BertModel
-            print("初始化BERT模型...")
+            logger.info("初始化BERT模型...")
             
             # 加载预训练的BERT模型和分词器
             self.tokenizer = BertTokenizer.from_pretrained(TEXT_CONFIG['bert_model_name'])
             self.bert_model = BertModel.from_pretrained(TEXT_CONFIG['bert_model_name'])
             
-            print(f"BERT模型加载成功，名称: {TEXT_CONFIG['bert_model_name']}")
-            print(f"分词器类型: {type(self.tokenizer)}")
-            print(f"模型类型: {type(self.bert_model)}")
+            logger.info(f"BERT模型加载成功，名称: {TEXT_CONFIG['bert_model_name']}")
+            logger.debug(f"分词器类型: {type(self.tokenizer)}")
+            logger.debug(f"模型类型: {type(self.bert_model)}")
             
         except Exception as e:
-            print(f"BERT模型加载失败: {e}")
+            logger.error(f"BERT模型加载失败: {e}")
             import traceback
             traceback.print_exc()
             self.bert_model = None
@@ -82,9 +82,9 @@ class TextFeatureExtractor:
                     features["embedding"] = embedding.tolist()
                     
                 except Exception as e:
-                    print(f"BERT嵌入提取失败: {e}")
-                    import traceback
-                    traceback.print_exc()
+                        logger.error(f"BERT嵌入提取失败: {e}")
+                        import traceback
+                        traceback.print_exc()
             
             # 模拟情绪分析（实际项目中可以使用专业的情绪分析模型）
             # 简单的基于关键词的情绪分析
@@ -109,7 +109,7 @@ class TextFeatureExtractor:
             features["keywords"] = positive_words[:3]  # 示例关键词
             
         except Exception as e:
-            print(f"文本特征提取失败: {e}")
+            logger.error(f"文本特征提取失败: {e}")
             import traceback
             traceback.print_exc()
         

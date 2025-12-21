@@ -8,7 +8,7 @@ from collections import defaultdict
 # 添加项目根目录到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.config import FUSION_CONFIG
+from config.config import FUSION_CONFIG, logger
 
 class MultimodalFeatureFusion:
     """多模态特征融合类，用于融合视频、音频和文本特征"""
@@ -62,7 +62,7 @@ class MultimodalFeatureFusion:
             self._generate_fusion_vector(fused_features)
             
         except Exception as e:
-            print(f"多模态特征融合失败: {e}")
+            logger.error(f"多模态特征融合失败: {e}")
             import traceback
             traceback.print_exc()
         

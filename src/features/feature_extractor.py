@@ -219,4 +219,7 @@ class FeatureExtractor:
         """
         return self.features
 
+# 创建模块级实例
+feature_extractor = FeatureExtractor()
+
 

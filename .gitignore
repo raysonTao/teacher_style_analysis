@@ -71,7 +71,10 @@ activate_env.sh
 # 模型权重目录
 /teacher_style_analysis/models/weights/
 /src/models/weights/
+
+*.pt
 # 模型分析文档
 CLAUDE.md
 IFLOW.md
 src/data/metadata.json
+yolov8n.pt

@@ -15,6 +15,7 @@ FEATURES_DIR = DATA_DIR / 'extracted_features'
 RESULTS_DIR = DATA_DIR / 'results'
 TEMP_DIR = BASE_DIR / 'temp'
 FEEDBACK_DIR = BASE_DIR / 'feedback'
+LOG_DIR = BASE_DIR.parent / 'log'  # 日志目录配置在/src同级
 
 # 初始化目录函数
 def init_directories():
@@ -22,13 +23,13 @@ def init_directories():
     directories = [
         VIDEO_DIR, AUDIO_DIR, TEXT_DIR, FEATURES_DIR, RESULTS_DIR,
         BASE_DIR / 'models', BASE_DIR / 'experiments' / 'results',
-        BASE_DIR / 'experiments' / 'visualizations'
+        BASE_DIR / 'experiments' / 'visualizations', LOG_DIR
     ]
     for dir_path in directories:
         dir_path.mkdir(exist_ok=True, parents=True)
 
 # 创建必要的目录
-for dir_path in [VIDEO_DIR, AUDIO_DIR, TEXT_DIR, FEATURES_DIR, RESULTS_DIR]:
+for dir_path in [VIDEO_DIR, AUDIO_DIR, TEXT_DIR, FEATURES_DIR, RESULTS_DIR, LOG_DIR]:
     dir_path.mkdir(exist_ok=True, parents=True)
 
 # 模型配置

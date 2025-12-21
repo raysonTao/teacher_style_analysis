@@ -4,19 +4,50 @@ import sys
 import argparse
 import logging
 from pathlib import Path
-
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger('teacher_style_analysis')
+from datetime import datetime
 
 # 添加项目根目录到Python路径
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.config.config import PROJECT_ROOT, DATA_DIR, init_directories
+from src.config.config import PROJECT_ROOT, DATA_DIR, init_directories, LOG_DIR
+
+# 配置日志
+logger = logging.getLogger('teacher_style_analysis')
+logger.setLevel(logging.INFO)
+
+# 创建日志格式器
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# 创建控制台处理器
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+
+# 创建文件处理器，日志文件按日期命名
+log_filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log')
+log_filepath = LOG_DIR / log_filename
+file_handler = logging.FileHandler(log_filepath, encoding='utf-8')
+file_handler.setFormatter(formatter)
+
+# 移除默认的处理器（如果有）
+for handler in logger.handlers[:]:
+    logger.removeHandler(handler)
+
+# 添加处理器
+logger.addHandler(console_handler)
+logger.addHandler(file_handler)
+
+# 设置根日志器的级别和处理器
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+for handler in root_logger.handlers[:]:
+    root_logger.removeHandler(handler)
+root_logger.addHandler(console_handler)
+root_logger.addHandler(file_handler)
+
+logger.info("系统启动，日志配置完成")
+logger.info(f"日志文件路径: {log_filepath}")
+
 from src.api.api_handler import start_server
 from src.data.data_manager import data_manager
 from src.features.feature_extractor import feature_extractor

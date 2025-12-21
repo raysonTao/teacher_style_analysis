@@ -18,21 +18,32 @@ from .visualization_utils import VisualizationManager
 class VideoFeatureExtractor:
     """视频特征提取类，整合目标检测、姿态估计和动作识别"""
     
+    # 单例模式实现
+    _instance = None
+    
+    def __new__(cls):
+        """控制实例创建，确保只创建一个实例"""
+        if cls._instance is None:
+            cls._instance = super(VideoFeatureExtractor, cls).__new__(cls)
+        return cls._instance
+    
     def __init__(self):
         """初始化视频特征提取器"""
-        self.object_detector = YOLOObjectDetector()
-        self.pose_estimator = MediaPipePoseEstimator()
-        self.action_recognizer = PoseActionRecognizer()
+        # 确保只初始化一次
+        if not hasattr(self, 'object_detector'):
+            self.object_detector = YOLOObjectDetector()
+            self.pose_estimator = MediaPipePoseEstimator()
+            self.action_recognizer = PoseActionRecognizer()
 
-        # 初始化特征变量
-        self.action_sequence = []
-        self.action_counts = defaultdict(int)
-        self.pose_confidences = []
-        self.motion_energy = []
-        self.spatial_distribution = defaultdict(int)
+            # 初始化特征变量
+            self.action_sequence = []
+            self.action_counts = defaultdict(int)
+            self.pose_confidences = []
+            self.motion_energy = []
+            self.spatial_distribution = defaultdict(int)
 
-        # 可视化管理器（延迟初始化）
-        self.visualization_manager = None
+            # 可视化管理器（延迟初始化）
+            self.visualization_manager = None
         
     def _calculate_motion_energy(self, prev_frame: np.ndarray, curr_frame: np.ndarray) -> float:
         """

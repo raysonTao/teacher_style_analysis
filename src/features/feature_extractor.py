@@ -18,20 +18,31 @@ from .multimodal_fusion import MultimodalFeatureFusion
 class FeatureExtractor:
     """主特征提取类，协调所有子模块进行多模态特征提取"""
     
+    # 单例模式实现
+    _instance = None
+    
+    def __new__(cls):
+        """控制实例创建，确保只创建一个实例"""
+        if cls._instance is None:
+            cls._instance = super(FeatureExtractor, cls).__new__(cls)
+        return cls._instance
+    
     def __init__(self):
         """初始化主特征提取器"""
-        logger.info("初始化主特征提取器...")
-        
-        # 初始化各个子模块
-        self.video_extractor = VideoFeatureExtractor()
-        self.audio_extractor = AudioFeatureExtractor()
-        self.text_extractor = TextFeatureExtractor()
-        self.multimodal_fusion = MultimodalFeatureFusion()
-        
-        # 初始化特征变量
-        self.features = None
-        
-        logger.info("主特征提取器初始化完成")
+        # 确保只初始化一次
+        if not hasattr(self, 'video_extractor'):
+            logger.info("初始化主特征提取器...")
+            
+            # 初始化各个子模块
+            self.video_extractor = VideoFeatureExtractor()
+            self.audio_extractor = AudioFeatureExtractor()
+            self.text_extractor = TextFeatureExtractor()
+            self.multimodal_fusion = MultimodalFeatureFusion()
+            
+            # 初始化特征变量
+            self.features = None
+            
+            logger.info("主特征提取器初始化完成")
     
     def process_video(self, video_path: str) -> Dict:
         """
@@ -208,5 +219,4 @@ class FeatureExtractor:
         """
         return self.features
 
-# 创建特征提取器实例
-feature_extractor = FeatureExtractor()
+

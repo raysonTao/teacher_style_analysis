@@ -13,10 +13,21 @@ from config.config import BASE_DIR, MODEL_CONFIG, logger
 class YOLOObjectDetector:
     """YOLO目标检测类，用于检测视频中的目标对象"""
     
+    # 单例模式实现
+    _instance = None
+    
+    def __new__(cls):
+        """控制实例创建，确保只创建一个实例"""
+        if cls._instance is None:
+            cls._instance = super(YOLOObjectDetector, cls).__new__(cls)
+        return cls._instance
+    
     def __init__(self):
         """初始化YOLO模型"""
-        self.model = None
-        self._load_model()
+        # 确保模型只加载一次
+        if not hasattr(self, 'model') or self.model is None:
+            self.model = None
+            self._load_model()
     
     def _load_model(self):
         """加载YOLO模型"""

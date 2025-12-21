@@ -18,6 +18,7 @@ RESULTS_DIR = DATA_DIR / 'results'
 TEMP_DIR = BASE_DIR / 'temp'
 FEEDBACK_DIR = BASE_DIR / 'feedback'
 LOG_DIR = BASE_DIR.parent / 'log'  # 日志目录配置在/src同级
+VISUALIZATION_DIR = BASE_DIR.parent / 'result'  # 可视化结果目录
 
 # 初始化目录函数
 def init_directories():
@@ -31,7 +32,7 @@ def init_directories():
         dir_path.mkdir(exist_ok=True, parents=True)
 
 # 创建必要的目录
-for dir_path in [VIDEO_DIR, AUDIO_DIR, TEXT_DIR, FEATURES_DIR, RESULTS_DIR, LOG_DIR]:
+for dir_path in [VIDEO_DIR, AUDIO_DIR, TEXT_DIR, FEATURES_DIR, RESULTS_DIR, LOG_DIR, VISUALIZATION_DIR]:
     dir_path.mkdir(exist_ok=True, parents=True)
 
 # 自定义类将stdout和stderr重定向到logger
@@ -108,7 +109,22 @@ VIDEO_CONFIG = {
     'detection_frame_interval': 30,
     'detection_confidence_threshold': 0.5,
     'test_mode': False,
-    'test_frame_limit': 100
+    'test_frame_limit': 100,
+    # 可视化配置
+    'enable_visualization': True,  # 启用可视化
+    'visualization_frame_interval': 30,  # 可视化采样间隔（与检测间隔一致）
+    'save_visualization_video': True,  # 保存可视化视频
+    'save_visualization_frames': True,  # 保存可视化帧图片
+    'bbox_color': (0, 0, 255),  # 红色边界框 (BGR: 蓝,绿,红)
+    'bbox_thickness': 2,  # 边界框线条粗细
+    'pose_text_color': (255, 0, 0),  # 蓝色文本 (BGR: 蓝,绿,红)
+    'text_font': 0,  # 字体 (cv2.FONT_HERSHEY_SIMPLEX = 0)
+    'text_font_scale': 0.6,  # 字体大小
+    'text_thickness': 2,  # 文本粗细
+    'keypoint_color': (0, 255, 0),  # 绿色关键点 (BGR)
+    'keypoint_radius': 3,  # 关键点半径
+    'skeleton_color': (0, 255, 255),  # 黄色骨架线 (BGR)
+    'skeleton_thickness': 2  # 骨架线粗细
 }
 
 # 动作配置

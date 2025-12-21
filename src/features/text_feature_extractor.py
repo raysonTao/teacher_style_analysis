@@ -23,11 +23,25 @@ class TextFeatureExtractor:
         """加载BERT模型"""
         try:
             from transformers import BertTokenizer, BertModel
+            import warnings
+            
             logger.info("初始化BERT模型...")
             
+            # 过滤huggingface_hub的resume_download弃用警告
+            warnings.filterwarnings("ignore", category=FutureWarning, module="huggingface_hub")
+            
             # 加载预训练的BERT模型和分词器
-            self.tokenizer = BertTokenizer.from_pretrained(TEXT_CONFIG['bert_model_name'])
-            self.bert_model = BertModel.from_pretrained(TEXT_CONFIG['bert_model_name'])
+            # force_download=False：避免使用已弃用的resume_download参数
+            # ignore_mismatched_sizes=True：忽略未使用的CLS层权重警告，因为我们只使用编码器部分
+            self.tokenizer = BertTokenizer.from_pretrained(
+                TEXT_CONFIG['bert_model_name'],
+                force_download=False
+            )
+            self.bert_model = BertModel.from_pretrained(
+                TEXT_CONFIG['bert_model_name'],
+                force_download=False,
+                ignore_mismatched_sizes=True
+            )
             
             logger.info(f"BERT模型加载成功，名称: {TEXT_CONFIG['bert_model_name']}")
             logger.debug(f"分词器类型: {type(self.tokenizer)}")

@@ -15,12 +15,23 @@ from config.config import BASE_DIR, AUDIO_CONFIG, logger
 
 class AudioFeatureExtractor:
     """音频特征提取类，用于提取音频中的特征"""
-    
+
+    # 单例模式实现
+    _instance = None
+
+    def __new__(cls):
+        """控制实例创建，确保只创建一个实例"""
+        if cls._instance is None:
+            cls._instance = super(AudioFeatureExtractor, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
         """初始化音频特征提取器"""
-        self.whisper_model = None
-        self._load_model()
-    
+        # 确保模型只加载一次
+        if not hasattr(self, 'whisper_model'):
+            self.whisper_model = None
+            self._load_model()
+
     def _load_model(self):
         """加载Whisper模型"""
         try:

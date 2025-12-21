@@ -12,13 +12,24 @@ from config.config import TEXT_CONFIG, logger
 
 class TextFeatureExtractor:
     """文本特征提取类，用于提取文本中的特征"""
-    
+
+    # 单例模式实现
+    _instance = None
+
+    def __new__(cls):
+        """控制实例创建，确保只创建一个实例"""
+        if cls._instance is None:
+            cls._instance = super(TextFeatureExtractor, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
         """初始化文本特征提取器"""
-        self.bert_model = None
-        self.tokenizer = None
-        self._load_model()
-    
+        # 确保模型只加载一次
+        if not hasattr(self, 'bert_model'):
+            self.bert_model = None
+            self.tokenizer = None
+            self._load_model()
+
     def _load_model(self):
         """加载BERT模型"""
         try:

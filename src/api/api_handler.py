@@ -20,14 +20,14 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.config import (
+from src.config.config import (
     SYSTEM_CONFIG, API_CONFIG, DATA_DIR, TEMP_DIR,
     RESULTS_DIR, FEEDBACK_DIR
 )
-from data.data_manager import data_manager
-from features.feature_extractor import feature_extractor
-from models.core.style_classifier import style_classifier
-from feedback.feedback_generator import feedback_generator
+from src.data.data_manager import data_manager
+from src.features.feature_extractor import feature_extractor
+from src.models.core.style_classifier import style_classifier
+from src.feedback.feedback_generator import feedback_generator
 
 # 配置日志
 logging.basicConfig(

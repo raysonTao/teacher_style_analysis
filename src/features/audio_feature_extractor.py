@@ -7,6 +7,7 @@ import numpy as np
 import librosa
 import soundfile as sf
 from collections import defaultdict
+import torch
 
 # 添加项目根目录到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -33,29 +34,43 @@ class AudioFeatureExtractor:
             self._load_model()
 
     def _load_model(self):
-        """加载Whisper模型"""
+        """加载Whisper模型，强制使用float32精度"""
         try:
             import whisper
             logger.info("初始化Whisper模型...")
-            
+
             # 使用绝对路径加载Whisper模型
             whisper_path = os.path.join(BASE_DIR, AUDIO_CONFIG['whisper_model_path'])
             logger.debug(f"Whisper模型路径: {whisper_path}")
             logger.debug(f"文件是否存在: {os.path.exists(whisper_path)}")
-            
+
             if os.path.exists(whisper_path):
                 logger.debug(f"文件大小: {os.path.getsize(whisper_path)} 字节")
-                # 使用本地模型文件
-                self.whisper_model = whisper.load_model(whisper_path)
+                # 使用本地模型文件，显式指定CPU设备
+                self.whisper_model = whisper.load_model(whisper_path, device="cpu")
                 logger.info(f"Whisper模型加载成功，使用本地文件: {whisper_path}")
             else:
-                # 回退到默认加载方式
+                # 回退到默认加载方式，显式指定CPU设备
                 logger.warning("本地模型文件不存在，尝试从网络加载...")
-                self.whisper_model = whisper.load_model(AUDIO_CONFIG['whisper_model_size'])
+                self.whisper_model = whisper.load_model(AUDIO_CONFIG['whisper_model_size'], device="cpu")
                 logger.info(f"Whisper模型加载成功，大小: {AUDIO_CONFIG['whisper_model_size']}")
-                
+
             logger.debug(f"模型类型: {type(self.whisper_model)}")
-            
+            logger.debug(f"模型设备: {self.whisper_model.device}")
+
+            # 强制转换为float32精度（CPU不支持half精度）
+            logger.info("将模型转换为float32精度...")
+            self.whisper_model = self.whisper_model.float()
+
+            # 验证所有参数是否为float32
+            for name, param in self.whisper_model.named_parameters():
+                if param.dtype != torch.float32:
+                    logger.warning(f"参数 {name} 仍为 {param.dtype}，强制转换...")
+                    param.data = param.data.float()
+
+            logger.info(f"模型设备: {self.whisper_model.device}")
+            logger.info("模型数据类型已验证: float32")
+
         except Exception as e:
             logger.error(f"Whisper模型加载失败: {e}")
             import traceback
@@ -119,21 +134,17 @@ class AudioFeatureExtractor:
             if self.whisper_model is not None:
                 logger.info("使用Whisper模型进行语音识别...")
                 try:
-                    # 加载原始音频
-                    audio = whisper.load_audio(audio_path)
-                    audio = whisper.pad_or_trim(audio)
-                    
-                    # 生成梅尔频谱
-                    mel = whisper.log_mel_spectrogram(audio).to(self.whisper_model.device)
-                    
-                    # 语音识别
-                    options = whisper.DecodingOptions(language="zh")
-                    result = whisper.decode(self.whisper_model, mel, options)
-                    
-                    transcription = result.text
+                    # 使用高级transcribe API（自动处理dtype/device）
+                    result = self.whisper_model.transcribe(
+                        audio_path,
+                        language="zh",
+                        fp16=False  # 关键：禁用FP16，强制使用float32
+                    )
+
+                    transcription = result['text']
                     features["transcription"] = transcription
                     logger.info(f"语音识别结果: {transcription}")
-                    
+
                 except Exception as e:
                     logger.error(f"Whisper语音识别失败: {e}")
                     import traceback
@@ -176,11 +187,17 @@ class AudioFeatureExtractor:
         try:
             import moviepy.editor as mp
             
+            # 创建当前目录下的tmp文件夹
+            tmp_dir = os.path.join(os.getcwd(), "tmp")
+            if not os.path.exists(tmp_dir):
+                os.makedirs(tmp_dir)
+                logger.info(f"创建临时目录: {tmp_dir}")
+            
             # 加载视频
             video = mp.VideoFileClip(video_path)
             
-            # 创建临时音频文件
-            temp_audio_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+            # 创建临时音频文件在当前目录的tmp文件夹下
+            temp_audio_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False, dir=tmp_dir)
             temp_audio_path = temp_audio_file.name
             temp_audio_file.close()
             

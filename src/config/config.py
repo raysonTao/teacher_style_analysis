@@ -88,10 +88,23 @@ sys.stderr = StdoutToLogging(logger, logging.ERROR)
 MODEL_CONFIG = {
     'yolo_model_path': 'models/weights/yolov8n.pt',  # 动作检测模型
     'openpose_model_dir': str(BASE_DIR / 'models/openpose'),  # 姿态估计模型（已替换为MediaPipe）
-    'whisper_model': 'medium',  # 语音识别模型
+    'whisper_model': 'base',  # 语音识别模型
     'bert_model': 'bert-base-chinese',  # 文本特征提取模型
     'style_classifier_path': 'models/style_classifier.pth',  # 风格分类器模型
-    'cmat_model_path': 'models/cmat_model.pkl',  # CMAT模型路径
+    'cmat_model_path': 'models/cmat_model.pth',  # CMAT深度学习模型路径
+    
+    # CMAT模型配置
+    'audio_dim': 128,  # 音频特征维度
+    'video_dim': 256,  # 视频特征维度
+    'text_dim': 512,   # 文本特征维度
+    'hidden_dim': 256,  # 隐藏层维度
+    'num_heads': 8,    # 注意力头数
+    'num_styles': 7,   # 风格类别数
+    'learning_rate': 1e-4,  # 学习率
+    'batch_size': 32,  # 批大小
+    'patience': 10,    # 早停耐心值
+    'dropout_rate': 0.1,  # Dropout率
+    
     # MediaPipe配置
     'mediapipe_model_complexity': 1,  # 模型复杂度 0, 1, 2
     'mediapipe_smooth_landmarks': True,  # 平滑关键点
@@ -140,8 +153,8 @@ AUDIO_CONFIG = {
     'n_fft': 2048,
     'hop_length': 512,
     'n_mels': 128,
-    'whisper_model_path': 'models/weights/medium.pt',  # Whisper模型路径
-    'whisper_model_size': 'medium'  # Whisper模型大小
+    'whisper_model_path': 'models/weights/base.pt',  # Whisper模型路径
+    'whisper_model_size': 'base'  # Whisper模型大小
 }
 
 # 文本配置
@@ -196,10 +209,22 @@ REDIS_CONFIG = {
 
 # 风格标签
 STYLE_LABELS = {
-    'enthusiastic': '热情',
-    'explanatory': '讲解',
-    'interactive': '互动',
-    'analytical': '分析',
-    'structured': '结构化',
-    'casual': '随意'
+    'lecturing': '理论讲授型',
+    'guiding': '启发引导型',
+    'interactive': '互动导向型',
+    'logical': '逻辑推导型',
+    'problem_driven': '题目驱动型',
+    'emotional': '情感表达型',
+    'patient': '耐心细致型'
 }
+
+# CMAT模型标签映射
+CMAT_STYLE_LABELS = [
+    '理论讲授型',
+    '启发引导型', 
+    '互动导向型',
+    '逻辑推导型',
+    '题目驱动型',
+    '情感表达型',
+    '耐心细致型'
+]

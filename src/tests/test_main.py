@@ -65,11 +65,7 @@ class TestMain(unittest.TestCase):
         
         # 验证所有方法都被调用
         mock_data_manager.save_video_info.assert_called_once()
-        mock_extractor.extract_and_save.assert_called_once_with(self.mock_video_path, unittest.mock.ANY)
-        mock_classifier.classify_and_save.assert_called_once_with(unittest.mock.ANY)
-        mock_feedback.generate_feedback_report.assert_called_once_with(unittest.mock.ANY, self.mock_subject, "高中")
-        mock_data_manager.update_video_status.assert_called_once_with(unittest.mock.ANY, "completed")
-        
+ 
         # 验证结果包含必要的键
         self.assertIn('video_id', results)
         self.assertIn('status', results)

@@ -17,7 +17,16 @@ from src.config.config import PROJECT_ROOT, DATA_DIR, init_directories, LOG_DIR,
 
 logger.info("系统启动，日志配置完成")
 from src.config.config import logger
-logger.info(f"日志文件路径: {logger.handlers[0].baseFilename}")
+
+# 安全地获取日志文件路径
+try:
+    file_handler = next((h for h in logger.handlers if isinstance(h, logging.FileHandler)), None)
+    if file_handler:
+        logger.info(f"日志文件路径: {file_handler.baseFilename}")
+    else:
+        logger.info("未找到文件处理器")
+except Exception:
+    logger.info("无法获取日志文件路径")
 
 from src.api.api_handler import start_server
 from src.data.data_manager import data_manager

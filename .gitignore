@@ -34,6 +34,10 @@ __pycache__/
 /src/models/*.pkl
 /models/
 
+# 训练数据集
+/data/
+
+
 # 可视化结果
 /teacher_style_analysis/visualization/
 /src/visualization/

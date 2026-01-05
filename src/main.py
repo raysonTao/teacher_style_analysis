@@ -31,21 +31,25 @@ except Exception:
 from src.api.api_handler import start_server
 from src.data.data_manager import data_manager
 from src.features.feature_extractor import feature_extractor
-from src.models.core.style_classifier import style_classifier
+from src.models.core.style_classifier import StyleClassifier
 from src.feedback.feedback_generator import feedback_generator
 
 
-def run_analysis_pipeline(video_path: str, teacher_id: str, 
-                         discipline: str, grade: str) -> dict:
+def run_analysis_pipeline(video_path: str, teacher_id: str,
+                         discipline: str, grade: str,
+                         mode: str = 'deep_learning',
+                         dl_device: str = 'cpu') -> dict:
     """
     运行完整的风格分析流程
-    
+
     Args:
         video_path: 视频文件路径
         teacher_id: 教师ID
         discipline: 学科类型
         grade: 年级水平
-        
+        mode: 分类模式 ('rule', 'deep_learning', 'hybrid')，默认为 'deep_learning'
+        dl_device: 深度学习设备 ('cpu', 'cuda')，默认为 'cpu'
+
     Returns:
         分析结果
     """
@@ -87,13 +91,21 @@ def run_analysis_pipeline(video_path: str, teacher_id: str,
         features = feature_extractor.process_video(video_path)
         
         # 3. 风格分类
-        logger.info("步骤3: 执行风格分类")
+        logger.info(f"步骤3: 执行风格分类（模式: {mode}）")
         # 添加调试信息
         logger.info(f"特征结构: {type(features)}, keys: {list(features.keys())}")
         logger.info(f"fused_features类型: {type(features.get('fused_features'))}")
         if features.get('fused_features'):
             logger.info(f"fused_features keys: {list(features['fused_features'].keys())}")
-        
+
+        # 创建风格分类器实例，使用指定的模式
+        style_classifier = StyleClassifier(
+            mode=mode,
+            dl_checkpoint='./checkpoints/best_model.pth',
+            dl_model_config='default',
+            dl_device=dl_device
+        )
+
         # 使用完整的特征字典作为参数
         result = style_classifier.classify_style(None, features)
         
@@ -165,17 +177,21 @@ def run_analysis_pipeline(video_path: str, teacher_id: str,
         raise
 
 
-def batch_analysis(directory_path: str, teacher_id: str, 
-                  discipline: str, grade: str) -> list:
+def batch_analysis(directory_path: str, teacher_id: str,
+                  discipline: str, grade: str,
+                  mode: str = 'deep_learning',
+                  dl_device: str = 'cpu') -> list:
     """
     批量分析指定目录下的所有视频文件
-    
+
     Args:
         directory_path: 视频目录路径
         teacher_id: 教师ID
         discipline: 学科类型
         grade: 年级水平
-        
+        mode: 分类模式 ('rule', 'deep_learning', 'hybrid')，默认为 'deep_learning'
+        dl_device: 深度学习设备 ('cpu', 'cuda')，默认为 'cpu'
+
     Returns:
         分析结果列表
     """
@@ -196,7 +212,10 @@ def batch_analysis(directory_path: str, teacher_id: str,
         for i, video_path in enumerate(video_files, 1):
             try:
                 logger.info(f"开始分析第 {i}/{len(video_files)} 个视频: {video_path}")
-                result = run_analysis_pipeline(video_path, teacher_id, discipline, grade)
+                result = run_analysis_pipeline(
+                    video_path, teacher_id, discipline, grade,
+                    mode=mode, dl_device=dl_device
+                )
                 results.append({
                     'video_path': video_path,
                     'success': True,
@@ -375,13 +394,25 @@ def main() -> None:
     analyze_parser.add_argument('--teacher', type=str, required=True, help='教师ID')
     analyze_parser.add_argument('--discipline', type=str, required=True, help='学科类型')
     analyze_parser.add_argument('--grade', type=str, required=True, help='年级水平')
-    
+    analyze_parser.add_argument('--mode', type=str, default='deep_learning',
+                               choices=['rule', 'deep_learning', 'hybrid'],
+                               help='分类模式（默认: deep_learning）')
+    analyze_parser.add_argument('--device', type=str, default='cpu',
+                               choices=['cpu', 'cuda'],
+                               help='深度学习设备（默认: cpu）')
+
     # 批量分析命令
     batch_parser = subparsers.add_parser('batch', help='批量分析视频')
     batch_parser.add_argument('--dir', type=str, required=True, help='视频目录路径')
     batch_parser.add_argument('--teacher', type=str, required=True, help='教师ID')
     batch_parser.add_argument('--discipline', type=str, required=True, help='学科类型')
     batch_parser.add_argument('--grade', type=str, required=True, help='年级水平')
+    batch_parser.add_argument('--mode', type=str, default='deep_learning',
+                             choices=['rule', 'deep_learning', 'hybrid'],
+                             help='分类模式（默认: deep_learning）')
+    batch_parser.add_argument('--device', type=str, default='cpu',
+                             choices=['cpu', 'cuda'],
+                             help='深度学习设备（默认: cpu）')
     
     # 导出结果命令
     export_parser = subparsers.add_parser('export', help='导出分析结果')
@@ -411,20 +442,28 @@ def main() -> None:
         # 分析单个视频
         logger.info(f"开始分析视频: {args.video}")
         logger.info(f"教师ID: {args.teacher}, 学科: {args.discipline}, 年级: {args.grade}")
-        
-        result = run_analysis_pipeline(args.video, args.teacher, args.discipline, args.grade)
-        
+        logger.info(f"分类模式: {args.mode}, 设备: {args.device}")
+
+        result = run_analysis_pipeline(
+            args.video, args.teacher, args.discipline, args.grade,
+            mode=args.mode, dl_device=args.device
+        )
+
         logger.info("\n分析完成!")
         logger.info(f"视频ID: {result['video_id']}")
         logger.info(f"SMI分数: {result['feedback']['smi']['score']}")
         logger.info(f"主要风格: {result['feedback']['teaching_style']['main_styles'][0][0]}")
-    
+
     elif args.command == 'batch':
         # 批量分析
         logger.info(f"开始批量分析视频目录: {args.dir}")
         logger.info(f"教师ID: {args.teacher}, 学科: {args.discipline}, 年级: {args.grade}")
-        
-        results = batch_analysis(args.dir, args.teacher, args.discipline, args.grade)
+        logger.info(f"分类模式: {args.mode}, 设备: {args.device}")
+
+        results = batch_analysis(
+            args.dir, args.teacher, args.discipline, args.grade,
+            mode=args.mode, dl_device=args.device
+        )
         
         logger.info("\n批量分析完成!")
         logger.info(f"总视频数: {len(results)}")

@@ -9,33 +9,126 @@ import torch
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from config.config import (
+from src.config.config import (
     MODEL_CONFIG, SYSTEM_CONFIG, STYLE_LABELS,
     FEATURES_DIR, RESULTS_DIR, logger
 )
 
+try:
+    from src.models.deep_learning.inference import get_inference_instance
+    DL_AVAILABLE = True
+except ImportError:
+    DL_AVAILABLE = False
+    logger.warning("深度学习推理模块导入失败，仅能使用规则系统")
+
 
 class StyleClassifier:
     """教师风格分类器"""
-    
-    def __init__(self):
+
+    def __init__(
+        self,
+        mode: str = 'rule',
+        dl_checkpoint: Optional[str] = None,
+        dl_model_config: str = 'default',
+        dl_device: Optional[str] = None
+    ):
+        """
+        Args:
+            mode: 分类模式
+                - 'rule': 仅使用规则系统（默认，向后兼容）
+                - 'deep_learning': 仅使用深度学习模型
+                - 'hybrid': 混合模式（规则系统 + 深度学习）
+            dl_checkpoint: 深度学习模型检查点路径
+            dl_model_config: 深度学习模型配置（default/lightweight/high_accuracy）
+            dl_device: 深度学习模型设备（cuda/cpu）
+        """
+        self.mode = mode
+        self.dl_inference = None
+
+        # 初始化规则系统模型（始终初始化，作为备用）
         self._init_model()
+
+        # 初始化深度学习模型（如果需要）
+        if self.mode in ['deep_learning', 'hybrid'] and DL_AVAILABLE:
+            self._init_deep_learning_model(
+                checkpoint_path=dl_checkpoint or "./checkpoints/best_model.pth",
+                model_config=dl_model_config,
+                device=dl_device
+            )
+        elif self.mode in ['deep_learning', 'hybrid'] and not DL_AVAILABLE:
+            logger.warning(f"模式设置为'{self.mode}'，但深度学习模块不可用，回退到规则系统")
+            self.mode = 'rule'
     
+    def _init_deep_learning_model(
+        self,
+        checkpoint_path: str,
+        model_config: str,
+        device: Optional[str]
+    ):
+        """初始化深度学习模型"""
+        try:
+            logger.info(f"初始化深度学习模型: {checkpoint_path}")
+            self.dl_inference = get_inference_instance(
+                checkpoint_path=checkpoint_path,
+                model_config=model_config,
+                device=device
+            )
+
+            if self.dl_inference.is_loaded:
+                info = self.dl_inference.get_model_info()
+                logger.info(f"深度学习模型加载成功")
+                logger.info(f"  模型配置: {info.get('model_config', 'N/A')}")
+                logger.info(f"  设备: {info.get('device', 'N/A')}")
+                logger.info(f"  参数量: {info.get('num_parameters', 'N/A'):,}")
+                if 'performance' in info:
+                    perf = info['performance']
+                    logger.info(f"  性能: Acc={perf.get('accuracy', 'N/A'):.4f}, "
+                              f"F1={perf.get('f1_macro', 'N/A'):.4f}")
+            else:
+                logger.warning("深度学习模型加载失败，将使用规则系统")
+                if self.mode == 'deep_learning':
+                    logger.warning("回退到规则系统模式")
+                    self.mode = 'rule'
+                elif self.mode == 'hybrid':
+                    logger.warning("混合模式降级为纯规则模式")
+                    self.mode = 'rule'
+
+        except Exception as e:
+            logger.error(f"深度学习模型初始化失败: {e}")
+            self.dl_inference = None
+            if self.mode == 'deep_learning':
+                logger.warning("回退到规则系统模式")
+                self.mode = 'rule'
+            elif self.mode == 'hybrid':
+                logger.warning("混合模式降级为纯规则模式")
+                self.mode = 'rule'
+
     def get_status(self) -> Dict:
         """
         获取风格分类器状态
-        
+
         Returns:
             包含状态信息的字典
         """
-        return {
-            'model_loaded': self.model is not None,
-            'model_type': 'pretrained' if os.path.exists(MODEL_CONFIG['cmat_model_path']) else 'mock',
+        status = {
+            'mode': self.mode,
+            'rule_model_loaded': self.model is not None,
+            'rule_model_type': 'pretrained' if os.path.exists(MODEL_CONFIG['cmat_model_path']) else 'mock',
             'lambda_weight': self.model.get('lambda_weight', 0.5) if self.model else 0.5,
-            'status': 'ready' if self.model else 'not_loaded'
+            'status': 'ready'
         }
+
+        # 添加深度学习模型状态
+        if self.dl_inference is not None:
+            dl_info = self.dl_inference.get_model_info()
+            status['deep_learning_loaded'] = dl_info.get('is_loaded', False)
+            status['deep_learning_info'] = dl_info
+        else:
+            status['deep_learning_loaded'] = False
+
+        return status
     
     def _init_model(self):
         """初始化风格分类模型"""
@@ -182,45 +275,83 @@ class StyleClassifier:
     def _apply_ml_model(self, features: Dict) -> Dict:
         """
         应用机器学习层
-        
+
         Args:
             features: 融合后的特征
-            
+
         Returns:
             机器学习层的输出
         """
         ml_output = {}
         feature_importance = self.model['ml_params']['feature_importance']
         fusion = features.get('fusion', {})
-        
+
         # 计算各风格的机器学习分数
         style_metrics = fusion.get('teaching_style_metrics', {})
-        
+
         # 使用预计算的风格指标作为机器学习层的输出
         for style in ['lecturing', 'guiding', 'interactive', 'logical', 'problem_driven', 'emotional', 'patient']:
             ml_output[style] = style_metrics.get(style, 0.0)
-        
+
         return ml_output
+
+    def _classify_with_deep_learning(self, features: Dict) -> Dict:
+        """
+        使用深度学习模型进行分类
+
+        Args:
+            features: 融合后的特征
+
+        Returns:
+            深度学习分类结果
+        """
+        if self.dl_inference is None or not self.dl_inference.is_loaded:
+            raise RuntimeError("深度学习模型未加载")
+
+        try:
+            # 使用深度学习模型预测
+            dl_result = self.dl_inference.predict(
+                features=features,
+                use_rule_features=(self.mode == 'hybrid')
+            )
+
+            # 转换为标准输出格式
+            result = {
+                'style_scores': dl_result['style_scores'],
+                'top_styles': dl_result['top_styles'],
+                'predicted_style': dl_result['predicted_style'],
+                'confidence': dl_result['confidence'],
+                'method': 'deep_learning',
+                'timestamp': {
+                    'analysis_time': '2024-11-12T23:30:00Z'  # 模拟时间戳
+                }
+            }
+
+            return result
+
+        except Exception as e:
+            logger.error(f"深度学习分类失败: {e}")
+            raise
     
     def classify_style(self, features_path=None, features=None) -> Dict:
         """
         对特征进行风格分类
-        
+
         Args:
             features_path: 特征文件路径（可选）
             features: 特征数据（可选，优先使用）
-            
+
         Returns:
             风格分类结果
         """
-        
+
         # 如果提供了features参数，直接使用它
         if features is not None:
-            logger.info(f"直接使用提供的特征数据")
+            logger.info(f"直接使用提供的特征数据（模式: {self.mode}）")
         # 如果提供了features_path参数，尝试从文件读取
         elif features_path is not None:
-            logger.info(f"开始风格分类: {features_path}")
-            
+            logger.info(f"开始风格分类: {features_path}（模式: {self.mode}）")
+
             # 如果输入是numpy数组，按论文中的CMAT模型处理
             if isinstance(features_path, np.ndarray):
                 # 应用规则驱动层
@@ -229,7 +360,7 @@ class StyleClassifier:
                 ml_results = self.apply_ml_layer(features_path)
                 # 融合结果
                 fused_results = self.fuse_outputs(rule_results, ml_results)
-                
+
                 return {
                     'style_scores': fused_results,
                     'dominant_style': fused_results.get('dominant_style', 'analytical'),
@@ -251,23 +382,90 @@ class StyleClassifier:
             # 两者都没有提供，使用空特征
             logger.warning(f"未提供特征数据或路径，使用空特征")
             features = {}
-        
+
+        # 根据模式选择分类方法
+        if self.mode == 'deep_learning':
+            # 纯深度学习模式
+            try:
+                return self._classify_with_deep_learning(features)
+            except Exception as e:
+                logger.error(f"深度学习分类失败，回退到规则系统: {e}")
+                # 回退到规则系统
+                pass
+
+        elif self.mode == 'hybrid':
+            # 混合模式：结合规则系统和深度学习
+            try:
+                # 获取深度学习预测
+                dl_result = self._classify_with_deep_learning(features)
+
+                # 获取规则系统预测
+                rule_output = self._apply_rules(features)
+                ml_output = self._apply_ml_model(features)
+
+                # 融合规则系统结果
+                lambda_weight = self.model['lambda_weight']
+                rule_final = {}
+
+                style_mapping = {
+                    'lecturing': '理论讲授型',
+                    'guiding': '启发引导型',
+                    'interactive': '互动导向型',
+                    'logical': '逻辑推导型',
+                    'problem_driven': '题目驱动型',
+                    'emotional': '情感表达型',
+                    'patient': '耐心细致型'
+                }
+
+                for style_key, style_label in style_mapping.items():
+                    rule_score = lambda_weight * rule_output[style_key] + (1 - lambda_weight) * ml_output.get(style_key, 0.0)
+                    rule_final[style_label] = rule_score
+
+                # 混合深度学习和规则系统（50/50权重）
+                hybrid_scores = {}
+                for style in dl_result['style_scores'].keys():
+                    hybrid_scores[style] = (
+                        0.5 * dl_result['style_scores'][style] +
+                        0.5 * rule_final.get(style, 0.0)
+                    )
+
+                # 构建混合结果
+                result = {
+                    'style_scores': hybrid_scores,
+                    'top_styles': self._get_top_styles(hybrid_scores),
+                    'deep_learning_results': dl_result['style_scores'],
+                    'rule_based_results': rule_final,
+                    'confidence': (dl_result['confidence'] + self._calculate_confidence(rule_final)) / 2,
+                    'method': 'hybrid',
+                    'timestamp': {
+                        'analysis_time': '2024-11-12T23:30:00Z'
+                    }
+                }
+
+                return result
+
+            except Exception as e:
+                logger.error(f"混合模式分类失败，回退到规则系统: {e}")
+                # 回退到规则系统
+                pass
+
+        # 规则系统模式（默认或回退）
         # 应用规则驱动层
         rule_output = self._apply_rules(features)
-        
+
         # 应用机器学习层
         ml_output = self._apply_ml_model(features)
-        
+
         # 融合两种输出
         lambda_weight = self.model['lambda_weight']
         final_output = {}
-        
+
         for style in rule_output.keys():
             final_output[style] = (
-                lambda_weight * rule_output[style] + 
+                lambda_weight * rule_output[style] +
                 (1 - lambda_weight) * ml_output.get(style, 0.0)
             )
-        
+
         # 映射到论文中的风格标签
         labeled_output = {}
         style_mapping = {
@@ -279,13 +477,13 @@ class StyleClassifier:
             'emotional': '情感表达型',
             'patient': '耐心细致型'
         }
-        
+
         for style_key, style_label in style_mapping.items():
             labeled_output[style_label] = final_output.get(style_key, 0.0)
-        
+
         # 计算特征贡献度分析（可解释性）
         feature_contributions = self._analyze_feature_contributions(features, final_output)
-        
+
         # 生成分类结果
         result = {
             'style_scores': labeled_output,
@@ -298,11 +496,12 @@ class StyleClassifier:
             },
             'feature_contributions': feature_contributions,
             'confidence': self._calculate_confidence(final_output),
+            'method': 'rule',
             'timestamp': {
                 'analysis_time': '2024-11-12T23:30:00Z'  # 模拟时间戳
             }
         }
-        
+
         return result
     
     def _get_top_styles(self, style_scores: Dict) -> List[Tuple[str, float]]:
@@ -474,16 +673,21 @@ class StyleClassifier:
     def _calculate_confidence(self, final_output: Dict) -> float:
         """
         计算分类结果的置信度
-        
+
         Args:
-            final_output: 最终分类输出
-            
+            final_output: 最终分类输出（可以是dict）
+
         Returns:
             置信度分数（0-1）
         """
-        scores = list(final_output.values())
+        # 如果是字典，提取值
+        if isinstance(final_output, dict):
+            scores = list(final_output.values())
+        else:
+            scores = final_output
+
         max_score = max(scores) if scores else 0
-        
+
         # 计算最高分与次高分的差异
         if len(scores) > 1:
             sorted_scores = sorted(scores, reverse=True)
@@ -492,7 +696,7 @@ class StyleClassifier:
             confidence = max_score * 0.7 + score_diff * 0.3
         else:
             confidence = max_score
-        
+
         return min(1.0, confidence)
     
     def classify_and_save(self, video_id: str) -> str:

@@ -34,7 +34,7 @@ class VLMStyleAnnotator:
     def __init__(self,
                  api_key: str,
                  base_url: str = "https://aidev.deyecloud.com/api",
-                 model: str = "claude-3-5-sonnet-20241022",
+                 model: str = "claude-opus-4-5-20251101",
                  max_retries: int = 3,
                  retry_delay: int = 5):
         """

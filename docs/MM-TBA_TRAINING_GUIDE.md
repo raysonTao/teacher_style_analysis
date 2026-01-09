@@ -59,39 +59,16 @@ python -m src.models.deep_learning.train \
 
 **优势：** 真实教学数据，预期更高准确率
 
-#### 步骤 1: 转换数据格式
-
-```bash
-cd /home/rayson/code/teacher_style_analysis
-
-# 运行数据转换脚本
-python convert_mmtba.py
-```
-
-这会将 MM-TBA 的讲课文本转换为我们需要的特征格式：
-- 输入：167 训练样本 + 42 评估样本 = 209 样本
-- 输出：`data/mm-tba/mmtba_converted.json`
-- 格式：包含 video_features (20维), audio_features (15维), text_features (25维)
-
-#### 步骤 2: GPU 训练
-
-**选项 A: 一键训练（推荐）**
-
-```bash
-# 自动转换数据并训练
-./train_mmtba_gpu.sh
-```
-
-**选项 B: 手动训练（更多控制）**
+#### GPU 训练
 
 ```bash
 # 设置CUDA环境变量
 export LD_LIBRARY_PATH=/usr/local/cuda-11.7/lib64:/usr/local/cuda-11.7/targets/x86_64-linux/lib:$LD_LIBRARY_PATH
 export CUDA_HOME=/usr/local/cuda-11.7
 
-# 基础配置训练
+# 使用VLM标注的数据训练（推荐）
 python -m src.models.deep_learning.train \
-    --data_path data/mm-tba/mmtba_converted.json \
+    --data_path data/mm-tba/training.json \
     --model_config default \
     --batch_size 32 \
     --num_epochs 150 \
@@ -102,7 +79,7 @@ python -m src.models.deep_learning.train \
 
 # 高精度配置训练（更好的效果但更慢）
 python -m src.models.deep_learning.train \
-    --data_path data/mm-tba/mmtba_converted.json \
+    --data_path data/mm-tba/training.json \
     --model_config high_accuracy \
     --batch_size 16 \
     --num_epochs 200 \
@@ -113,7 +90,7 @@ python -m src.models.deep_learning.train \
 
 # 轻量级配置训练（更快但准确率稍低）
 python -m src.models.deep_learning.train \
-    --data_path data/mm-tba/mmtba_converted.json \
+    --data_path data/mm-tba/training.json \
     --model_config lightweight \
     --batch_size 64 \
     --num_epochs 100 \
@@ -142,12 +119,9 @@ python -m src.models.deep_learning.train \
     --device cuda \
     --checkpoint_dir ./checkpoints/pretrain
 
-# 步骤2: 转换MM-TBA数据
-python convert_mmtba.py
-
-# 步骤3: 用MM-TBA数据微调
+# 步骤2: 用MM-TBA数据微调（需先完成VLM标注）
 python -m src.models.deep_learning.train \
-    --data_path data/mm-tba/mmtba_converted.json \
+    --data_path data/mm-tba/training.json \
     --batch_size 32 \
     --num_epochs 100 \
     --lr 1e-5 \
@@ -331,12 +305,18 @@ export CUDA_HOME=/usr/local/cuda-11.7
 # 1. 进入项目目录
 cd /home/rayson/code/teacher_style_analysis
 
-# 2. 运行MM-TBA数据训练（一键完成）
-./train_mmtba_gpu.sh
+# 2. 按照上述VLM标注流程准备数据
 
-# 3. 等待训练完成（约15-30分钟）
+# 3. 运行训练
+python -m src.models.deep_learning.train \
+    --data_path data/mm-tba/training.json \
+    --batch_size 32 \
+    --num_epochs 150 \
+    --device cuda
 
-# 4. 测试模型
+# 4. 等待训练完成（约15-30分钟）
+
+# 5. 测试模型
 python test_integration.py
 ```
 
@@ -366,7 +346,7 @@ python test_integration.py
 ## 下一步
 
 1. ✅ 数据已解压和处理
-2. 🚀 **立即开始：** 运行 `./train_mmtba_gpu.sh`
+2. 🚀 **立即开始：** 按照上述VLM标注流程准备数据并训练
 3. 📊 训练完成后查看结果
 4. 🎯 使用训练好的模型分析视频
 5. 🔧 根据结果调优参数

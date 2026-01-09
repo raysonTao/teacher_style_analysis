@@ -75,13 +75,7 @@ python -m src.main server --host 0.0.0.0 --port 8000
 
 所有MM-TBA数据处理工具位于：`data/mm-tba/tools/`
 
-**快速开始**：
-```bash
-cd data/mm-tba/tools
-bash train_mmtba_gpu.sh
-```
-
-**方法1：使用VLM自动标注（推荐）**
+**使用VLM自动标注**
 
 ```bash
 cd data/mm-tba/tools
@@ -106,23 +100,9 @@ python convert_mmtba_vlm.py to-training \
     --output ../training.json
 
 # 4. 训练模型
-bash train_mmtba_gpu.sh
-```
-
-**方法2：使用原始标注**
-
-```bash
-cd data/mm-tba/tools
-
-# 1. 直接转换数据集
-python convert_mmtba.py \
-    --mmtba_path ../MM-TBA \
-    --output ../mmtba_converted.json
-
-# 2. 训练模型
 python -m src.models.deep_learning.train \
-    --data_path ../mmtba_converted.json \
-    --batch_size 64 \
+    --data_path ../training.json \
+    --batch_size 32 \
     --num_epochs 150 \
     --device cuda \
     --checkpoint_dir ../../../checkpoints/mm-tba
@@ -171,9 +151,7 @@ teacher_style_analysis/
 │       ├── MM-TBA/        # 原始数据
 │       ├── tools/         # ⭐ 数据处理工具
 │       │   ├── README.md
-│       │   ├── convert_mmtba.py
 │       │   ├── convert_mmtba_vlm.py
-│       │   ├── train_mmtba_gpu.sh
 │       │   └── train_gpu.sh
 │       ├── for_vlm_annotation.json
 │       ├── vlm_annotated.json

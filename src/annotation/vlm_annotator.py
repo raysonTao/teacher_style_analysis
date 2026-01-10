@@ -4,6 +4,7 @@
 """
 
 import os
+import sys
 import json
 import base64
 import time
@@ -12,6 +13,10 @@ from typing import List, Dict, Optional
 import anthropic
 from tqdm import tqdm
 import logging
+
+# 导入FeatureEncoder用于特征解读
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from src.features.feature_encoder import FeatureEncoder
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -55,6 +60,9 @@ class VLMStyleAnnotator:
         self.max_retries = max_retries
         self.retry_delay = retry_delay
 
+        # 创建特征编码器实例（用于生成特征解读）
+        self.feature_encoder = FeatureEncoder()
+
         logger.info(f"VLM标注器初始化完成")
         logger.info(f"使用模型: {model}")
         logger.info(f"API地址: {base_url}")
@@ -65,7 +73,8 @@ class VLMStyleAnnotator:
                                behavior_durations: Dict[str, float] = None,
                                audio_transcript: str = None,
                                lecture_text: str = None,
-                               metadata: Dict = None) -> Dict:
+                               metadata: Dict = None,
+                               raw_features: Dict = None) -> Dict:
         """
         标注单个样本的教学风格
 
@@ -76,6 +85,7 @@ class VLMStyleAnnotator:
             audio_transcript: 语音转文本
             lecture_text: 讲课文本
             metadata: 其他元数据
+            raw_features: 原始提取的特征（用于生成量化解读）
 
         Returns:
             标注结果
@@ -88,7 +98,8 @@ class VLMStyleAnnotator:
                     behavior_durations=behavior_durations,
                     audio_transcript=audio_transcript,
                     lecture_text=lecture_text,
-                    metadata=metadata
+                    metadata=metadata,
+                    raw_features=raw_features
                 )
 
                 # 准备消息内容
@@ -154,7 +165,8 @@ class VLMStyleAnnotator:
                      behavior_durations: Dict[str, float] = None,
                      audio_transcript: str = None,
                      lecture_text: str = None,
-                     metadata: Dict = None) -> str:
+                     metadata: Dict = None,
+                     raw_features: Dict = None) -> str:
         """构建提示词"""
 
         prompt = """# 教学风格分类任务
@@ -170,6 +182,16 @@ class VLMStyleAnnotator:
             prompt += f"{idx}. **{style}**: {description}\n"
 
         prompt += "\n## 观察到的数据：\n\n"
+
+        # 添加量化特征解读（如果有raw_features）
+        if raw_features:
+            try:
+                # 使用FeatureEncoder编码并生成人类可读解读
+                encoded = self.feature_encoder.encode_all(raw_features)
+                feature_interpretation = self.feature_encoder.get_feature_interpretation(encoded)
+                prompt += feature_interpretation + "\n\n"
+            except Exception as e:
+                logger.warning(f"生成特征解读失败: {e}")
 
         # 添加行为序列
         if behavior_sequence:
@@ -334,7 +356,8 @@ class VLMStyleAnnotator:
                     behavior_durations=sample.get('behavior_durations'),
                     audio_transcript=sample.get('audio_transcript'),
                     lecture_text=sample.get('lecture_text'),
-                    metadata=sample.get('metadata')
+                    metadata=sample.get('metadata'),
+                    raw_features=sample.get('raw_features')  # 传递原始特征
                 )
 
                 # 添加样本ID和原始数据

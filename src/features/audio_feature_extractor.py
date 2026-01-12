@@ -13,6 +13,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.config import BASE_DIR, AUDIO_CONFIG, logger
 
+# 全局导入whisper（避免作用域问题）
+try:
+    import whisper
+    WHISPER_AVAILABLE = True
+except ImportError:
+    WHISPER_AVAILABLE = False
+    logger.warning("Whisper模块未安装，语音识别功能将不可用")
+
 class AudioFeatureExtractor:
     """音频特征提取类，用于提取音频中的特征"""
 
@@ -33,29 +41,50 @@ class AudioFeatureExtractor:
             self._load_model()
 
     def _load_model(self):
-        """加载Whisper模型"""
+        """加载Whisper模型，支持自动下载和本地缓存"""
+        if not WHISPER_AVAILABLE:
+            logger.warning("Whisper模块不可用，跳过模型加载")
+            self.whisper_model = None
+            return
+
         try:
-            import whisper
             logger.info("初始化Whisper模型...")
-            
-            # 使用绝对路径加载Whisper模型
-            whisper_path = os.path.join(BASE_DIR, AUDIO_CONFIG['whisper_model_path'])
-            logger.debug(f"Whisper模型路径: {whisper_path}")
-            logger.debug(f"文件是否存在: {os.path.exists(whisper_path)}")
-            
-            if os.path.exists(whisper_path):
-                logger.debug(f"文件大小: {os.path.getsize(whisper_path)} 字节")
-                # 使用本地模型文件
-                self.whisper_model = whisper.load_model(whisper_path)
-                logger.info(f"Whisper模型加载成功，使用本地文件: {whisper_path}")
-            else:
-                # 回退到默认加载方式
-                logger.warning("本地模型文件不存在，尝试从网络加载...")
-                self.whisper_model = whisper.load_model(AUDIO_CONFIG['whisper_model_size'])
-                logger.info(f"Whisper模型加载成功，大小: {AUDIO_CONFIG['whisper_model_size']}")
-                
-            logger.debug(f"模型类型: {type(self.whisper_model)}")
-            
+
+            # 设置Whisper缓存目录到项目内
+            whisper_cache_dir = os.path.join(BASE_DIR, 'models', 'weights', 'whisper_cache')
+            os.makedirs(whisper_cache_dir, exist_ok=True)
+
+            # 设置环境变量，让whisper使用我们的缓存目录
+            os.environ['XDG_CACHE_HOME'] = os.path.join(BASE_DIR, 'models', 'weights')
+
+            # 方案1: 尝试从本地路径加载
+            local_model_path = os.path.join(BASE_DIR, AUDIO_CONFIG['whisper_model_path'])
+
+            if os.path.exists(local_model_path):
+                logger.info(f"找到本地Whisper模型: {local_model_path}")
+                logger.info(f"模型文件大小: {os.path.getsize(local_model_path) / (1024*1024):.2f} MB")
+                try:
+                    # 直接加载本地.pt文件
+                    self.whisper_model = whisper.load_model(local_model_path, device="cpu")
+                    logger.info(f"✓ Whisper模型加载成功（使用本地文件）")
+                    return
+                except Exception as e:
+                    logger.warning(f"本地模型加载失败: {e}，尝试其他方式...")
+
+            # 方案2: 使用模型名称加载（会自动下载到缓存）
+            model_size = AUDIO_CONFIG['whisper_model_size']
+            logger.info(f"尝试加载Whisper模型: {model_size}")
+            logger.info(f"模型将缓存到: {whisper_cache_dir}")
+
+            self.whisper_model = whisper.load_model(model_size, device="cpu", download_root=whisper_cache_dir)
+            logger.info(f"✓ Whisper模型加载成功（模型: {model_size}）")
+
+            # 保存模型信息以便下次快速加载
+            model_info_path = os.path.join(whisper_cache_dir, f"{model_size}_info.txt")
+            with open(model_info_path, 'w') as f:
+                f.write(f"Model: {model_size}\n")
+                f.write(f"Loaded at: {os.path.getctime(model_info_path)}\n")
+
         except Exception as e:
             logger.error(f"Whisper模型加载失败: {e}")
             import traceback
@@ -116,28 +145,35 @@ class AudioFeatureExtractor:
             features["voice_activity"] = voice_activity
             
             # 语音识别
-            if self.whisper_model is not None:
-                logger.info("使用Whisper模型进行语音识别...")
+            if WHISPER_AVAILABLE and self.whisper_model is not None:
+                logger.info("使用Whisper模型进行语音识别（完整音频）...")
+                logger.info(f"音频时长: {features.get('audio_duration', 0):.2f} 秒")
                 try:
-                    # 加载原始音频
-                    audio = whisper.load_audio(audio_path)
-                    audio = whisper.pad_or_trim(audio)
-                    
-                    # 生成梅尔频谱
-                    mel = whisper.log_mel_spectrogram(audio).to(self.whisper_model.device)
-                    
-                    # 语音识别
-                    options = whisper.DecodingOptions(language="zh")
-                    result = whisper.decode(self.whisper_model, mel, options)
-                    
-                    transcription = result.text
+                    # 使用transcribe方法处理完整音频（自动分段）
+                    result = whisper.transcribe(
+                        self.whisper_model,
+                        audio_path,
+                        language="zh",
+                        fp16=False,  # CPU不支持fp16
+                        verbose=False  # 关闭详细输出
+                    )
+
+                    transcription = result["text"]
                     features["transcription"] = transcription
-                    logger.info(f"语音识别结果: {transcription}")
-                    
+                    logger.info(f"✓ 语音识别成功！")
+                    logger.info(f"  转录文本长度: {len(transcription)} 字")
+                    logger.info(f"  识别片段数: {len(result.get('segments', []))} 段")
+                    logger.info(f"  文本预览: {transcription[:150]}...")
+
                 except Exception as e:
                     logger.error(f"Whisper语音识别失败: {e}")
                     import traceback
                     traceback.print_exc()
+            else:
+                if not WHISPER_AVAILABLE:
+                    logger.warning("Whisper模块不可用，跳过语音识别")
+                else:
+                    logger.warning("Whisper模型未加载，跳过语音识别")
             
             # 模拟情绪分数（实际项目中可以使用专业的情绪分析模型）
             avg_volume = np.mean(features["volume"])

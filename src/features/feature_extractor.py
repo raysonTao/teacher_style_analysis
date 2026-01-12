@@ -44,39 +44,40 @@ class FeatureExtractor:
             
             logger.info("主特征提取器初始化完成")
     
-    def process_video(self, video_path: str) -> Dict:
+    def process_video(self, video_path: str, return_raw: bool = False) -> Dict:
         """
         处理视频文件，提取所有模态的特征并融合
-        
+
         Args:
             video_path: 视频文件路径
-            
+            return_raw: 是否返回原始特征（用于知识蒸馏流程）
+
         Returns:
-            融合后的多模态特征字典
+            融合后的多模态特征字典，如果return_raw=True则包含原始特征
         """
         logger.info(f"开始处理视频: {video_path}")
-        
+
         # 确保输出目录存在
         output_dir = str(FEATURES_DIR)
         os.makedirs(output_dir, exist_ok=True)
-        
+
         # 1. 提取视频特征
         logger.info("开始提取视频特征...")
         video_features = self.video_extractor.extract_features(video_path)
         logger.info("视频特征提取完成")
-        
+
         # 2. 提取音频特征
         logger.info("开始提取音频特征...")
         try:
             # 从视频中提取音频
             temp_audio_path = self.audio_extractor.extract_audio_from_video(video_path)
-            
+
             if temp_audio_path and os.path.exists(temp_audio_path):
                 logger.info(f"临时音频文件已创建: {temp_audio_path}")
-                
+
                 # 提取音频特征
                 audio_features = self.audio_extractor.extract_features(temp_audio_path)
-                
+
                 # 删除临时音频文件
                 try:
                     os.remove(temp_audio_path)
@@ -86,34 +87,65 @@ class FeatureExtractor:
             else:
                 logger.warning("无法提取音频，使用默认音频特征")
                 audio_features = self.audio_extractor.extract_features(" ")
-                
+
         except Exception as e:
             logger.error(f"音频处理失败: {e}")
             import traceback
             traceback.print_exc()
             audio_features = self.audio_extractor.extract_features(" ")
-        
+
         logger.info("音频特征提取完成")
-        
+
         # 3. 提取文本特征
         logger.info("开始提取文本特征...")
         transcription = audio_features.get("transcription", "")
         text_features = self.text_extractor.extract_features(transcription)
         logger.info("文本特征提取完成")
-        
+
         # 4. 融合多模态特征
         logger.info("开始融合多模态特征...")
         self.features = self.multimodal_fusion.fuse_features(
-            video_features, 
-            audio_features, 
+            video_features,
+            audio_features,
             text_features
         )
         logger.info("多模态特征融合完成")
-        
+
         # 添加视频元信息
         self.features["video_path"] = video_path
         self.features["video_name"] = os.path.basename(video_path)
-        
+
+        # 如果需要返回原始特征（用于知识蒸馏）
+        if return_raw:
+            # 组织原始特征为知识蒸馏所需的格式
+            self.features["raw_features"] = {
+                "pose_tracking": {
+                    "action_sequence": video_features.get("action_sequence", []),
+                    "keypoints_sequence": []  # 如果需要可以添加
+                },
+                "motion_analysis": {
+                    "average_motion_energy": video_features.get("average_motion_energy", 0.0),
+                    "motion_sequence": []  # 如果需要可以添加
+                },
+                "spatial_distribution": video_features.get("spatial_distribution", {}),
+                "audio": {
+                    "volume_statistics": audio_features.get("volume_statistics", {}),
+                    "pitch_statistics": audio_features.get("pitch_statistics", {}),
+                    "voice_activity_ratio": audio_features.get("voice_activity_ratio", 0.0)
+                },
+                "text": {
+                    "bert_embedding": text_features.get("bert_embedding", []),
+                    "sentiment_analysis": text_features.get("sentiment_analysis", {}),
+                    "text_statistics": text_features.get("text_statistics", {})
+                },
+                "transcription": transcription,
+                "metadata": {
+                    "duration": video_features.get("video_duration", 0.0),
+                    "total_frames": video_features.get("total_frames", 0),
+                    "average_confidence": np.mean(video_features.get("pose_confidences", [0.0])) if video_features.get("pose_confidences") else 0.0
+                }
+            }
+
         return self.features
     
     def extract_video_features(self, video_path: str) -> Dict:

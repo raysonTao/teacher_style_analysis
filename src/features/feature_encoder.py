@@ -80,7 +80,7 @@ class FeatureEncoder:
             if pose_confidences:
                 features[17] = np.mean(pose_confidences)
             else:
-                features[17] = 0.5  # 默认中等置信度
+                features[17] = 0.0
 
             # 19-20维: 保留维度（可扩展）
             features[18] = 0.0
@@ -142,7 +142,7 @@ class FeatureEncoder:
             # 10-12维: 情感分析
             sentiment = raw_features.get('sentiment', {})
             if sentiment:
-                features[9] = sentiment.get('score', 0.5)  # 情感分数
+                features[9] = sentiment.get('score', 0.0)  # 情感分数
                 label = sentiment.get('label', 'neutral')
                 features[10] = self.sentiment_labels.get(label, 0.0)  # 标签编码
                 # 11维: 正负情感差异（可用于区分强烈程度）
@@ -210,7 +210,7 @@ class FeatureEncoder:
             # 21-22维: 情感分析
             sentiment = raw_features.get('sentiment', {})
             if sentiment:
-                features[20] = sentiment.get('score', 0.5)
+                features[20] = sentiment.get('score', 0.0)
                 label = sentiment.get('label', 'neutral')
                 features[21] = self.sentiment_labels.get(label, 0.0)
 

@@ -71,16 +71,72 @@ class VideoFeatureExtractor:
         
         return motion_energy
     
+    def _select_teacher_from_detections(self, detections: List[Dict], frame_height: int) -> Optional[Dict]:
+        """
+        从一帧的多个检测结果中选出最可能是教师的一个人
+
+        教师识别策略：
+        1. 位置在画面前方（y坐标较小）
+        2. 检测框较大（离镜头近）
+        3. 排除明显的学生（y > 画面高度的75%）
+
+        Args:
+            detections: 检测结果列表
+            frame_height: 帧高度
+
+        Returns:
+            最可能是教师的检测结果，如果没有则返回None
+        """
+        if not detections:
+            return None
+
+        # 计算bbox面积并添加到每个detection中
+        enhanced_detections = []
+        for d in detections:
+            bbox = d['bbox']
+            bbox_area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
+            enhanced_d = d.copy()
+            enhanced_d['bbox_area'] = bbox_area
+            enhanced_detections.append(enhanced_d)
+
+        # 步骤1: 过滤掉明显的学生（画面下方75%以后的区域）
+        student_threshold_y = frame_height * 0.75
+        candidates = [d for d in enhanced_detections if d['center'][1] < student_threshold_y]
+
+        # 如果过滤后没有候选（全是学生），退回到选择y最小的
+        if not candidates:
+            logger.debug(f"所有检测都在学生区域，选择最靠前的")
+            candidates = enhanced_detections
+
+        # 步骤2: 在候选中选择最可能的教师
+        # 综合考虑位置（y坐标）和大小（bbox面积）
+        # 优先级：位置权重60%，大小权重40%
+        def teacher_score(detection):
+            # y坐标归一化（越小越好，所以用1减去）
+            y_normalized = 1 - (detection['center'][1] / frame_height)
+            # bbox面积归一化
+            max_area = max(d['bbox_area'] for d in candidates)
+            area_normalized = detection['bbox_area'] / max_area if max_area > 0 else 0
+            # 加权评分
+            return 0.6 * y_normalized + 0.4 * area_normalized
+
+        teacher = max(candidates, key=teacher_score)
+
+        logger.debug(f"选中教师: y={teacher['center'][1]:.1f}, area={teacher['bbox_area']:.0f}, "
+                    f"候选人数={len(candidates)}, 总检测={len(detections)}")
+
+        return teacher
+
     def _get_spatial_region(self, center_x: float, center_y: float, frame_width: int, frame_height: int) -> str:
         """
         根据中心点坐标确定空间区域
-        
+
         Args:
             center_x: 中心点x坐标
             center_y: 中心点y坐标
             frame_width: 帧宽度
             frame_height: 帧高度
-            
+
         Returns:
             空间区域名称
         """
@@ -189,16 +245,14 @@ class VideoFeatureExtractor:
                     class_filter=["person"]
                 )
 
-                for detection in detections:
-                    class_name = detection["class_name"]
-                    confidence = detection["confidence"]
-                    bbox = detection["bbox"]
-                    center = detection["center"]
+                # ✨ 新逻辑：从所有检测中选出最可能的教师
+                teacher_detection = self._select_teacher_from_detections(detections, height)
 
-                    # 只处理person类别
-                    if class_name != "person":
-                        logger.debug("非人物目标，跳过")
-                        continue
+                if teacher_detection:
+                    class_name = teacher_detection["class_name"]
+                    confidence = teacher_detection["confidence"]
+                    bbox = teacher_detection["bbox"]
+                    center = teacher_detection["center"]
 
                     # 姿态估计
                     pose_result = self.pose_estimator.estimate_pose(curr_frame)
@@ -210,7 +264,7 @@ class VideoFeatureExtractor:
                         # 动作识别
                         action_name, action_confidence = self.action_recognizer.recognize_action(pose_keypoints)
 
-                        # 更新动作序列
+                        # 更新动作序列（只记录教师）
                         action_info = {
                             "frame": frame_count,
                             "time": frame_count / fps,
@@ -247,7 +301,7 @@ class VideoFeatureExtractor:
                         if VIDEO_CONFIG['enable_visualization'] and self.visualization_manager is not None:
                             vis_frame = self.visualization_manager.draw_detection_and_pose(
                                 curr_frame,
-                                detection,
+                                teacher_detection,  # ← 使用teacher_detection
                                 pose_result,
                                 action_name,
                                 action_confidence,
@@ -255,9 +309,9 @@ class VideoFeatureExtractor:
                             )
                             self.visualization_manager.save_frame(vis_frame, frame_count)
                     else:
-                        # 没有姿态信息，使用默认动作
+                        # 没有姿态信息，标记为未知动作
                         action_name = "unknown"
-                        action_confidence = 0.5
+                        action_confidence = 0.0
 
                         action_info = {
                             "frame": frame_count,
@@ -275,7 +329,7 @@ class VideoFeatureExtractor:
                         if VIDEO_CONFIG['enable_visualization'] and self.visualization_manager is not None:
                             vis_frame = self.visualization_manager.draw_detection_and_pose(
                                 curr_frame,
-                                detection,
+                                teacher_detection,  # ← 使用teacher_detection
                                 pose_result,
                                 action_name,
                                 action_confidence,
@@ -309,6 +363,10 @@ class VideoFeatureExtractor:
         if total_actions > 0:
             for action, count in features["action_counts"].items():
                 features["action_frequency"][action] = count / total_actions
+
+        # 兼容字段：behavior_frequency / behavior_counts
+        features["behavior_frequency"] = dict(features["action_frequency"])
+        features["behavior_counts"] = dict(features["action_counts"])
         
         return features
     

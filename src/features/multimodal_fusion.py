@@ -33,12 +33,20 @@ class MultimodalFeatureFusion:
             "video_features": video_features,
             "audio_features": audio_features,
             "text_features": text_features,
-            "teaching_style": {
-                "lecturing": 0.0,
-                "guiding": 0.0,
-                "interactive": 0.0,
-                "demonstrative": 0.0
+            "video": video_features,
+            "audio": audio_features,
+            "text": text_features,
+            "fusion": {
+                "teaching_style_metrics": {},
+                "interaction_level": 0.0,
+                "explanation_clarity": 0.0,
+                "emotional_engagement": 0.0,
+                "logical_structure": 0.0,
+                "interaction_score": 0.0,
+                "clarity_score": 0.0,
+                "engagement_level": 0.0
             },
+            "teaching_style": {},
             "engagement_level": 0.0,
             "interaction_score": 0.0,
             "clarity_score": 0.0,
@@ -48,13 +56,13 @@ class MultimodalFeatureFusion:
         try:
             # 计算教学风格指标
             self._calculate_teaching_style(fused_features)
-            
+
             # 计算互动水平
             self._calculate_interaction_score(fused_features)
-            
+
             # 计算讲解清晰度
             self._calculate_clarity_score(fused_features)
-            
+
             # 计算参与度
             self._calculate_engagement_level(fused_features)
             
@@ -79,65 +87,92 @@ class MultimodalFeatureFusion:
         audio_features = fused_features["audio_features"]
         text_features = fused_features["text_features"]
         
-        # 初始化风格分数
-        lecturing = 0.0
-        guiding = 0.0
-        interactive = 0.0
-        demonstrative = 0.0
-        
-        # 基于视频特征的风格分析
-        action_counts = video_features.get("action_counts", {})
         action_frequency = video_features.get("action_frequency", {})
-        
-        # lecturing: 站立、讲解
-        if action_frequency.get("standing", 0) > 0.5:
-            lecturing += 0.5
-        
-        # guiding: 指向、引导
-        if action_frequency.get("pointing", 0) > 0.2:
-            guiding += 0.4
-        
-        # interactive: 手势、互动
-        if action_frequency.get("gesturing", 0) > 0.3:
-            interactive += 0.4
-        
-        # demonstrative: 书写、演示
-        if action_frequency.get("writing", 0) > 0.2:
-            demonstrative += 0.4
-        
-        # 基于音频特征的风格分析
-        audio_duration = audio_features.get("audio_duration", 0)
-        voice_activity = audio_features.get("voice_activity", [])
-        
-        if voice_activity:
-            speaking_ratio = sum(voice_activity) / len(voice_activity)
-            if speaking_ratio > 0.8:
-                lecturing += 0.3
-            elif speaking_ratio > 0.5:
-                interactive += 0.2
-        
-        # 基于文本特征的风格分析
-        word_count = text_features.get("word_count", 0)
-        if word_count > 500:
-            lecturing += 0.2
-        elif word_count > 200:
-            guiding += 0.2
-        
-        # 归一化分数
-        total = lecturing + guiding + interactive + demonstrative
-        if total > 0:
-            lecturing /= total
-            guiding /= total
-            interactive /= total
-            demonstrative /= total
-        
-        # 更新教学风格
-        fused_features["teaching_style"] = {
-            "lecturing": float(lecturing),
-            "guiding": float(guiding),
-            "interactive": float(interactive),
-            "demonstrative": float(demonstrative)
+        gesture = action_frequency.get("gesturing", 0.0)
+        pointing = action_frequency.get("pointing", 0.0)
+        writing = action_frequency.get("writing", 0.0)
+        standing = action_frequency.get("standing", 0.0)
+
+        speaking_ratio = self._extract_speaking_ratio(audio_features)
+        speech_rate = audio_features.get("speech_rate", 0.0)
+        silence_ratio = audio_features.get("silence_ratio", 1.0)
+        pitch_variation = audio_features.get("pitch_variation", 0.0)
+        emotion_scores = audio_features.get("emotion_scores", {})
+
+        question_frequency = text_features.get("question_frequency", 0.0)
+        vocabulary_richness = text_features.get("vocabulary_richness", 0.0)
+        sentence_complexity = text_features.get("sentence_complexity", 0.0)
+        keyword_density = text_features.get("keyword_density", {})
+        logical_indicators = text_features.get("logical_indicators", {})
+
+        interaction_level = self._clamp01(
+            0.4 * self._clamp01(question_frequency) +
+            0.3 * gesture +
+            0.2 * pointing +
+            0.1 * (1.0 - abs(speaking_ratio - 0.6))
+        )
+
+        explanation_clarity = self._clamp01(
+            0.4 * self._bell_score(speech_rate, 150.0, 60.0) +
+            0.3 * self._volume_stability(audio_features) +
+            0.3 * self._sentence_clarity(text_features)
+        )
+
+        logical_structure = self._clamp01(
+            0.6 * self._clamp01(sum(logical_indicators.values())) +
+            0.4 * self._clamp01(sentence_complexity)
+        )
+
+        emotional_engagement = self._clamp01(
+            0.6 * (emotion_scores.get("happy", 0.0) + emotion_scores.get("surprise", 0.0)) +
+            0.2 * gesture +
+            0.2 * self._clamp01(pitch_variation)
+        )
+
+        teaching_style_metrics = {
+            "lecturing": self._clamp01(
+                0.4 * standing +
+                0.3 * self._bell_score(speech_rate, 150.0, 60.0) +
+                0.3 * self._clamp01(speaking_ratio)
+            ),
+            "guiding": self._clamp01(
+                0.4 * self._clamp01(question_frequency) +
+                0.3 * interaction_level +
+                0.3 * pointing
+            ),
+            "interactive": self._clamp01(
+                0.5 * interaction_level +
+                0.3 * gesture +
+                0.2 * self._clamp01(1.0 - silence_ratio)
+            ),
+            "logical": self._clamp01(
+                0.5 * logical_structure +
+                0.3 * vocabulary_richness +
+                0.2 * sentence_complexity
+            ),
+            "problem_driven": self._clamp01(
+                0.4 * self._clamp01(question_frequency) +
+                0.4 * keyword_density.get("problem", 0.0) +
+                0.2 * logical_structure
+            ),
+            "emotional": self._clamp01(
+                0.6 * emotional_engagement +
+                0.2 * gesture +
+                0.2 * self._clamp01(pitch_variation)
+            ),
+            "patient": self._clamp01(
+                0.5 * silence_ratio +
+                0.3 * self._bell_score(speech_rate, 110.0, 50.0) +
+                0.2 * self._clamp01(1.0 - pitch_variation)
+            )
         }
+
+        fused_features["teaching_style"] = teaching_style_metrics
+        fused_features["fusion"]["teaching_style_metrics"] = teaching_style_metrics
+        fused_features["fusion"]["interaction_level"] = interaction_level
+        fused_features["fusion"]["explanation_clarity"] = explanation_clarity
+        fused_features["fusion"]["logical_structure"] = logical_structure
+        fused_features["fusion"]["emotional_engagement"] = emotional_engagement
     
     def _calculate_interaction_score(self, fused_features: Dict):
         """
@@ -149,26 +184,17 @@ class MultimodalFeatureFusion:
         video_features = fused_features["video_features"]
         audio_features = fused_features["audio_features"]
         
-        interaction_score = 0.0
-        
-        # 基于动作的互动分析
         action_frequency = video_features.get("action_frequency", {})
-        
-        # 手势和指向动作增加互动分数
-        interaction_score += action_frequency.get("gesturing", 0) * 0.4
-        interaction_score += action_frequency.get("pointing", 0) * 0.3
-        
-        # 基于音频的互动分析
-        voice_activity = audio_features.get("voice_activity", [])
-        if voice_activity:
-            speaking_ratio = sum(voice_activity) / len(voice_activity)
-            # 适中的说话比例（不是一直说）表示可能有互动
-            if 0.5 < speaking_ratio < 0.8:
-                interaction_score += 0.3
-        
-        # 归一化分数
-        interaction_score = min(interaction_score, 1.0)
+        speaking_ratio = self._extract_speaking_ratio(audio_features)
+
+        interaction_score = self._clamp01(
+            0.4 * action_frequency.get("gesturing", 0.0) +
+            0.3 * action_frequency.get("pointing", 0.0) +
+            0.3 * (1.0 - abs(speaking_ratio - 0.6))
+        )
+
         fused_features["interaction_score"] = float(interaction_score)
+        fused_features["fusion"]["interaction_score"] = float(interaction_score)
     
     def _calculate_clarity_score(self, fused_features: Dict):
         """
@@ -180,29 +206,14 @@ class MultimodalFeatureFusion:
         audio_features = fused_features["audio_features"]
         text_features = fused_features["text_features"]
         
-        clarity_score = 0.5  # 默认清晰度
-        
-        # 基于音频的清晰度分析
-        volume = audio_features.get("volume", [])
-        if volume:
-            avg_volume = np.mean(volume)
-            # 适中的音量表示清晰度较高
-            if 0.05 < avg_volume < 0.2:
-                clarity_score += 0.3
-        
-        # 基于文本的清晰度分析
-        word_count = text_features.get("word_count", 0)
-        sentence_count = text_features.get("sentence_count", 0)
-        
-        if sentence_count > 0:
-            avg_words_per_sentence = word_count / sentence_count
-            # 适中的句子长度表示清晰度较高
-            if 10 < avg_words_per_sentence < 20:
-                clarity_score += 0.2
-        
-        # 归一化分数
-        clarity_score = min(clarity_score, 1.0)
+        speech_rate = audio_features.get("speech_rate", 0.0)
+        clarity_score = self._clamp01(
+            0.4 * self._bell_score(speech_rate, 150.0, 60.0) +
+            0.3 * self._volume_stability(audio_features) +
+            0.3 * self._sentence_clarity(text_features)
+        )
         fused_features["clarity_score"] = float(clarity_score)
+        fused_features["fusion"]["clarity_score"] = float(clarity_score)
     
     def _calculate_engagement_level(self, fused_features: Dict):
         """
@@ -214,32 +225,22 @@ class MultimodalFeatureFusion:
         video_features = fused_features["video_features"]
         audio_features = fused_features["audio_features"]
         
-        engagement_level = 0.0
-        
-        # 基于视频特征的参与度分析
         motion_energy = video_features.get("motion_energy", [])
-        if motion_energy:
-            avg_motion = np.mean(motion_energy)
-            # 适当的运动表示较高的参与度
-            if avg_motion > 0.01:
-                engagement_level += 0.4
-        
+        avg_motion = np.mean(motion_energy) if motion_energy else 0.0
+        motion_score = float(np.tanh(avg_motion * 50.0))
+
         action_frequency = video_features.get("action_frequency", {})
-        # 手势和书写动作增加参与度
-        engagement_level += action_frequency.get("gesturing", 0) * 0.3
-        engagement_level += action_frequency.get("writing", 0) * 0.3
-        
-        # 基于音频特征的参与度分析
-        pitch = audio_features.get("pitch", [])
-        if pitch:
-            avg_pitch = np.mean(pitch)
-            # 适当的语调变化表示较高的参与度
-            if 100 < avg_pitch < 300:
-                engagement_level += 0.2
-        
-        # 归一化分数
-        engagement_level = min(engagement_level, 1.0)
+        pitch_variation = audio_features.get("pitch_variation", 0.0)
+
+        engagement_level = self._clamp01(
+            0.4 * motion_score +
+            0.3 * action_frequency.get("gesturing", 0.0) +
+            0.2 * action_frequency.get("writing", 0.0) +
+            0.1 * self._clamp01(pitch_variation)
+        )
+
         fused_features["engagement_level"] = float(engagement_level)
+        fused_features["fusion"]["engagement_level"] = float(engagement_level)
     
     def _generate_fusion_vector(self, fused_features: Dict):
         """
@@ -278,14 +279,56 @@ class MultimodalFeatureFusion:
         
         # 添加教学风格特征
         teaching_style = fused_features["teaching_style"]
-        fusion_vector.append(teaching_style["lecturing"])
-        fusion_vector.append(teaching_style["guiding"])
-        fusion_vector.append(teaching_style["interactive"])
-        fusion_vector.append(teaching_style["demonstrative"])
-        
+        for key in ["lecturing", "guiding", "interactive", "logical", "problem_driven", "emotional", "patient"]:
+            fusion_vector.append(teaching_style.get(key, 0.0))
+
         # 添加互动和清晰度分数
-        fusion_vector.append(fused_features["interaction_score"])
-        fusion_vector.append(fused_features["clarity_score"])
-        fusion_vector.append(fused_features["engagement_level"])
+        fusion_vector.append(fused_features["fusion"]["interaction_level"])
+        fusion_vector.append(fused_features["fusion"]["explanation_clarity"])
+        fusion_vector.append(fused_features["fusion"]["logical_structure"])
+        fusion_vector.append(fused_features["fusion"]["emotional_engagement"])
+        fusion_vector.append(fused_features["fusion"]["engagement_level"])
         
         fused_features["fusion_vector"] = fusion_vector
+
+    @staticmethod
+    def _clamp01(value: float) -> float:
+        return max(0.0, min(1.0, float(value)))
+
+    @staticmethod
+    def _bell_score(value: float, center: float, width: float) -> float:
+        if width <= 0:
+            return 0.0
+        return float(np.exp(-((value - center) / width) ** 2))
+
+    @staticmethod
+    def _extract_speaking_ratio(audio_features: Dict) -> float:
+        if audio_features.get("voice_activity"):
+            return float(np.mean(audio_features["voice_activity"]))
+        silence_ratio = audio_features.get("silence_ratio", None)
+        if silence_ratio is not None:
+            return float(1.0 - silence_ratio)
+        return 0.0
+
+    @staticmethod
+    def _volume_stability(audio_features: Dict) -> float:
+        stats = audio_features.get("volume_statistics", {})
+        mean_val = stats.get("mean", None)
+        std_val = stats.get("std", None)
+        if mean_val is None or std_val is None:
+            volume = audio_features.get("volume", [])
+            if not volume:
+                return 0.0
+            mean_val = float(np.mean(volume))
+            std_val = float(np.std(volume))
+        variation = std_val / (mean_val + 1e-6)
+        return max(0.0, min(1.0, 1.0 - variation))
+
+    @staticmethod
+    def _sentence_clarity(text_features: Dict) -> float:
+        word_count = text_features.get("word_count", 0)
+        sentence_count = text_features.get("sentence_count", 0)
+        if sentence_count <= 0:
+            return 0.0
+        avg_words = word_count / sentence_count
+        return float(np.exp(-((avg_words - 15.0) / 7.0) ** 2))

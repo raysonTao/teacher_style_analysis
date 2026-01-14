@@ -6,6 +6,7 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 import torch
+from datetime import datetime
 
 import sys
 import os
@@ -46,6 +47,7 @@ class StyleClassifier:
         """
         self.mode = mode
         self.dl_inference = None
+        self.model_source = 'unknown'
 
         # 初始化规则系统模型（始终初始化，作为备用）
         self._init_model()
@@ -115,7 +117,7 @@ class StyleClassifier:
         status = {
             'mode': self.mode,
             'rule_model_loaded': self.model is not None,
-            'rule_model_type': 'pretrained' if os.path.exists(MODEL_CONFIG['cmat_model_path']) else 'mock',
+            'rule_model_type': self.model_source,
             'lambda_weight': self.model.get('lambda_weight', 0.5) if self.model else 0.5,
             'status': 'ready'
         }
@@ -134,34 +136,37 @@ class StyleClassifier:
         """初始化风格分类模型"""
         try:
             logger.info("初始化风格分类模型...")
-            
-            # 这里我们模拟CMAT模型（Combined Multi-modal Attention-based Teaching style model）
-            # 实际使用时，这里应该加载预训练的XGBoost或RandomForest模型
-            
+
+            default_model = self._build_default_rule_model()
+
             # 检查是否有预训练模型
             if os.path.exists(MODEL_CONFIG['cmat_model_path']):
                 with open(MODEL_CONFIG['cmat_model_path'], 'rb') as f:
                     self.model = pickle.load(f)
-                logger.info("预训练模型加载成功")
+
+                if not isinstance(self.model, dict) or 'rule_weights' not in self.model:
+                    raise ValueError("CMAT模型格式无效")
+
+                # 如果模型内容与默认规则完全一致，标记为启发式而非预训练
+                if self._is_default_model(self.model, default_model):
+                    logger.warning("检测到规则模型为默认配置，结果仅为启发式输出")
+                    self.model_source = 'heuristic'
+                else:
+                    logger.info("预训练模型加载成功")
+                    self.model_source = 'pretrained'
             else:
-                # 创建模拟模型
-                self.model = self._create_mock_model()
-                logger.info("创建模拟模型成功")
-                
-                # 保存模拟模型
-                os.makedirs(os.path.dirname(MODEL_CONFIG['cmat_model_path']), exist_ok=True)
-                with open(MODEL_CONFIG['cmat_model_path'], 'wb') as f:
-                    pickle.dump(self.model, f)
-                logger.info(f"模拟模型已保存到: {MODEL_CONFIG['cmat_model_path']}")
-                
+                logger.warning("未找到预训练CMAT模型，使用规则配置作为回退")
+                self.model = default_model
+                self.model_source = 'heuristic'
+
         except Exception as e:
             logger.error(f"模型初始化失败: {e}")
-            self.model = self._create_mock_model()
+            self.model = self._build_default_rule_model()
+            self.model_source = 'heuristic'
     
-    def _create_mock_model(self) -> Dict:
-        """创建模拟的CMAT模型"""
-        # 模拟模型包含规则驱动层和机器学习层的参数
-        mock_model = {
+    def _build_default_rule_model(self) -> Dict:
+        """创建默认规则模型（启发式参数）"""
+        rule_model = {
             'rule_weights': {
                 'lecturing': {'speech_rate': 0.3, 'silence_ratio': -0.4, 'interaction_level': -0.5},
                 'guiding': {'question_frequency': 0.5, 'interaction_level': 0.3, 'gesturing': 0.2},
@@ -184,7 +189,32 @@ class StyleClassifier:
             },
             'lambda_weight': SYSTEM_CONFIG['lambda_weight']
         }
-        return mock_model
+        return rule_model
+
+    def _is_default_model(self, model: Dict, default_model: Dict) -> bool:
+        """判断模型是否为默认规则配置"""
+        try:
+            return (
+                model.get('rule_weights') == default_model.get('rule_weights') and
+                model.get('ml_params') == default_model.get('ml_params') and
+                model.get('lambda_weight') == default_model.get('lambda_weight')
+            )
+        except Exception:
+            return False
+
+    @staticmethod
+    def _clamp01(value: float) -> float:
+        return max(0.0, min(1.0, float(value)))
+
+    @staticmethod
+    def _sigmoid(value: float) -> float:
+        return 1.0 / (1.0 + np.exp(-value))
+
+    @staticmethod
+    def _bell_score(value: float, center: float, width: float) -> float:
+        if width <= 0:
+            return 0.0
+        return float(np.exp(-((value - center) / width) ** 2))
     
     def _apply_rules(self, features: Dict) -> Dict:
         """
@@ -208,10 +238,10 @@ class StyleClassifier:
         rule_weights = self.model['rule_weights']
         
         # 提取需要的特征
-        fusion = features.get('fusion', {})
-        audio = features.get('audio', {})
-        video = features.get('video', {})
-        text = features.get('text', {})
+        fusion = features.get('fusion', features.get('fused_features', {}).get('fusion', {}))
+        audio = features.get('audio', features.get('audio_features', {}))
+        video = features.get('video', features.get('video_features', {}))
+        text = features.get('text', features.get('text_features', {}))
         
         # 计算规则驱动的输出
         for style, weights in rule_weights.items():
@@ -239,7 +269,8 @@ class StyleClassifier:
                 elif feature_name == 'question_frequency':
                     feature_value = text.get('question_frequency', 0.0) * 10  # 放大效应
                 elif feature_name == 'gesturing':
-                    feature_value = video.get('behavior_frequency', {}).get('gesturing', 0.0)
+                    frequency = video.get('behavior_frequency', video.get('action_frequency', {}))
+                    feature_value = frequency.get('gesturing', 0.0)
                 elif feature_name == 'logical_indicators':
                     feature_value = sum(text.get('logical_indicators', {}).values()) * 10
                 elif feature_name == 'vocabulary_richness':
@@ -284,7 +315,7 @@ class StyleClassifier:
         """
         ml_output = {}
         feature_importance = self.model['ml_params']['feature_importance']
-        fusion = features.get('fusion', {})
+        fusion = features.get('fusion', features.get('fused_features', {}).get('fusion', {}))
 
         # 计算各风格的机器学习分数
         style_metrics = fusion.get('teaching_style_metrics', {})
@@ -323,7 +354,7 @@ class StyleClassifier:
                 'confidence': dl_result['confidence'],
                 'method': 'deep_learning',
                 'timestamp': {
-                    'analysis_time': '2024-11-12T23:30:00Z'  # 模拟时间戳
+                    'analysis_time': datetime.utcnow().isoformat(timespec='seconds') + 'Z'
                 }
             }
 
@@ -438,7 +469,7 @@ class StyleClassifier:
                     'confidence': (dl_result['confidence'] + self._calculate_confidence(rule_final)) / 2,
                     'method': 'hybrid',
                     'timestamp': {
-                        'analysis_time': '2024-11-12T23:30:00Z'
+                        'analysis_time': datetime.utcnow().isoformat(timespec='seconds') + 'Z'
                     }
                 }
 
@@ -498,7 +529,7 @@ class StyleClassifier:
             'confidence': self._calculate_confidence(final_output),
             'method': 'rule',
             'timestamp': {
-                'analysis_time': '2024-11-12T23:30:00Z'  # 模拟时间戳
+                'analysis_time': datetime.utcnow().isoformat(timespec='seconds') + 'Z'
             }
         }
 
@@ -528,12 +559,47 @@ class StyleClassifier:
         Returns:
             规则驱动层输出
         """
-        # 创建测试用的规则输出
+        raw_data = raw_data or {}
+        vector = np.asarray(features).reshape(-1)
+
+        # 基于向量统计量构建基础分数
+        mean_val = float(np.mean(vector)) if vector.size else 0.0
+        std_val = float(np.std(vector)) if vector.size else 0.0
+        max_val = float(np.max(vector)) if vector.size else 0.0
+        min_val = float(np.min(vector)) if vector.size else 0.0
+        energy = float(np.mean(vector ** 2)) if vector.size else 0.0
+
+        analytical_score = self._sigmoid(mean_val + std_val)
+        interactive_score = self._sigmoid(std_val + (max_val - mean_val))
+        authoritative_score = self._sigmoid(energy - std_val)
+        supportive_score = self._sigmoid(1.0 - abs(mean_val - 0.5))
+
+        # 融入原始多模态信号（如果提供）
+        video = raw_data.get('video_features', raw_data.get('video', {}))
+        audio = raw_data.get('audio_features', raw_data.get('audio', {}))
+        text = raw_data.get('text_features', raw_data.get('text', {}))
+
+        gesture = video.get('behavior_frequency', video.get('action_frequency', {})).get('gesturing', 0.0)
+        pointing = video.get('behavior_frequency', video.get('action_frequency', {})).get('pointing', 0.0)
+        speech_rate = audio.get('speech_rate', 0.0)
+        sentiment = text.get('sentiment_score', text.get('sentiment', {}).get('score', 0.5))
+        question_frequency = text.get('question_frequency', 0.0)
+
+        interactive_boost = self._clamp01(0.6 * gesture + 0.4 * pointing)
+        authoritative_boost = self._bell_score(speech_rate, 150.0, 60.0)
+        supportive_boost = self._clamp01(0.5 + (sentiment - 0.5) * 0.5)
+        analytical_boost = self._clamp01(1.0 - question_frequency)
+
+        analytical_score = self._clamp01(0.7 * analytical_score + 0.3 * analytical_boost)
+        interactive_score = self._clamp01(0.7 * interactive_score + 0.3 * interactive_boost)
+        authoritative_score = self._clamp01(0.7 * authoritative_score + 0.3 * authoritative_boost)
+        supportive_score = self._clamp01(0.7 * supportive_score + 0.3 * supportive_boost)
+
         return {
-            'analytical_score': 0.7,
-            'interactive_score': 0.8,
-            'authoritative_score': 0.5,
-            'supportive_score': 0.6
+            'analytical_score': analytical_score,
+            'interactive_score': interactive_score,
+            'authoritative_score': authoritative_score,
+            'supportive_score': supportive_score
         }
     
     def apply_ml_layer(self, features: np.ndarray) -> np.ndarray:
@@ -546,8 +612,18 @@ class StyleClassifier:
         Returns:
             机器学习层输出
         """
-        # 模拟ML模型输出
-        return np.random.rand(1, 4)  # 返回4种风格的分数
+        vector = np.asarray(features).reshape(-1)
+        if vector.size == 0:
+            return np.zeros((1, 4))
+
+        segments = np.array_split(vector, 4)
+        raw_scores = np.array([np.mean(seg) if seg.size else 0.0 for seg in segments], dtype=float)
+
+        # 使用softmax归一化以避免随机输出
+        exp_scores = np.exp(raw_scores - np.max(raw_scores))
+        norm_scores = exp_scores / (np.sum(exp_scores) + 1e-8)
+
+        return norm_scores.reshape(1, 4)
     
     def fuse_outputs(self, rule_results: Dict, ml_results: np.ndarray) -> Dict:
         """
@@ -560,12 +636,12 @@ class StyleClassifier:
         Returns:
             融合后的结果
         """
-        # 简化融合逻辑
         fused = {}
-        for style in ['analytical', 'interactive', 'authoritative', 'supportive']:
-            rule_score = rule_results.get(f'{style}_score', 0.5)
-            ml_score = ml_results[0][0] if ml_results.size > 0 else 0.5  # 简化处理
-            fused[style] = (rule_score + ml_score) / 2
+        style_order = ['analytical', 'interactive', 'authoritative', 'supportive']
+        for idx, style in enumerate(style_order):
+            rule_score = rule_results.get(f'{style}_score', 0.0)
+            ml_score = float(ml_results[0][idx]) if ml_results.size > 0 else 0.0
+            fused[style] = self._clamp01((rule_score + ml_score) / 2)
         
         # 确定主导风格
         dominant_style = max(fused.items(), key=lambda x: x[1])[0]
@@ -583,12 +659,24 @@ class StyleClassifier:
         Returns:
             特征贡献度
         """
-        # 模拟特征贡献度
+        vector = np.asarray(features).reshape(-1)
         contributions = {}
-        for style in ['analytical', 'interactive', 'authoritative', 'supportive']:
-            contributions[style] = {
-                i: np.random.rand() for i in range(min(5, features.shape[1]))
-            }
+        if vector.size == 0:
+            for style in ['analytical', 'interactive', 'authoritative', 'supportive']:
+                contributions[style] = {}
+            return contributions
+
+        segments = np.array_split(np.arange(vector.size), 4)
+        for style, indices in zip(['analytical', 'interactive', 'authoritative', 'supportive'], segments):
+            if indices.size == 0:
+                contributions[style] = {}
+                continue
+
+            segment_values = np.abs(vector[indices])
+            top_idx = indices[np.argsort(segment_values)[-5:]][::-1]
+            total = np.sum(segment_values) + 1e-8
+            contributions[style] = {int(i): float(vector[i] / total) for i in top_idx}
+
         return contributions
     
     def explain_prediction(self, classification_result: Dict, feature_contributions: Dict) -> Dict:

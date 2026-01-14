@@ -85,14 +85,24 @@ class FeatureExtractor:
                 except Exception as e:
                     logger.warning(f"删除临时音频文件失败: {e}")
             else:
-                logger.warning("无法提取音频，使用默认音频特征")
-                audio_features = self.audio_extractor.extract_features(" ")
+                logger.warning("无法提取音频，跳过音频特征提取")
+                audio_features = {
+                    "transcription": "",
+                    "audio_duration": 0.0,
+                    "voice_activity": [],
+                    "error": "音频提取失败"
+                }
 
         except Exception as e:
             logger.error(f"音频处理失败: {e}")
             import traceback
             traceback.print_exc()
-            audio_features = self.audio_extractor.extract_features(" ")
+            audio_features = {
+                "transcription": "",
+                "audio_duration": 0.0,
+                "voice_activity": [],
+                "error": f"音频处理失败: {e}"
+            }
 
         logger.info("音频特征提取完成")
 
@@ -111,6 +121,15 @@ class FeatureExtractor:
         )
         logger.info("多模态特征融合完成")
 
+        # 兼容结构：封装fused_features字段
+        self.features["fused_features"] = {
+            "video": self.features.get("video", video_features),
+            "audio": self.features.get("audio", audio_features),
+            "text": self.features.get("text", text_features),
+            "fusion": self.features.get("fusion", {}),
+            "fusion_vector": self.features.get("fusion_vector", None)
+        }
+
         # 添加视频元信息
         self.features["video_path"] = video_path
         self.features["video_name"] = os.path.basename(video_path)
@@ -124,7 +143,7 @@ class FeatureExtractor:
                     "keypoints_sequence": []  # 如果需要可以添加
                 },
                 "motion_analysis": {
-                    "average_motion_energy": video_features.get("average_motion_energy", 0.0),
+                    "average_motion_energy": video_features.get("avg_motion_energy", 0.0),
                     "motion_sequence": []  # 如果需要可以添加
                 },
                 "spatial_distribution": video_features.get("spatial_distribution", {}),
@@ -134,9 +153,12 @@ class FeatureExtractor:
                     "voice_activity_ratio": audio_features.get("voice_activity_ratio", 0.0)
                 },
                 "text": {
-                    "bert_embedding": text_features.get("bert_embedding", []),
-                    "sentiment_analysis": text_features.get("sentiment_analysis", {}),
-                    "text_statistics": text_features.get("text_statistics", {})
+                    "bert_embedding": text_features.get("embedding", []),
+                    "sentiment_analysis": text_features.get("sentiment", {}),
+                    "text_statistics": {
+                        "sentence_count": text_features.get("sentence_count", 0),
+                        "word_count": text_features.get("word_count", 0)
+                    }
                 },
                 "transcription": transcription,
                 "metadata": {
@@ -183,6 +205,20 @@ class FeatureExtractor:
             文本特征字典
         """
         return self.text_extractor.extract_features(text)
+
+    def fuse_multimodal_features(self, video_features: Dict, audio_features: Dict, text_features: Dict) -> Dict:
+        """
+        融合各模态特征（便于测试与外部调用）
+
+        Args:
+            video_features: 视频特征
+            audio_features: 音频特征
+            text_features: 文本特征
+
+        Returns:
+            融合后的特征字典
+        """
+        return self.multimodal_fusion.fuse_features(video_features, audio_features, text_features)
     
     def extract_and_save_features(self, video_path: str, output_path: Optional[str] = None) -> Dict:
         """
@@ -253,5 +289,3 @@ class FeatureExtractor:
 
 # 创建模块级实例
 feature_extractor = FeatureExtractor()
-
-

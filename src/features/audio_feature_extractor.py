@@ -109,11 +109,26 @@ class AudioFeatureExtractor:
                 "score": 0.0,
                 "label": "neutral"
             },
+            "sentiment_score": 0.0,
             "voice_activity": [],
-            "audio_duration": 0.0
+            "audio_duration": 0.0,
+            "speech_rate": 0.0,
+            "pitch_variation": 0.0,
+            "volume_level": 0.0,
+            "silence_ratio": 1.0,
+            "emotion_scores": {},
+            "volume_statistics": {},
+            "pitch_statistics": {},
+            "voice_activity_ratio": 0.0,
+            "error": None
         }
         
         try:
+            if not audio_path or not os.path.exists(audio_path):
+                features["error"] = f"音频文件不存在: {audio_path}"
+                logger.error(features["error"])
+                return features
+
             # 加载音频文件
             y, sr = librosa.load(audio_path, sr=None)
             features["audio_duration"] = len(y) / sr
@@ -121,6 +136,15 @@ class AudioFeatureExtractor:
             # 计算音量
             rms = librosa.feature.rms(y=y, frame_length=2048, hop_length=512)
             features["volume"] = rms[0].tolist()
+            if features["volume"]:
+                volume_array = np.array(features["volume"], dtype=float)
+                features["volume_level"] = float(np.mean(volume_array))
+                features["volume_statistics"] = {
+                    "mean": float(np.mean(volume_array)),
+                    "std": float(np.std(volume_array)),
+                    "min": float(np.min(volume_array)),
+                    "max": float(np.max(volume_array))
+                }
             
             # 计算语调
             try:
@@ -137,12 +161,40 @@ class AudioFeatureExtractor:
             except Exception as e:
                 logger.warning(f"语调计算失败: {e}")
                 features["pitch"] = [0.0] * len(features["volume"])
+
+            if features["pitch"]:
+                valid_pitch = [p for p in features["pitch"] if p > 0]
+                if valid_pitch:
+                    pitch_array = np.array(valid_pitch, dtype=float)
+                    pitch_std = float(np.std(pitch_array))
+                    features["pitch_variation"] = float(np.tanh(pitch_std / 50.0))
+                    features["pitch_statistics"] = {
+                        "mean": float(np.mean(pitch_array)),
+                        "std": pitch_std,
+                        "min": float(np.min(pitch_array)),
+                        "max": float(np.max(pitch_array))
+                    }
             
             # 语音活动检测
             energy = np.array(features["volume"])
-            threshold = np.mean(energy) * 0.5
-            voice_activity = [1 if e > threshold else 0 for e in energy]
-            features["voice_activity"] = voice_activity
+            if energy.size > 0:
+                intervals = librosa.effects.split(y, top_db=25)
+                frame_times = librosa.frames_to_time(
+                    np.arange(len(energy)), sr=sr, hop_length=512
+                )
+                active_mask = np.zeros_like(frame_times, dtype=bool)
+                for start, end in intervals:
+                    start_time = start / sr
+                    end_time = end / sr
+                    active_mask |= (frame_times >= start_time) & (frame_times <= end_time)
+                voice_activity = active_mask.astype(int).tolist()
+                features["voice_activity"] = voice_activity
+                features["voice_activity_ratio"] = float(np.mean(voice_activity))
+                features["silence_ratio"] = float(1.0 - features["voice_activity_ratio"])
+            else:
+                features["voice_activity"] = []
+                features["voice_activity_ratio"] = 0.0
+                features["silence_ratio"] = 1.0
             
             # 语音识别
             if WHISPER_AVAILABLE and self.whisper_model is not None:
@@ -174,30 +226,58 @@ class AudioFeatureExtractor:
                     logger.warning("Whisper模块不可用，跳过语音识别")
                 else:
                     logger.warning("Whisper模型未加载，跳过语音识别")
+
+            # 语速估计（字符/分钟）
+            if features["transcription"] and features["audio_duration"] > 0:
+                char_count = len(features["transcription"])
+                minutes = features["audio_duration"] / 60.0
+                features["speech_rate"] = float(char_count / minutes) if minutes > 0 else 0.0
             
-            # 模拟情绪分数（实际项目中可以使用专业的情绪分析模型）
-            avg_volume = np.mean(features["volume"])
-            if avg_volume > 0.1:
-                sentiment_score = 0.7
+            # 基于韵律特征估计情感强度（连续分数，避免固定阈值）
+            volume_std = float(np.std(features["volume"])) if features["volume"] else 0.0
+            volume_mean = float(np.mean(features["volume"])) if features["volume"] else 0.0
+            volume_variation = float(np.tanh(volume_std / (volume_mean + 1e-6)))
+            pitch_variation = features["pitch_variation"]
+            speaking_ratio = features["voice_activity_ratio"]
+
+            energy_score = self._clip01(0.5 * (pitch_variation + volume_variation))
+            raw_scores = {
+                "neutral": max(0.0, 1.0 - energy_score),
+                "happy": energy_score * (0.6 + 0.4 * speaking_ratio),
+                "sad": energy_score * (0.3 * (1.0 - speaking_ratio)),
+                "angry": energy_score * (0.2 + 0.2 * volume_variation),
+                "surprise": energy_score * 0.2 * (1.0 + pitch_variation)
+            }
+            total = sum(raw_scores.values()) or 1.0
+            features["emotion_scores"] = {k: float(v / total) for k, v in raw_scores.items()}
+
+            positive = features["emotion_scores"].get("happy", 0.0) + features["emotion_scores"].get("surprise", 0.0)
+            negative = features["emotion_scores"].get("sad", 0.0) + features["emotion_scores"].get("angry", 0.0)
+            sentiment_score = self._clip01(0.5 + 0.5 * (positive - negative))
+            if sentiment_score > 0.55:
                 sentiment_label = "positive"
-            elif avg_volume < 0.05:
-                sentiment_score = 0.3
+            elif sentiment_score < 0.45:
                 sentiment_label = "negative"
             else:
-                sentiment_score = 0.5
                 sentiment_label = "neutral"
-            
+
             features["sentiment"] = {
                 "score": sentiment_score,
                 "label": sentiment_label
             }
+            features["sentiment_score"] = sentiment_score
             
         except Exception as e:
             logger.error(f"音频特征提取失败: {e}")
             import traceback
             traceback.print_exc()
+            features["error"] = str(e)
         
         return features
+
+    @staticmethod
+    def _clip01(value: float) -> float:
+        return max(0.0, min(1.0, float(value)))
     
     def extract_audio_from_video(self, video_path: str) -> str:
         """

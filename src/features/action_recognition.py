@@ -93,43 +93,63 @@ class PoseActionRecognizer:
             left_wrist_relative_y = left_wrist[1] - left_shoulder[1]
             right_wrist_relative_y = right_wrist[1] - right_shoulder[1]
             
-            # 初始化动作和置信度
-            action_name = 'standing'
-            confidence = 0.7  # 默认置信度
-            
-            # 1. 检测walking（膝盖弯曲角度变化）
-            if (left_knee_angle < 140 or right_knee_angle < 140) and \
-               (left_knee_angle > 70 or right_knee_angle > 70):
-                action_name = 'walking'
-                confidence = 0.8
-            
-            # 2. 检测writing（一只手在胸前区域，手肘弯曲）
-            elif (left_elbow_angle < 90 and right_elbow_angle > 150 and \
-                  abs(left_wrist_relative_y) < 0.2 and left_wrist_relative_x < 0.1) or \
-                 (right_elbow_angle < 90 and left_elbow_angle > 150 and \
-                  abs(right_wrist_relative_y) < 0.2 and right_wrist_relative_x > 0.1):
-                action_name = 'writing'
-                confidence = 0.85
-            
-            # 3. 检测gesturing（手臂抬起，手肘弯曲）
-            elif (left_elbow_angle < 120 and left_wrist[1] < left_shoulder[1] and \
-                  abs(left_wrist_relative_x) > 0.1) or \
-                 (right_elbow_angle < 120 and right_wrist[1] < right_shoulder[1] and \
-                  abs(right_wrist_relative_x) > 0.1):
-                action_name = 'gesturing'
-                confidence = 0.8
-            
-            # 4. 检测pointing（一只手臂伸直，手指指向某个方向）
-            elif (left_elbow_angle > 160 and abs(left_wrist_relative_x) > 0.3) or \
-                 (right_elbow_angle > 160 and abs(right_wrist_relative_x) > 0.3):
-                action_name = 'pointing'
-                confidence = 0.75
-            
-            # 5. 其他情况默认standing
-            else:
-                action_name = 'standing'
-                confidence = 0.7
-            
+            # 计算动作评分（连续评分避免硬阈值）
+            def score_center(value: float, center: float, width: float) -> float:
+                if width <= 0:
+                    return 0.0
+                return float(np.exp(-((value - center) / width) ** 2))
+
+            def score_range(value: float, low: float, high: float) -> float:
+                if low >= high:
+                    return 0.0
+                return float(np.clip((value - low) / (high - low), 0.0, 1.0))
+
+            knee_flex = max(
+                score_center(left_knee_angle, 110.0, 40.0),
+                score_center(right_knee_angle, 110.0, 40.0)
+            )
+            knee_straight = min(
+                score_center(left_knee_angle, 175.0, 20.0),
+                score_center(right_knee_angle, 175.0, 20.0)
+            )
+
+            left_elbow_bent = score_center(left_elbow_angle, 70.0, 35.0)
+            right_elbow_bent = score_center(right_elbow_angle, 70.0, 35.0)
+            left_elbow_straight = score_center(left_elbow_angle, 175.0, 20.0)
+            right_elbow_straight = score_center(right_elbow_angle, 175.0, 20.0)
+
+            left_wrist_raise = score_range(left_shoulder[1] - left_wrist[1], 0.05, 0.4)
+            right_wrist_raise = score_range(right_shoulder[1] - right_wrist[1], 0.05, 0.4)
+            left_wrist_extend = score_range(abs(left_wrist_relative_x), 0.1, 0.5)
+            right_wrist_extend = score_range(abs(right_wrist_relative_x), 0.1, 0.5)
+
+            # 动作得分
+            walking_score = knee_flex * score_range(abs(left_knee_angle - right_knee_angle), 5.0, 40.0)
+            writing_score = max(
+                left_elbow_bent * (1.0 - left_wrist_extend),
+                right_elbow_bent * (1.0 - right_wrist_extend)
+            )
+            gesturing_score = max(
+                left_elbow_bent * left_wrist_raise * left_wrist_extend,
+                right_elbow_bent * right_wrist_raise * right_wrist_extend
+            )
+            pointing_score = max(
+                left_elbow_straight * left_wrist_extend,
+                right_elbow_straight * right_wrist_extend
+            )
+            standing_score = knee_straight * score_center((left_elbow_angle + right_elbow_angle) / 2, 170.0, 25.0)
+
+            scores = {
+                "walking": walking_score,
+                "writing": writing_score,
+                "gesturing": gesturing_score,
+                "pointing": pointing_score,
+                "standing": standing_score
+            }
+
+            action_name = max(scores.items(), key=lambda x: x[1])[0]
+            confidence = float(np.clip(scores[action_name], 0.0, 1.0))
+
             return action_name, confidence
             
         except Exception as e:

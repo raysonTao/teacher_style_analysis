@@ -152,9 +152,9 @@ class VLMStyleAnnotator:
                     logger.info(f"等待 {self.retry_delay} 秒后重试...")
                     time.sleep(self.retry_delay)
                 else:
-                    logger.error("达到最大重试次数，返回默认结果")
+                    logger.error("达到最大重试次数，返回错误结果")
                     return {
-                        'style': '理论讲授型',
+                        'style': None,
                         'confidence': 0.0,
                         'reasoning': f'标注失败: {str(e)}',
                         'error': True
@@ -286,14 +286,13 @@ class VLMStyleAnnotator:
             if 'style' not in result:
                 raise ValueError("缺少 'style' 字段")
             if 'confidence' not in result:
-                result['confidence'] = 0.7  # 默认置信度
+                result['confidence'] = 0.0
             if 'reasoning' not in result:
                 result['reasoning'] = "未提供理由"
 
             # 确保 style 是有效的
             if result['style'] not in self.TEACHING_STYLES:
-                logger.warning(f"无效的风格: {result['style']}, 使用默认值")
-                result['style'] = '理论讲授型'
+                raise ValueError(f"无效的风格: {result['style']}")
 
             # 确保 confidence 在 0-1 之间
             result['confidence'] = max(0.0, min(1.0, float(result['confidence'])))
@@ -304,10 +303,10 @@ class VLMStyleAnnotator:
             logger.error(f"解析响应失败: {str(e)}")
             logger.debug(f"原始响应: {response_text[:500]}")
 
-            # 返回默认结果
+            # 返回错误结果
             return {
-                'style': '理论讲授型',
-                'confidence': 0.5,
+                'style': None,
+                'confidence': 0.0,
                 'reasoning': f'解析失败: {str(e)}',
                 'error': True,
                 'raw_response': response_text[:200]

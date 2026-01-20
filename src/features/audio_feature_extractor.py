@@ -50,6 +50,11 @@ class AudioFeatureExtractor:
         try:
             logger.info("初始化Whisper模型...")
 
+            # 检测GPU可用性
+            import torch
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            logger.info(f"使用设备: {device}")
+
             # 设置Whisper缓存目录到项目内
             whisper_cache_dir = os.path.join(BASE_DIR, 'models', 'weights', 'whisper_cache')
             os.makedirs(whisper_cache_dir, exist_ok=True)
@@ -64,9 +69,9 @@ class AudioFeatureExtractor:
                 logger.info(f"找到本地Whisper模型: {local_model_path}")
                 logger.info(f"模型文件大小: {os.path.getsize(local_model_path) / (1024*1024):.2f} MB")
                 try:
-                    # 直接加载本地.pt文件
-                    self.whisper_model = whisper.load_model(local_model_path, device="cpu")
-                    logger.info(f"✓ Whisper模型加载成功（使用本地文件）")
+                    # 直接加载本地.pt文件，自动检测设备
+                    self.whisper_model = whisper.load_model(local_model_path, device=device)
+                    logger.info(f"✓ Whisper模型加载成功（使用本地文件，设备: {device}）")
                     return
                 except Exception as e:
                     logger.warning(f"本地模型加载失败: {e}，尝试其他方式...")
@@ -76,8 +81,8 @@ class AudioFeatureExtractor:
             logger.info(f"尝试加载Whisper模型: {model_size}")
             logger.info(f"模型将缓存到: {whisper_cache_dir}")
 
-            self.whisper_model = whisper.load_model(model_size, device="cpu", download_root=whisper_cache_dir)
-            logger.info(f"✓ Whisper模型加载成功（模型: {model_size}）")
+            self.whisper_model = whisper.load_model(model_size, device=device, download_root=whisper_cache_dir)
+            logger.info(f"✓ Whisper模型加载成功（模型: {model_size}，设备: {device}）")
 
             # 保存模型信息以便下次快速加载
             model_info_path = os.path.join(whisper_cache_dir, f"{model_size}_info.txt")
@@ -201,12 +206,18 @@ class AudioFeatureExtractor:
                 logger.info("使用Whisper模型进行语音识别（完整音频）...")
                 logger.info(f"音频时长: {features.get('audio_duration', 0):.2f} 秒")
                 try:
+                    # 检测设备类型，GPU支持fp16加速
+                    import torch
+                    use_fp16 = torch.cuda.is_available()
+                    device_type = "CUDA" if use_fp16 else "CPU"
+                    logger.info(f"使用设备: {device_type}, FP16: {use_fp16}")
+
                     # 使用transcribe方法处理完整音频（自动分段）
                     result = whisper.transcribe(
                         self.whisper_model,
                         audio_path,
                         language="zh",
-                        fp16=False,  # CPU不支持fp16
+                        fp16=use_fp16,  # GPU支持fp16，CPU不支持
                         verbose=False  # 关闭详细输出
                     )
 

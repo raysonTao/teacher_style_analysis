@@ -66,12 +66,13 @@ class MediaPipePoseEstimator:
             traceback.print_exc()
             self.pose = None
     
-    def estimate_pose(self, frame: np.ndarray) -> Dict:
+    def estimate_pose(self, frame: np.ndarray, bbox: Optional[List[float]] = None) -> Dict:
         """
         对输入帧进行姿态估计
 
         Args:
             frame: 输入的视频帧
+            bbox: 可选的目标区域 [x1, y1, x2, y2]，用于聚焦教师区域
 
         Returns:
             姿态估计结果，包含关键点和置信度
@@ -86,8 +87,20 @@ class MediaPipePoseEstimator:
         try:
             import mediapipe as mp
 
+            # 可选裁剪教师区域
+            h, w = frame.shape[:2]
+            crop_offset = (0, 0)
+            crop_frame = frame
+            if bbox is not None:
+                x1, y1, x2, y2 = [int(max(0, v)) for v in bbox]
+                x2 = min(x2, w)
+                y2 = min(y2, h)
+                if x2 > x1 and y2 > y1:
+                    crop_frame = frame[y1:y2, x1:x2]
+                    crop_offset = (x1, y1)
+
             # 转换颜色空间从BGR到RGB
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            rgb_frame = cv2.cvtColor(crop_frame, cv2.COLOR_BGR2RGB)
 
             # 创建MediaPipe Image对象
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
@@ -114,8 +127,14 @@ class MediaPipePoseEstimator:
 
             for landmark in results.pose_landmarks[0]:
                 # 获取关键点坐标和置信度
-                x = landmark.x
-                y = landmark.y
+                # 还原到原始坐标系
+                if crop_frame is not frame:
+                    crop_h, crop_w = crop_frame.shape[:2]
+                    x = (crop_offset[0] + landmark.x * crop_w) / w
+                    y = (crop_offset[1] + landmark.y * crop_h) / h
+                else:
+                    x = landmark.x
+                    y = landmark.y
                 z = landmark.z
                 visibility = landmark.visibility if hasattr(landmark, 'visibility') else landmark.presence
 

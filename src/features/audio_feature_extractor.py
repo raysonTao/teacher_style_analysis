@@ -38,13 +38,25 @@ class AudioFeatureExtractor:
         # 确保模型只加载一次
         if not hasattr(self, 'whisper_model'):
             self.whisper_model = None
+            self.wav2vec2_model = None
+            self.wav2vec2_emotion_model = None
+            self.wav2vec2_processor = None
+            self.wav2vec2_device = None
             self._load_model()
 
     def _load_model(self):
-        """加载Whisper模型，支持自动下载和本地缓存"""
+        """加载模型（Whisper与Wav2Vec2），支持自动下载和本地缓存"""
         if not WHISPER_AVAILABLE:
             logger.warning("Whisper模块不可用，跳过模型加载")
             self.whisper_model = None
+            # Whisper不可用也不影响Wav2Vec2
+
+        self._load_whisper_model()
+        self._load_wav2vec2_models()
+
+    def _load_whisper_model(self):
+        """加载Whisper模型"""
+        if not WHISPER_AVAILABLE:
             return
 
         try:
@@ -95,6 +107,44 @@ class AudioFeatureExtractor:
             import traceback
             traceback.print_exc()
             self.whisper_model = None
+
+    def _load_wav2vec2_models(self):
+        """加载Wav2Vec2模型（声学表征 + 情感识别）"""
+        try:
+            from transformers import AutoFeatureExtractor, AutoModel, AutoModelForAudioClassification
+            import torch
+
+            logger.info("初始化Wav2Vec2模型...")
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            self.wav2vec2_device = device
+
+            cache_dir = AUDIO_CONFIG.get('wav2vec2_cache_dir')
+            base_name = AUDIO_CONFIG.get('wav2vec2_model_name')
+            emotion_name = AUDIO_CONFIG.get('wav2vec2_emotion_model_name')
+
+            self.wav2vec2_processor = AutoFeatureExtractor.from_pretrained(
+                base_name,
+                cache_dir=cache_dir
+            )
+            self.wav2vec2_model = AutoModel.from_pretrained(
+                base_name,
+                cache_dir=cache_dir
+            ).to(device).eval()
+
+            self.wav2vec2_emotion_model = AutoModelForAudioClassification.from_pretrained(
+                emotion_name,
+                cache_dir=cache_dir
+            ).to(device).eval()
+
+            logger.info(f"Wav2Vec2表征模型加载成功: {base_name}")
+            logger.info(f"Wav2Vec2情感模型加载成功: {emotion_name}")
+
+        except Exception as e:
+            logger.warning(f"Wav2Vec2模型加载失败: {e}")
+            self.wav2vec2_model = None
+            self.wav2vec2_emotion_model = None
+            self.wav2vec2_processor = None
+            self.wav2vec2_device = None
     
     def extract_features(self, audio_path: str) -> Dict:
         """
@@ -110,6 +160,10 @@ class AudioFeatureExtractor:
             "volume": [],
             "pitch": [],
             "transcription": "",
+            "wav2vec2_embedding": [],
+            "wav2vec2_embedding_dim": 0,
+            "emotion_label": "neutral",
+            "emotion_logits": [],
             "sentiment": {
                 "score": 0.0,
                 "label": "neutral"
@@ -125,6 +179,7 @@ class AudioFeatureExtractor:
             "volume_statistics": {},
             "pitch_statistics": {},
             "voice_activity_ratio": 0.0,
+            "audio_representation": {},
             "error": None
         }
         
@@ -201,6 +256,16 @@ class AudioFeatureExtractor:
                 features["voice_activity_ratio"] = 0.0
                 features["silence_ratio"] = 1.0
             
+            # Wav2Vec2深度声学表征与情感识别
+            wav2vec2_inputs = self._prepare_wav2vec2_inputs(y, sr)
+            if wav2vec2_inputs is not None:
+                wav2vec2_outputs = self._extract_wav2vec2_representation(wav2vec2_inputs)
+                features.update(wav2vec2_outputs.get("representation", {}))
+                emotion_outputs = self._extract_wav2vec2_emotion(wav2vec2_inputs)
+                features.update(emotion_outputs)
+            else:
+                features["error"] = "Wav2Vec2输入准备失败"
+
             # 语音识别
             if WHISPER_AVAILABLE and self.whisper_model is not None:
                 logger.info("使用Whisper模型进行语音识别（完整音频）...")
@@ -244,39 +309,23 @@ class AudioFeatureExtractor:
                 minutes = features["audio_duration"] / 60.0
                 features["speech_rate"] = float(char_count / minutes) if minutes > 0 else 0.0
             
-            # 基于韵律特征估计情感强度（连续分数，避免固定阈值）
-            volume_std = float(np.std(features["volume"])) if features["volume"] else 0.0
-            volume_mean = float(np.mean(features["volume"])) if features["volume"] else 0.0
-            volume_variation = float(np.tanh(volume_std / (volume_mean + 1e-6)))
-            pitch_variation = features["pitch_variation"]
-            speaking_ratio = features["voice_activity_ratio"]
-
-            energy_score = self._clip01(0.5 * (pitch_variation + volume_variation))
-            raw_scores = {
-                "neutral": max(0.0, 1.0 - energy_score),
-                "happy": energy_score * (0.6 + 0.4 * speaking_ratio),
-                "sad": energy_score * (0.3 * (1.0 - speaking_ratio)),
-                "angry": energy_score * (0.2 + 0.2 * volume_variation),
-                "surprise": energy_score * 0.2 * (1.0 + pitch_variation)
-            }
-            total = sum(raw_scores.values()) or 1.0
-            features["emotion_scores"] = {k: float(v / total) for k, v in raw_scores.items()}
-
-            positive = features["emotion_scores"].get("happy", 0.0) + features["emotion_scores"].get("surprise", 0.0)
-            negative = features["emotion_scores"].get("sad", 0.0) + features["emotion_scores"].get("angry", 0.0)
-            sentiment_score = self._clip01(0.5 + 0.5 * (positive - negative))
-            if sentiment_score > 0.55:
-                sentiment_label = "positive"
-            elif sentiment_score < 0.45:
-                sentiment_label = "negative"
+            # 基于Wav2Vec2情感结果估计情感强度（不使用韵律降级）
+            if features["emotion_scores"]:
+                sentiment_score, sentiment_label = self._derive_sentiment(features["emotion_scores"])
+                features["sentiment"] = {
+                    "score": sentiment_score,
+                    "label": sentiment_label
+                }
+                features["sentiment_score"] = sentiment_score
             else:
-                sentiment_label = "neutral"
-
-            features["sentiment"] = {
-                "score": sentiment_score,
-                "label": sentiment_label
-            }
-            features["sentiment_score"] = sentiment_score
+                features["emotion_label"] = "unknown"
+                features["sentiment"] = {
+                    "score": None,
+                    "label": "unknown"
+                }
+                features["sentiment_score"] = None
+                if features["error"] is None:
+                    features["error"] = "Wav2Vec2情感模型未产生结果"
             
         except Exception as e:
             logger.error(f"音频特征提取失败: {e}")
@@ -289,6 +338,118 @@ class AudioFeatureExtractor:
     @staticmethod
     def _clip01(value: float) -> float:
         return max(0.0, min(1.0, float(value)))
+
+    def _prepare_wav2vec2_inputs(self, y: np.ndarray, sr: int):
+        """准备Wav2Vec2输入，处理采样率和格式"""
+        if self.wav2vec2_processor is None:
+            return None
+
+        try:
+            target_sr = AUDIO_CONFIG.get('sample_rate', 16000)
+            if sr != target_sr:
+                y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
+            if y.ndim > 1:
+                y = np.mean(y, axis=0)
+
+            inputs = self.wav2vec2_processor(
+                y,
+                sampling_rate=target_sr,
+                return_tensors="pt",
+                padding=True
+            )
+            return inputs
+        except Exception as e:
+            logger.warning(f"Wav2Vec2输入准备失败: {e}")
+            return None
+
+    def _extract_wav2vec2_representation(self, inputs) -> Dict:
+        """提取Wav2Vec2深度声学表征"""
+        if self.wav2vec2_model is None:
+            return {}
+
+        try:
+            import torch
+            device = self.wav2vec2_device or torch.device('cpu')
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+
+            with torch.no_grad():
+                outputs = self.wav2vec2_model(**inputs)
+
+            hidden_states = outputs.last_hidden_state
+            pooled = hidden_states.mean(dim=1).squeeze(0).cpu().numpy()
+            embedding = pooled.tolist()
+
+            return {
+                "representation": {
+                    "wav2vec2_embedding": embedding,
+                    "wav2vec2_embedding_dim": len(embedding),
+                    "audio_representation": {
+                        "wav2vec2_mean": embedding
+                    }
+                }
+            }
+        except Exception as e:
+            logger.warning(f"Wav2Vec2表征提取失败: {e}")
+            return {}
+
+    def _extract_wav2vec2_emotion(self, inputs) -> Dict:
+        """提取Wav2Vec2情感识别结果"""
+        if self.wav2vec2_emotion_model is None:
+            return {}
+
+        try:
+            import torch
+            import torch.nn.functional as F
+
+            device = self.wav2vec2_device or torch.device('cpu')
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+
+            with torch.no_grad():
+                outputs = self.wav2vec2_emotion_model(**inputs)
+
+            logits = outputs.logits
+            probs = F.softmax(logits, dim=-1).squeeze(0).cpu().numpy()
+
+            id2label = getattr(self.wav2vec2_emotion_model.config, "id2label", None) or {}
+            label_map = AUDIO_CONFIG.get('emotion_label_map', {})
+
+            scores = {}
+            for idx, score in enumerate(probs.tolist()):
+                raw_label = id2label.get(idx, f"emotion_{idx}")
+                mapped_label = label_map.get(raw_label, raw_label)
+                scores[mapped_label] = float(score)
+
+            if scores:
+                emotion_label = max(scores.items(), key=lambda x: x[1])[0]
+            else:
+                emotion_label = "neutral"
+
+            return {
+                "emotion_scores": scores,
+                "emotion_label": emotion_label,
+                "emotion_logits": logits.squeeze(0).cpu().tolist()
+            }
+        except Exception as e:
+            logger.warning(f"Wav2Vec2情感识别失败: {e}")
+            return {}
+
+    def _derive_sentiment(self, emotion_scores: Dict) -> Tuple[float, str]:
+        """将情感分布映射为极性分数"""
+        positive_labels = {"happy", "surprise", "excited", "joy"}
+        negative_labels = {"sad", "angry", "fear", "disgust"}
+
+        positive = sum(score for label, score in emotion_scores.items() if label in positive_labels)
+        negative = sum(score for label, score in emotion_scores.items() if label in negative_labels)
+
+        sentiment_score = self._clip01(0.5 + 0.5 * (positive - negative))
+        if sentiment_score > 0.55:
+            sentiment_label = "positive"
+        elif sentiment_score < 0.45:
+            sentiment_label = "negative"
+        else:
+            sentiment_label = "neutral"
+
+        return sentiment_score, sentiment_label
     
     def extract_audio_from_video(self, video_path: str) -> str:
         """
@@ -324,4 +485,4 @@ class AudioFeatureExtractor:
     
     def is_loaded(self) -> bool:
         """检查模型是否已加载"""
-        return self.whisper_model is not None
+        return self.whisper_model is not None or self.wav2vec2_model is not None

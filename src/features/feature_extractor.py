@@ -140,21 +140,26 @@ class FeatureExtractor:
             self.features["raw_features"] = {
                 "pose_tracking": {
                     "action_sequence": video_features.get("action_sequence", []),
-                    "keypoints_sequence": []  # 如果需要可以添加
+                    "keypoints_sequence": video_features.get("keypoints_sequence", [])
                 },
                 "motion_analysis": {
                     "average_motion_energy": video_features.get("avg_motion_energy", 0.0),
                     "motion_sequence": []  # 如果需要可以添加
                 },
                 "spatial_distribution": video_features.get("spatial_distribution", {}),
+                "action_distribution": video_features.get("action_distribution", {}),
                 "audio": {
                     "volume_statistics": audio_features.get("volume_statistics", {}),
                     "pitch_statistics": audio_features.get("pitch_statistics", {}),
-                    "voice_activity_ratio": audio_features.get("voice_activity_ratio", 0.0)
+                    "voice_activity_ratio": audio_features.get("voice_activity_ratio", 0.0),
+                    "wav2vec2_embedding": audio_features.get("wav2vec2_embedding", []),
+                    "emotion_scores": audio_features.get("emotion_scores", {})
                 },
                 "text": {
                     "bert_embedding": text_features.get("embedding", []),
                     "sentiment_analysis": text_features.get("sentiment", {}),
+                    "dialogue_act": text_features.get("dialogue_act", ""),
+                    "dialogue_act_scores": text_features.get("dialogue_act_scores", {}),
                     "text_statistics": {
                         "sentence_count": text_features.get("sentence_count", 0),
                         "word_count": text_features.get("word_count", 0)

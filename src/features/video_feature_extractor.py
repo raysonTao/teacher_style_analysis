@@ -12,7 +12,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config.config import VIDEO_CONFIG, logger
 from .object_detection import YOLOObjectDetector
 from .pose_estimation import MediaPipePoseEstimator
-from .action_recognition import PoseActionRecognizer
+from .action_recognition import PoseActionRecognizer, STGCNActionRecognizer
+from .tracker import TeacherTracker
 from .visualization_utils import VisualizationManager
 
 class VideoFeatureExtractor:
@@ -34,13 +35,22 @@ class VideoFeatureExtractor:
             self.object_detector = YOLOObjectDetector()
             self.pose_estimator = MediaPipePoseEstimator()
             self.action_recognizer = PoseActionRecognizer()
+            self.stgcn_recognizer = STGCNActionRecognizer()
+            self.tracker = TeacherTracker()
 
             # 初始化特征变量
             self.action_sequence = []
             self.action_counts = defaultdict(int)
+            self.action_score_sums = defaultdict(float)
+            self.action_score_frames = 0
             self.pose_confidences = []
             self.motion_energy = []
             self.spatial_distribution = defaultdict(int)
+            self.keypoints_buffer = []
+            self.teacher_track_id = None
+            self.teacher_track_missing = 0
+            self.teacher_track_frames = 0
+            self.detection_frames = 0
 
             # 可视化管理器（延迟初始化）
             self.visualization_manager = None
@@ -127,6 +137,37 @@ class VideoFeatureExtractor:
 
         return teacher
 
+    def _select_teacher_from_tracks(self, tracks: List[Dict], frame_height: int) -> Optional[Dict]:
+        """从跟踪结果中选择教师轨迹"""
+        if not tracks:
+            return None
+
+        enhanced_tracks = []
+        for t in tracks:
+            bbox = t['bbox']
+            bbox_area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
+            center_y = (bbox[1] + bbox[3]) / 2
+            enhanced = t.copy()
+            enhanced['bbox_area'] = bbox_area
+            enhanced['center'] = [
+                (bbox[0] + bbox[2]) / 2,
+                center_y
+            ]
+            enhanced_tracks.append(enhanced)
+
+        student_threshold_y = frame_height * 0.75
+        candidates = [t for t in enhanced_tracks if t['center'][1] < student_threshold_y]
+        if not candidates:
+            candidates = enhanced_tracks
+
+        def teacher_score(track):
+            y_normalized = 1 - (track['center'][1] / frame_height)
+            max_area = max(t['bbox_area'] for t in candidates)
+            area_normalized = track['bbox_area'] / max_area if max_area > 0 else 0
+            return 0.6 * y_normalized + 0.4 * area_normalized
+
+        return max(candidates, key=teacher_score)
+
     def _get_spatial_region(self, center_x: float, center_y: float, frame_width: int, frame_height: int) -> str:
         """
         根据中心点坐标确定空间区域
@@ -181,10 +222,15 @@ class VideoFeatureExtractor:
             "action_sequence": [],
             "action_counts": defaultdict(int),
             "action_frequency": {},
+            "action_distribution": {},
+            "pose_estimation": [],
             "pose_confidences": [],
             "motion_energy": [],
             "avg_motion_energy": 0.0,
             "spatial_distribution": defaultdict(int),
+            "keypoints_sequence": [],
+            "teacher_track_id": None,
+            "track_continuity": 0.0,
             "video_duration": 0.0,
             "total_frames": 0,
             "visualization_output": None
@@ -245,26 +291,75 @@ class VideoFeatureExtractor:
                     class_filter=["person"]
                 )
 
-                # ✨ 新逻辑：从所有检测中选出最可能的教师
-                teacher_detection = self._select_teacher_from_detections(detections, height)
+                self.detection_frames += 1
 
-                if teacher_detection:
-                    class_name = teacher_detection["class_name"]
-                    confidence = teacher_detection["confidence"]
-                    bbox = teacher_detection["bbox"]
-                    center = teacher_detection["center"]
+                # DeepSORT跟踪
+                tracks = self.tracker.update(detections, curr_frame)
+                teacher_track = None
+                if self.teacher_track_id is not None:
+                    for t in tracks:
+                        if t.get('track_id') == self.teacher_track_id:
+                            teacher_track = t
+                            break
 
-                    # 姿态估计
-                    pose_result = self.pose_estimator.estimate_pose(curr_frame)
+                if teacher_track is None:
+                    teacher_track = self._select_teacher_from_tracks(tracks, height)
+                    if teacher_track:
+                        self.teacher_track_id = teacher_track.get('track_id')
+                        self.teacher_track_missing = 0
+
+                if teacher_track:
+                    self.teacher_track_frames += 1
+                    self.teacher_track_missing = 0
+                else:
+                    self.teacher_track_missing += 1
+                    if self.teacher_track_missing > VIDEO_CONFIG.get('teacher_track_patience', 45):
+                        self.teacher_track_id = None
+
+                if teacher_track:
+                    bbox = teacher_track["bbox"]
+                    center = teacher_track.get("center")
+                    if center is None:
+                        center = [
+                            (bbox[0] + bbox[2]) / 2,
+                            (bbox[1] + bbox[3]) / 2
+                        ]
+                    teacher_detection = {
+                        "class_name": teacher_track.get("class_name", "person"),
+                        "confidence": teacher_track.get("confidence", 0.0),
+                        "bbox": bbox,
+                        "center": center
+                    }
+
+                    # 姿态估计（聚焦教师区域）
+                    pose_result = self.pose_estimator.estimate_pose(curr_frame, bbox=bbox)
+
+                    action_name = "unknown"
+                    action_confidence = 0.0
+                    action_scores = {}
+                    action_source = "stgcn"
 
                     if pose_result["success"] and pose_result["keypoints"] is not None:
                         pose_keypoints = pose_result["keypoints"]
                         pose_confidence = pose_result["confidence"]
 
-                        # 动作识别
-                        action_name, action_confidence = self.action_recognizer.recognize_action(pose_keypoints)
+                        self.keypoints_buffer.append(pose_keypoints)
+                        features["keypoints_sequence"].append(pose_keypoints.tolist())
+                        features["pose_estimation"].append(pose_keypoints.tolist())
+                        max_buffer = VIDEO_CONFIG.get('stgcn_sequence_length', 32) * 2
+                        if len(self.keypoints_buffer) > max_buffer:
+                            self.keypoints_buffer = self.keypoints_buffer[-max_buffer:]
 
-                        # 更新动作序列（只记录教师）
+                        if (len(self.keypoints_buffer) >= VIDEO_CONFIG.get('stgcn_sequence_length', 32) and
+                                frame_count % VIDEO_CONFIG.get('stgcn_stride', 8) == 0):
+                            seq = np.stack(self.keypoints_buffer[-VIDEO_CONFIG.get('stgcn_sequence_length', 32):])
+                            action_name, action_confidence, action_scores = (
+                                self.stgcn_recognizer.recognize_action_sequence(seq)
+                            )
+                        else:
+                            action_source = "stgcn_unready"
+
+                        # 更新动作序列
                         action_info = {
                             "frame": frame_count,
                             "time": frame_count / fps,
@@ -272,7 +367,9 @@ class VideoFeatureExtractor:
                             "confidence": action_confidence,
                             "pose_confidence": pose_confidence,
                             "bbox": bbox,
-                            "center": center
+                            "center": center,
+                            "source": action_source,
+                            "action_scores": action_scores
                         }
 
                         self.action_sequence.append(action_info)
@@ -282,60 +379,51 @@ class VideoFeatureExtractor:
                         self.action_counts[action_name] += 1
                         features["action_counts"][action_name] += 1
 
+                        if action_scores:
+                            for key, value in action_scores.items():
+                                self.action_score_sums[key] += value
+                            self.action_score_frames += 1
+
                         # 记录姿态置信度
                         self.pose_confidences.append(pose_confidence)
                         features["pose_confidences"].append(pose_confidence)
-
-                        # 确定空间区域
-                        spatial_region = self._get_spatial_region(
-                            center[0] / width,  # 归一化x坐标
-                            center[1] / height,  # 归一化y坐标
-                            width,
-                            height
-                        )
-
-                        self.spatial_distribution[spatial_region] += 1
-                        features["spatial_distribution"][spatial_region] += 1
-
-                        # 可视化：绘制检测框和姿态信息
-                        if VIDEO_CONFIG['enable_visualization'] and self.visualization_manager is not None:
-                            vis_frame = self.visualization_manager.draw_detection_and_pose(
-                                curr_frame,
-                                teacher_detection,  # ← 使用teacher_detection
-                                pose_result,
-                                action_name,
-                                action_confidence,
-                                frame_count
-                            )
-                            self.visualization_manager.save_frame(vis_frame, frame_count)
                     else:
                         # 没有姿态信息，标记为未知动作
-                        action_name = "unknown"
-                        action_confidence = 0.0
-
                         action_info = {
                             "frame": frame_count,
                             "time": frame_count / fps,
                             "action": action_name,
                             "confidence": action_confidence,
                             "bbox": bbox,
-                            "center": center
+                            "center": center,
+                            "source": "none"
                         }
 
                         self.action_sequence.append(action_info)
                         features["action_sequence"].append(action_info)
 
-                        # 可视化：即使没有姿态也绘制检测框
-                        if VIDEO_CONFIG['enable_visualization'] and self.visualization_manager is not None:
-                            vis_frame = self.visualization_manager.draw_detection_and_pose(
-                                curr_frame,
-                                teacher_detection,  # ← 使用teacher_detection
-                                pose_result,
-                                action_name,
-                                action_confidence,
-                                frame_count
-                            )
-                            self.visualization_manager.save_frame(vis_frame, frame_count)
+                    # 确定空间区域
+                    spatial_region = self._get_spatial_region(
+                        center[0] / width,
+                        center[1] / height,
+                        width,
+                        height
+                    )
+
+                    self.spatial_distribution[spatial_region] += 1
+                    features["spatial_distribution"][spatial_region] += 1
+
+                    # 可视化：绘制检测框和姿态信息
+                    if VIDEO_CONFIG['enable_visualization'] and self.visualization_manager is not None:
+                        vis_frame = self.visualization_manager.draw_detection_and_pose(
+                            curr_frame,
+                            teacher_detection,
+                            pose_result,
+                            action_name,
+                            action_confidence,
+                            frame_count
+                        )
+                        self.visualization_manager.save_frame(vis_frame, frame_count)
             
             # 更新前一帧
             prev_frame = curr_frame
@@ -364,9 +452,32 @@ class VideoFeatureExtractor:
             for action, count in features["action_counts"].items():
                 features["action_frequency"][action] = count / total_actions
 
+        legacy_map = {
+            "gesturing": ["wave", "raise_hand_hold"],
+            "pointing": ["pointing"],
+            "writing": ["writing"],
+            "standing": ["standing"],
+            "walking": ["walking"]
+        }
+        for legacy_action, mapped in legacy_map.items():
+            if legacy_action not in features["action_frequency"]:
+                features["action_frequency"][legacy_action] = sum(
+                    features["action_frequency"].get(a, 0.0) for a in mapped
+                )
+
+        if self.action_score_frames > 0:
+            features["action_distribution"] = {
+                action: score / self.action_score_frames
+                for action, score in self.action_score_sums.items()
+            }
+
         # 兼容字段：behavior_frequency / behavior_counts
         features["behavior_frequency"] = dict(features["action_frequency"])
         features["behavior_counts"] = dict(features["action_counts"])
+
+        features["teacher_track_id"] = self.teacher_track_id
+        if self.detection_frames > 0:
+            features["track_continuity"] = self.teacher_track_frames / self.detection_frames
         
         return features
     
@@ -374,6 +485,13 @@ class VideoFeatureExtractor:
         """重置特征提取器状态"""
         self.action_sequence = []
         self.action_counts = defaultdict(int)
+        self.action_score_sums = defaultdict(float)
+        self.action_score_frames = 0
         self.pose_confidences = []
         self.motion_energy = []
         self.spatial_distribution = defaultdict(int)
+        self.keypoints_buffer = []
+        self.teacher_track_id = None
+        self.teacher_track_missing = 0
+        self.teacher_track_frames = 0
+        self.detection_frames = 0

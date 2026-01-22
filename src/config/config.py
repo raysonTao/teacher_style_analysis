@@ -92,6 +92,11 @@ MODEL_CONFIG = {
     'bert_model': 'bert-base-chinese',  # 文本特征提取模型
     'style_classifier_path': 'models/style_classifier.pth',  # 风格分类器模型
     'cmat_model_path': 'models/cmat_model.pkl',  # CMAT模型路径
+    'wav2vec2_model_name': 'facebook/wav2vec2-base-960h',  # 自监督声学表征模型
+    'wav2vec2_emotion_model_name': 'wav2vec2-base-emotion',  # 情感识别模型
+    'dialogue_act_model_name': 'bert-base-chinese',  # 对话行为识别模型
+    'stgcn_model_path': 'models/weights/stgcn_teacher_actions.pt',  # ST-GCN模型路径
+    'deepsort_model_path': 'models/weights/deepsort_osnet_x0_25.ckpt',  # DeepSORT外观模型
     # MediaPipe配置
     'mediapipe_model_complexity': 1,  # 模型复杂度 0, 1, 2
     'mediapipe_smooth_landmarks': True,  # 平滑关键点
@@ -124,7 +129,18 @@ VIDEO_CONFIG = {
     'keypoint_color': (0, 255, 0),  # 绿色关键点 (BGR)
     'keypoint_radius': 3,  # 关键点半径
     'skeleton_color': (0, 255, 255),  # 黄色骨架线 (BGR)
-    'skeleton_thickness': 2  # 骨架线粗细
+    'skeleton_thickness': 2,  # 骨架线粗细
+    # 跟踪与时序动作识别
+    'tracker_type': 'deepsort',
+    'tracker_max_age': 30,
+    'tracker_iou_threshold': 0.3,
+    'teacher_track_patience': 45,
+    'stgcn_sequence_length': 32,
+    'stgcn_stride': 8,
+    'stgcn_min_confidence': 0.4,
+    'stgcn_action_labels': [
+        'wave', 'raise_hand_hold', 'pointing', 'writing', 'standing', 'walking'
+    ]
 }
 
 # 动作配置
@@ -141,12 +157,25 @@ AUDIO_CONFIG = {
     'hop_length': 512,
     'n_mels': 128,
     'whisper_model_path': 'models/weights/medium.pt',  # Whisper模型路径
-    'whisper_model_size': 'medium'  # Whisper模型大小
+    'whisper_model_size': 'medium',  # Whisper模型大小
+    'wav2vec2_model_name': MODEL_CONFIG['wav2vec2_model_name'],
+    'wav2vec2_emotion_model_name': MODEL_CONFIG['wav2vec2_emotion_model_name'],
+    'wav2vec2_cache_dir': str(BASE_DIR / 'models' / 'weights' / 'huggingface'),
+    'emotion_label_map': {}
 }
 
 # 文本配置
 TEXT_CONFIG = {
-    'bert_model_name': 'bert-base-chinese'
+    'bert_model_name': 'bert-base-chinese',
+    'dialogue_act_model_name': MODEL_CONFIG['dialogue_act_model_name'],
+    'dialogue_act_labels': ['question', 'instruction', 'explanation', 'feedback'],
+    'dialogue_act_label_map': {
+        'question': '提问',
+        'instruction': '指令',
+        'explanation': '讲解',
+        'feedback': '反馈'
+    },
+    'max_length': 256
 }
 
 # 多模态融合配置
@@ -157,7 +186,10 @@ FUSION_CONFIG = {
         'audio': 0.3,
         'text': 0.3
     },
-    'normalization': True
+    'normalization': True,
+    'use_mman': True,
+    'mman_config': 'default',
+    'mman_checkpoint': 'checkpoints/best_model.pth'
 }
 
 # API配置

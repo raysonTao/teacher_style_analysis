@@ -31,13 +31,17 @@ class TextFeatureExtractor:
         if not hasattr(self, 'bert_model'):
             self.bert_model = None
             self.tokenizer = None
+            self.dialogue_act_model = None
+            self.dialogue_act_tokenizer = None
+            self.dialogue_act_device = None
             self._load_model()
 
     def _load_model(self):
-        """加载BERT模型"""
+        """加载BERT模型（语义表征 + 对话行为识别）"""
         try:
-            from transformers import BertTokenizer, BertModel
+            from transformers import BertTokenizer, BertModel, AutoModelForSequenceClassification
             import warnings
+            import torch
             
             logger.info("初始化BERT模型...")
             
@@ -56,10 +60,25 @@ class TextFeatureExtractor:
                 force_download=False,
                 ignore_mismatched_sizes=True
             )
+
+            # 对话行为识别模型
+            dialogue_act_name = TEXT_CONFIG.get('dialogue_act_model_name', TEXT_CONFIG['bert_model_name'])
+            self.dialogue_act_tokenizer = BertTokenizer.from_pretrained(
+                dialogue_act_name,
+                force_download=False
+            )
+            self.dialogue_act_model = AutoModelForSequenceClassification.from_pretrained(
+                dialogue_act_name,
+                force_download=False,
+                num_labels=len(TEXT_CONFIG.get('dialogue_act_labels', [])) or 4
+            )
+            self.dialogue_act_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            self.dialogue_act_model = self.dialogue_act_model.to(self.dialogue_act_device).eval()
             
             logger.info(f"BERT模型加载成功，名称: {TEXT_CONFIG['bert_model_name']}")
             logger.debug(f"分词器类型: {type(self.tokenizer)}")
             logger.debug(f"模型类型: {type(self.bert_model)}")
+            logger.info(f"对话行为模型加载成功，名称: {dialogue_act_name}")
             
         except Exception as e:
             logger.error(f"BERT模型加载失败: {e}")
@@ -67,6 +86,9 @@ class TextFeatureExtractor:
             traceback.print_exc()
             self.bert_model = None
             self.tokenizer = None
+            self.dialogue_act_model = None
+            self.dialogue_act_tokenizer = None
+            self.dialogue_act_device = None
     
     def extract_features(self, text: str) -> Dict:
         """
@@ -82,6 +104,10 @@ class TextFeatureExtractor:
             "text": text,
             "embedding": None,
             "semantic_features": None,
+            "dialogue_act": "unknown",
+            "dialogue_act_scores": {},
+            "dialogue_act_sequence": [],
+            "error": None,
             "sentiment": {
                 "score": 0.0,
                 "label": "neutral"
@@ -141,6 +167,14 @@ class TextFeatureExtractor:
                         logger.error(f"BERT嵌入提取失败: {e}")
                         import traceback
                         traceback.print_exc()
+
+            # 对话行为识别
+            dialogue_act, act_scores, act_sequence = self._recognize_dialogue_act(text)
+            features["dialogue_act"] = dialogue_act
+            features["dialogue_act_scores"] = act_scores
+            features["dialogue_act_sequence"] = act_sequence
+            if dialogue_act == "unknown" and features.get("error") is None:
+                features["error"] = "对话行为识别失败或模型未加载"
             
             # 情绪分析：基于情感词覆盖率计算连续分数
             positive_words = ["好", "棒", "优秀", "正确", "精彩", "清晰", "有效", "积极", "鼓励", "喜欢"]
@@ -235,3 +269,62 @@ class TextFeatureExtractor:
             处理后的文本特征
         """
         return self.extract_features(transcription)
+
+    def _split_sentences(self, text: str) -> List[str]:
+        """按标点切分句子"""
+        if not text:
+            return []
+        sentences = [s.strip() for s in re.split(r'[。！？!?]+', text) if s.strip()]
+        return sentences if sentences else [text.strip()]
+
+    def _recognize_dialogue_act(self, text: str) -> Tuple[str, Dict, List[Dict]]:
+        """基于BERT的对话行为识别（提问/指令/讲解/反馈）"""
+        labels = TEXT_CONFIG.get('dialogue_act_labels', ['question', 'instruction', 'explanation', 'feedback'])
+        label_map = TEXT_CONFIG.get('dialogue_act_label_map', {})
+        default_label = 'unknown'
+
+        if not text:
+            return label_map.get(default_label, default_label), {}, []
+
+        # 使用模型预测
+        if not self.dialogue_act_model or not self.dialogue_act_tokenizer:
+            logger.error("对话行为模型未加载，无法进行BERT识别")
+            return default_label, {}, []
+
+        try:
+            import torch
+            import torch.nn.functional as F
+            sentences = self._split_sentences(text)
+            scores_list = []
+            sequence = []
+
+            for sentence in sentences:
+                inputs = self.dialogue_act_tokenizer(
+                    sentence,
+                    return_tensors="pt",
+                    truncation=True,
+                    max_length=TEXT_CONFIG.get('max_length', 256)
+                )
+                inputs = {k: v.to(self.dialogue_act_device) for k, v in inputs.items()}
+                with torch.no_grad():
+                    outputs = self.dialogue_act_model(**inputs)
+                probs = F.softmax(outputs.logits, dim=-1).squeeze(0).cpu().numpy()
+                scores_list.append(probs)
+
+                best_idx = int(np.argmax(probs))
+                best_label = labels[best_idx] if best_idx < len(labels) else default_label
+                sequence.append({
+                    "text": sentence,
+                    "label": label_map.get(best_label, best_label),
+                    "score": float(probs[best_idx])
+                })
+
+            mean_scores = np.mean(scores_list, axis=0) if scores_list else np.zeros(len(labels))
+            act_scores = {label: float(mean_scores[i]) for i, label in enumerate(labels)}
+            best_idx = int(np.argmax(mean_scores)) if mean_scores.size > 0 else 0
+            best_label = labels[best_idx] if best_idx < len(labels) else default_label
+            return label_map.get(best_label, best_label), act_scores, sequence
+
+        except Exception as e:
+            logger.error(f"对话行为识别失败: {e}")
+            return default_label, {}, []

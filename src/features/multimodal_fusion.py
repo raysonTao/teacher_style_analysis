@@ -9,6 +9,85 @@ from collections import defaultdict
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.config import FUSION_CONFIG, logger
+from .feature_encoder import FeatureEncoder
+
+try:
+    from models.deep_learning.mman_model import create_model
+except Exception:
+    create_model = None
+
+
+class MMANFusionEngine:
+    """多模态注意力融合引擎"""
+
+    def __init__(self):
+        self.encoder = FeatureEncoder()
+        self.model = None
+        self.device = None
+        self.is_loaded = False
+        self._load_model()
+
+    def _load_model(self):
+        if not FUSION_CONFIG.get('use_mman', False) or create_model is None:
+            return
+
+        try:
+            import torch
+
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            self.model = create_model(FUSION_CONFIG.get('mman_config', 'default')).to(self.device).eval()
+
+            checkpoint_path = FUSION_CONFIG.get('mman_checkpoint')
+            if checkpoint_path and os.path.exists(checkpoint_path):
+                state = torch.load(checkpoint_path, map_location=self.device)
+                state_dict = state.get('model_state_dict', state)
+                self.model.load_state_dict(state_dict, strict=False)
+                self.is_loaded = True
+                logger.info(f"MMAN模型加载成功: {checkpoint_path}")
+            else:
+                logger.error("未找到MMAN检查点，无法启用多模态注意力融合")
+        except Exception as e:
+            logger.warning(f"MMAN模型加载失败: {e}")
+            self.model = None
+            self.is_loaded = False
+
+    def compute_weights(self, video_features: Dict, audio_features: Dict, text_features: Dict) -> Dict:
+        """计算模态权重"""
+        encoded = {
+            'video': self.encoder.encode_video_features(video_features),
+            'audio': self.encoder.encode_audio_features(audio_features),
+            'text': self.encoder.encode_text_features(text_features)
+        }
+
+        if not self.is_loaded or self.model is None:
+            logger.error("MMAN模型未加载，无法计算模态权重")
+            return None
+
+        try:
+            import torch
+
+            inputs = {
+                'video': torch.tensor(encoded['video'], dtype=torch.float32).unsqueeze(0).to(self.device),
+                'audio': torch.tensor(encoded['audio'], dtype=torch.float32).unsqueeze(0).to(self.device),
+                'text': torch.tensor(encoded['text'], dtype=torch.float32).unsqueeze(0).to(self.device)
+            }
+            with torch.no_grad():
+                outputs = self.model(inputs, return_attention=True)
+            attn = outputs.get('transformer_attention', [])
+            if attn:
+                last_layer = attn[-1]  # [batch, heads, seq, seq]
+                weights = last_layer.mean(dim=1).mean(dim=1).squeeze(0)
+                weights = weights / (weights.sum() + 1e-6)
+                return {
+                    'video': float(weights[0]),
+                    'audio': float(weights[1]),
+                    'text': float(weights[2])
+                }
+            logger.error("MMAN未返回注意力权重")
+            return None
+        except Exception as e:
+            logger.error(f"MMAN权重计算失败: {e}")
+            return None
 
 class MultimodalFeatureFusion:
     """多模态特征融合类，用于融合视频、音频和文本特征"""
@@ -16,6 +95,7 @@ class MultimodalFeatureFusion:
     def __init__(self):
         """初始化多模态特征融合器"""
         self.fusion_config = FUSION_CONFIG
+        self.mman_engine = MMANFusionEngine()
     
     def fuse_features(self, video_features: Dict, audio_features: Dict, text_features: Dict) -> Dict:
         """
@@ -44,7 +124,8 @@ class MultimodalFeatureFusion:
                 "logical_structure": 0.0,
                 "interaction_score": 0.0,
                 "clarity_score": 0.0,
-                "engagement_level": 0.0
+                "engagement_level": 0.0,
+                "modality_weights": {}
             },
             "teaching_style": {},
             "engagement_level": 0.0,
@@ -65,6 +146,12 @@ class MultimodalFeatureFusion:
 
             # 计算参与度
             self._calculate_engagement_level(fused_features)
+
+            # 计算多模态注意力权重
+            weights = self.mman_engine.compute_weights(video_features, audio_features, text_features)
+            fused_features["fusion"]["modality_weights"] = weights
+            if weights is None:
+                fused_features["fusion"]["error"] = "MMAN权重计算失败"
             
             # 生成融合向量
             self._generate_fusion_vector(fused_features)
@@ -100,6 +187,9 @@ class MultimodalFeatureFusion:
         emotion_scores = audio_features.get("emotion_scores", {})
 
         question_frequency = text_features.get("question_frequency", 0.0)
+        dialogue_act_scores = text_features.get("dialogue_act_scores", {})
+        if dialogue_act_scores:
+            question_frequency = max(question_frequency, dialogue_act_scores.get("question", 0.0))
         vocabulary_richness = text_features.get("vocabulary_richness", 0.0)
         sentence_complexity = text_features.get("sentence_complexity", 0.0)
         keyword_density = text_features.get("keyword_density", {})
@@ -250,32 +340,40 @@ class MultimodalFeatureFusion:
             fused_features: 融合特征字典
         """
         fusion_vector = []
+        weights = fused_features.get("fusion", {}).get("modality_weights")
+        if not weights:
+            fused_features["fusion_vector"] = None
+            return
+
+        video_weight = weights.get("video", 0.0)
+        audio_weight = weights.get("audio", 0.0)
+        text_weight = weights.get("text", 0.0)
         
         # 添加视频特征
         video_features = fused_features["video_features"]
-        fusion_vector.append(video_features.get("avg_motion_energy", 0.0))
+        fusion_vector.append(video_weight * video_features.get("avg_motion_energy", 0.0))
         
         # 添加动作频率特征
         action_frequency = video_features.get("action_frequency", {})
         for action in ["standing", "walking", "gesturing", "writing", "pointing"]:
-            fusion_vector.append(action_frequency.get(action, 0.0))
+            fusion_vector.append(video_weight * action_frequency.get(action, 0.0))
         
         # 添加音频特征
         audio_features = fused_features["audio_features"]
         if audio_features.get("volume", []):
-            fusion_vector.append(np.mean(audio_features["volume"]))
+            fusion_vector.append(audio_weight * np.mean(audio_features["volume"]))
         else:
             fusion_vector.append(0.0)
         
         if audio_features.get("pitch", []):
-            fusion_vector.append(np.mean(audio_features["pitch"]))
+            fusion_vector.append(audio_weight * np.mean(audio_features["pitch"]))
         else:
             fusion_vector.append(0.0)
         
         # 添加文本特征
         text_features = fused_features["text_features"]
-        fusion_vector.append(text_features.get("word_count", 0) / 100.0)  # 归一化
-        fusion_vector.append(text_features.get("sentence_count", 0) / 10.0)  # 归一化
+        fusion_vector.append(text_weight * (text_features.get("word_count", 0) / 100.0))
+        fusion_vector.append(text_weight * (text_features.get("sentence_count", 0) / 10.0))
         
         # 添加教学风格特征
         teaching_style = fused_features["teaching_style"]
@@ -288,6 +386,9 @@ class MultimodalFeatureFusion:
         fusion_vector.append(fused_features["fusion"]["logical_structure"])
         fusion_vector.append(fused_features["fusion"]["emotional_engagement"])
         fusion_vector.append(fused_features["fusion"]["engagement_level"])
+        fusion_vector.append(video_weight)
+        fusion_vector.append(audio_weight)
+        fusion_vector.append(text_weight)
         
         fused_features["fusion_vector"] = fusion_vector
 

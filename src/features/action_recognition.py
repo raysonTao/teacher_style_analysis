@@ -7,7 +7,12 @@ import numpy as np
 # 添加项目根目录到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.config import ACTION_CONFIG, logger
+from config.config import ACTION_CONFIG, VIDEO_CONFIG, MODEL_CONFIG, logger
+
+try:
+    from models.deep_learning.stgcn_model import STGCNModel
+except Exception:
+    STGCNModel = None
 
 class PoseActionRecognizer:
     """基于姿态的动作识别类，用于识别教师的动作"""
@@ -161,3 +166,92 @@ class PoseActionRecognizer:
     def get_action_config(self) -> Dict:
         """获取动作识别配置"""
         return self.action_config
+
+
+class STGCNActionRecognizer:
+    """基于ST-GCN的动作识别器"""
+
+    def __init__(self):
+        self.action_labels = VIDEO_CONFIG.get('stgcn_action_labels', [])
+        self.model = None
+        self.device = None
+        self._load_model()
+
+    def _load_model(self):
+        if STGCNModel is None:
+            logger.error("ST-GCN模型定义不可用，无法加载")
+            return
+
+        try:
+            import torch
+
+            model_path = MODEL_CONFIG.get('stgcn_model_path')
+            if not model_path or not os.path.exists(model_path):
+                logger.error("未找到ST-GCN模型权重，无法进行动作识别")
+                return
+
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            num_classes = max(len(self.action_labels), 1)
+            self.model = STGCNModel(num_class=num_classes).to(self.device).eval()
+
+            state = torch.load(model_path, map_location=self.device)
+            state_dict = state.get('state_dict', state)
+            self.model.load_state_dict(state_dict, strict=False)
+            logger.info(f"ST-GCN模型加载成功: {model_path}")
+        except Exception as e:
+            logger.error(f"ST-GCN模型加载失败: {e}")
+            self.model = None
+
+    def recognize_action_sequence(self, keypoints_sequence: np.ndarray) -> Tuple[str, float, Dict]:
+        """
+        基于关键点序列识别动作
+
+        Args:
+            keypoints_sequence: [T, V, C] 或 [T, V, 4]
+
+        Returns:
+            (动作名称, 置信度, 动作分布)
+        """
+        if self.model is None or keypoints_sequence is None:
+            return 'unknown', 0.0, {}
+
+        try:
+            import torch
+            import torch.nn.functional as F
+
+            sequence = np.array(keypoints_sequence, dtype=np.float32)
+            if sequence.ndim != 3:
+                return 'unknown', 0.0, {}
+
+            # 仅使用x,y维度
+            if sequence.shape[2] >= 2:
+                sequence = sequence[:, :, :2]
+            else:
+                return 'unknown', 0.0, {}
+
+            # 归一化到0-1范围
+            sequence = np.clip(sequence, 0.0, 1.0)
+
+            # 输入形状 [N, C, T, V]
+            sequence = np.transpose(sequence, (2, 0, 1))
+            tensor = torch.tensor(sequence, dtype=torch.float32).unsqueeze(0).to(self.device)
+
+            with torch.no_grad():
+                logits = self.model(tensor)
+                probs = F.softmax(logits, dim=-1).squeeze(0).cpu().numpy()
+
+            scores = {}
+            for idx, score in enumerate(probs.tolist()):
+                label = self.action_labels[idx] if idx < len(self.action_labels) else f"action_{idx}"
+                scores[label] = float(score)
+
+            if scores:
+                best_label, best_score = max(scores.items(), key=lambda x: x[1])
+            else:
+                best_label, best_score = 'unknown', 0.0
+
+            return best_label, float(best_score), scores
+
+        except Exception as e:
+            logger.warning(f"ST-GCN动作识别失败: {e}")
+            return 'unknown', 0.0, {}

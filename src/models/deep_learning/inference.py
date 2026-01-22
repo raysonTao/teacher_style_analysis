@@ -14,6 +14,7 @@ project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.models.deep_learning.mman_model import MMANModel, create_model
+from src.features.feature_encoder import FeatureEncoder
 from src.models.deep_learning.config import ModelConfig
 from src.config.config import logger
 
@@ -51,6 +52,7 @@ class DeepLearningInference:
         # 加载模型
         self.model = None
         self.is_loaded = False
+        self.encoder = FeatureEncoder()
         self._load_model()
 
     def _load_model(self):
@@ -104,80 +106,17 @@ class DeepLearningInference:
         Returns:
             模型输入格式的特征字典
         """
-        # 提取视频特征（20维）
-        video_features = []
-        video = features.get('video', {})
-        video_features.extend([
-            video.get('head_movement_frequency', 0.0),
-            video.get('body_movement_frequency', 0.0),
-            video.get('behavior_frequency', {}).get('writing', 0.0),
-            video.get('behavior_frequency', {}).get('gesturing', 0.0),
-            video.get('behavior_frequency', {}).get('pointing', 0.0),
-            video.get('behavior_frequency', {}).get('standing', 0.0),
-            video.get('behavior_frequency', {}).get('walking', 0.0),
-            video.get('eye_contact_score', 0.0),
-            video.get('facial_expression_scores', {}).get('neutral', 0.0),
-            video.get('facial_expression_scores', {}).get('happy', 0.0),
-            video.get('facial_expression_scores', {}).get('surprise', 0.0),
-            video.get('facial_expression_scores', {}).get('sad', 0.0),
-            video.get('facial_expression_scores', {}).get('angry', 0.0),
-            video.get('facial_expression_scores', {}).get('disgust', 0.0),
-            video.get('facial_expression_scores', {}).get('fear', 0.0),
-        ])
-        # 补足到20维
-        while len(video_features) < 20:
-            video_features.append(0.0)
-        video_features = video_features[:20]
+        raw_features = {
+            'video_features': features.get('video', features.get('video_features', {})),
+            'audio_features': features.get('audio', features.get('audio_features', {})),
+            'text_features': features.get('text', features.get('text_features', {}))
+        }
+        encoded = self.encoder.encode_all(raw_features)
 
-        # 提取音频特征（15维）
-        audio_features = []
-        audio = features.get('audio', {})
-        audio_features.extend([
-            audio.get('speech_rate', 0.0) / 200.0,  # 归一化
-            audio.get('volume_level', 0.0),
-            audio.get('pitch_variation', 0.0),
-            audio.get('silence_ratio', 0.0),
-            audio.get('emotion_scores', {}).get('neutral', 0.0),
-            audio.get('emotion_scores', {}).get('happy', 0.0),
-            audio.get('emotion_scores', {}).get('sad', 0.0),
-            audio.get('emotion_scores', {}).get('angry', 0.0),
-            audio.get('emotion_scores', {}).get('fear', 0.0),
-            audio.get('emotion_scores', {}).get('disgust', 0.0),
-            audio.get('emotion_scores', {}).get('surprise', 0.0),
-        ])
-        # 补足到15维
-        while len(audio_features) < 15:
-            audio_features.append(0.0)
-        audio_features = audio_features[:15]
-
-        # 提取文本特征（25维）
-        text_features = []
-        text = features.get('text', {})
-        text_features.extend([
-            text.get('vocabulary_richness', 0.0),
-            text.get('sentence_complexity', 0.0),
-            text.get('question_frequency', 0.0),
-            text.get('keyword_density', {}).get('definition', 0.0),
-            text.get('keyword_density', {}).get('example', 0.0),
-            text.get('keyword_density', {}).get('explanation', 0.0),
-            text.get('keyword_density', {}).get('summary', 0.0),
-            text.get('keyword_density', {}).get('question', 0.0),
-            text.get('logical_indicators', {}).get('causality', 0.0),
-            text.get('logical_indicators', {}).get('comparison', 0.0),
-            text.get('logical_indicators', {}).get('sequence', 0.0),
-            text.get('logical_indicators', {}).get('emphasis', 0.0),
-            text.get('sentiment_score', 0.0),
-        ])
-        # 补足到25维
-        while len(text_features) < 25:
-            text_features.append(0.0)
-        text_features = text_features[:25]
-
-        # 转换为tensor
         feature_tensors = {
-            'video': torch.tensor(video_features, dtype=torch.float32).unsqueeze(0),
-            'audio': torch.tensor(audio_features, dtype=torch.float32).unsqueeze(0),
-            'text': torch.tensor(text_features, dtype=torch.float32).unsqueeze(0)
+            'video': torch.tensor(encoded['video'], dtype=torch.float32).unsqueeze(0),
+            'audio': torch.tensor(encoded['audio'], dtype=torch.float32).unsqueeze(0),
+            'text': torch.tensor(encoded['text'], dtype=torch.float32).unsqueeze(0)
         }
 
         return feature_tensors

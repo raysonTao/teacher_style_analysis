@@ -15,6 +15,13 @@
 import numpy as np
 from typing import Dict, List, Any
 import logging
+import os
+import sys
+
+# 添加项目根目录到sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from config.config import VIDEO_CONFIG
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,20 +33,27 @@ class FeatureEncoder:
     def __init__(self):
         """初始化编码器"""
         # 动作类型映射
-        self.action_types = ['standing', 'walking', 'gesturing', 'writing', 'pointing']
+        self.action_types = VIDEO_CONFIG.get(
+            'stgcn_action_labels',
+            ['standing', 'walking', 'gesturing', 'writing', 'pointing']
+        )
 
         # 情感标签映射
         self.sentiment_labels = {'positive': 1.0, 'negative': -1.0, 'neutral': 0.0}
+        self.emotion_labels = ['neutral', 'happy', 'sad', 'angry', 'surprise', 'fear']
 
     def encode_video_features(self, raw_features: Dict) -> np.ndarray:
         """
         编码视频特征 → 20维向量
 
         维度分配：
-        1-5维: 动作频率 (standing, walking, gesturing, writing, pointing)
-        6维: 平均运动能量
-        7-15维: 空间分布 (9个区域)
-        16-20维: 统计量 (持续时间、帧数等)
+        1-6维: ST-GCN动作分布
+        7维: 平均运动能量
+        8-16维: 空间分布 (9个区域)
+        17维: 教师轨迹连续性
+        18维: 视频时长
+        19维: 总帧数
+        20维: 姿态平均置信度
 
         Args:
             raw_features: 原始视频特征字典
@@ -50,41 +64,41 @@ class FeatureEncoder:
         features = np.zeros(20)
 
         try:
-            # 1-5维: 动作频率
-            action_frequency = raw_features.get('action_frequency', {})
-            for i, action in enumerate(self.action_types):
-                features[i] = action_frequency.get(action, 0.0)
+            # 1-6维: 动作分布
+            action_distribution = raw_features.get('action_distribution') or raw_features.get('action_frequency', {})
+            for i, action in enumerate(self.action_types[:6]):
+                features[i] = action_distribution.get(action, 0.0)
 
-            # 6维: 平均运动能量（归一化）
+            # 7维: 平均运动能量（归一化）
             avg_motion = raw_features.get('avg_motion_energy', 0.0)
-            features[5] = min(avg_motion * 10, 1.0)  # 假设正常范围0-0.1，映射到0-1
+            features[6] = min(avg_motion * 10, 1.0)  # 假设正常范围0-0.1，映射到0-1
 
-            # 7-15维: 空间分布（9个区域）
+            # 8-16维: 空间分布（9个区域）
             spatial_dist = raw_features.get('spatial_distribution', {})
             regions = ['top_left', 'top_center', 'top_right',
                       'middle_left', 'middle_center', 'middle_right',
                       'bottom_left', 'bottom_center', 'bottom_right']
             for i, region in enumerate(regions):
-                features[6 + i] = spatial_dist.get(region, 0.0)
+                features[7 + i] = spatial_dist.get(region, 0.0)
 
-            # 16维: 视频时长（归一化，假设最长60分钟）
+            # 17维: 教师轨迹连续性
+            track_continuity = raw_features.get('track_continuity', 0.0)
+            features[16] = min(max(track_continuity, 0.0), 1.0)
+
+            # 18维: 视频时长（归一化，假设最长60分钟）
             duration = raw_features.get('video_duration', 0.0)
-            features[15] = min(duration / 3600, 1.0)
+            features[17] = min(duration / 3600, 1.0)
 
-            # 17维: 总帧数（归一化，假设最多180000帧=1小时@30fps）
+            # 19维: 总帧数（归一化，假设最多180000帧=1小时@30fps）
             total_frames = raw_features.get('total_frames', 0)
-            features[16] = min(total_frames / 180000, 1.0)
+            features[18] = min(total_frames / 180000, 1.0)
 
-            # 18维: 姿态平均置信度
+            # 20维: 姿态平均置信度
             pose_confidences = raw_features.get('pose_confidences', [])
             if pose_confidences:
-                features[17] = np.mean(pose_confidences)
+                features[19] = np.mean(pose_confidences)
             else:
-                features[17] = 0.0
-
-            # 19-20维: 保留维度（可扩展）
-            features[18] = 0.0
-            features[19] = 0.0
+                features[19] = 0.0
 
         except Exception as e:
             logger.error(f"编码视频特征失败: {e}")
@@ -97,11 +111,14 @@ class FeatureEncoder:
         编码音频特征 → 15维向量
 
         维度分配：
-        1-4维: 音量统计 (均值, 标准差, 最小值, 最大值)
-        5-8维: 音调统计 (均值, 标准差, 最小值, 最大值)
-        9维: 语音活动比例
-        10-12维: 情感分析 (分数, positive/negative概率)
-        13-15维: 文本统计 (词数, 句数, 字符数)
+        1-6维: 情感分布
+        7维: 语速
+        8维: 语音活动比例
+        9维: 静音比例
+        10维: 音量水平
+        11维: 音高变化
+        12维: 情感极性分数
+        13-15维: Wav2Vec2嵌入压缩
 
         Args:
             raw_features: 原始音频特征字典
@@ -112,56 +129,40 @@ class FeatureEncoder:
         features = np.zeros(15)
 
         try:
-            # 1-4维: 音量统计
-            volume = raw_features.get('volume', [])
-            if volume:
-                # 归一化到0-1（假设RMS范围0-1）
-                features[0] = np.mean(volume)
-                features[1] = np.std(volume)
-                features[2] = np.min(volume)
-                features[3] = np.max(volume)
+            # 1-6维: 情感分布
+            emotion_scores = raw_features.get('emotion_scores', {})
+            for i, label in enumerate(self.emotion_labels):
+                if i >= 6:
+                    break
+                features[i] = emotion_scores.get(label, 0.0)
 
-            # 5-8维: 音调统计
-            pitch = raw_features.get('pitch', [])
-            if pitch:
-                # 过滤无效值（0或负值）
-                valid_pitch = [p for p in pitch if p > 0]
-                if valid_pitch:
-                    # 归一化到0-1（假设音调范围50-500Hz）
-                    norm_pitch = [(p - 50) / 450 for p in valid_pitch]
-                    features[4] = np.mean(norm_pitch)
-                    features[5] = np.std(norm_pitch)
-                    features[6] = np.min(norm_pitch)
-                    features[7] = np.max(norm_pitch)
+            # 7维: 语速（归一化）
+            speech_rate = raw_features.get('speech_rate', 0.0)
+            features[6] = min(speech_rate / 200.0, 1.0)
 
-            # 9维: 语音活动比例
-            voice_activity = raw_features.get('voice_activity', [])
-            if voice_activity:
-                features[8] = np.mean(voice_activity)
+            # 8维: 语音活动比例
+            features[7] = raw_features.get('voice_activity_ratio', 0.0)
 
-            # 10-12维: 情感分析
-            sentiment = raw_features.get('sentiment', {})
-            if sentiment:
-                features[9] = sentiment.get('score', 0.0)  # 情感分数
-                label = sentiment.get('label', 'neutral')
-                features[10] = self.sentiment_labels.get(label, 0.0)  # 标签编码
-                # 11维: 正负情感差异（可用于区分强烈程度）
-                features[11] = abs(features[9] - 0.5) * 2  # 映射到0-1
+            # 9维: 静音比例
+            features[8] = raw_features.get('silence_ratio', 0.0)
 
-            # 13-15维: 文本统计（从转录得到）
-            transcription = raw_features.get('transcription', '')
-            if transcription:
-                # 中文：按字符计数
-                char_count = len(transcription)
-                # 句子数（按标点分割）
-                sentence_count = transcription.count('。') + transcription.count('？') + transcription.count('！')
-                # 词数（中文按字计，英文按空格分）
-                word_count = len(transcription.split())
+            # 10维: 音量水平
+            features[9] = raw_features.get('volume_level', 0.0)
 
-                # 归一化（假设最多5000字）
-                features[12] = min(word_count / 1000, 1.0)
-                features[13] = min(sentence_count / 50, 1.0)
-                features[14] = min(char_count / 5000, 1.0)
+            # 11维: 音高变化
+            features[10] = raw_features.get('pitch_variation', 0.0)
+
+            # 12维: 情感极性分数
+            features[11] = raw_features.get('sentiment_score', 0.0)
+
+            # 13-15维: Wav2Vec2嵌入压缩
+            embedding = raw_features.get('wav2vec2_embedding', [])
+            if embedding:
+                segment = max(len(embedding) // 3, 1)
+                for i in range(3):
+                    start = i * segment
+                    end = len(embedding) if i == 2 else min((i + 1) * segment, len(embedding))
+                    features[12 + i] = float(np.mean(embedding[start:end]))
 
         except Exception as e:
             logger.error(f"编码音频特征失败: {e}")
@@ -173,9 +174,14 @@ class FeatureEncoder:
         编码文本特征 → 25维向量
 
         维度分配：
-        1-20维: BERT嵌入降维 (768→20, 分段平均池化)
-        21-22维: 情感分析 (分数, label编码)
-        23-25维: 统计量 (词数, 句数, 关键词数)
+        1-4维: 对话行为分布
+        5-14维: BERT嵌入降维
+        15维: 情感分数
+        16维: 词汇丰富度
+        17维: 句子复杂度
+        18维: 提问频率
+        19-22维: 教学关键词密度
+        23-25维: 逻辑连接词指标
 
         Args:
             raw_features: 原始文本特征字典
@@ -186,43 +192,45 @@ class FeatureEncoder:
         features = np.zeros(25)
 
         try:
-            # 1-20维: BERT嵌入降维
+            # 1-4维: 对话行为分布
+            act_scores = raw_features.get('dialogue_act_scores', {})
+            labels = ['question', 'instruction', 'explanation', 'feedback']
+            for i, label in enumerate(labels):
+                features[i] = act_scores.get(label, 0.0)
+
+            # 5-14维: BERT嵌入降维
             embedding = raw_features.get('embedding', [])
-            if embedding and len(embedding) == 768:
-                # 分4段平均池化：768 → 192 → 48 → 20
-                # 方法：每38.4个维度合并为1维
-                segment_size = 768 // 20
-                for i in range(20):
-                    start = i * segment_size
-                    end = start + segment_size if i < 19 else 768
-                    features[i] = np.mean(embedding[start:end])
-            elif embedding:
-                # 如果维度不是768，做padding或截断
-                emb_array = np.array(embedding[:768])
-                if len(emb_array) < 768:
-                    emb_array = np.pad(emb_array, (0, 768 - len(emb_array)))
-                segment_size = 768 // 20
-                for i in range(20):
-                    start = i * segment_size
-                    end = start + segment_size if i < 19 else 768
-                    features[i] = np.mean(emb_array[start:end])
+            if embedding:
+                emb_array = np.array(embedding).flatten()
+                seg_size = max(len(emb_array) // 10, 1)
+                for i in range(10):
+                    start = i * seg_size
+                    end = len(emb_array) if i == 9 else min((i + 1) * seg_size, len(emb_array))
+                    features[4 + i] = float(np.mean(emb_array[start:end]))
 
-            # 21-22维: 情感分析
-            sentiment = raw_features.get('sentiment', {})
-            if sentiment:
-                features[20] = sentiment.get('score', 0.0)
-                label = sentiment.get('label', 'neutral')
-                features[21] = self.sentiment_labels.get(label, 0.0)
+            # 15维: 情感分数
+            features[14] = raw_features.get('sentiment_score', 0.0)
 
-            # 23-25维: 统计量
-            word_count = raw_features.get('word_count', 0)
-            sentence_count = raw_features.get('sentence_count', 0)
-            keywords = raw_features.get('keywords', [])
+            # 16维: 词汇丰富度
+            features[15] = raw_features.get('vocabulary_richness', 0.0)
 
-            # 归一化
-            features[22] = min(word_count / 1000, 1.0)
-            features[23] = min(sentence_count / 50, 1.0)
-            features[24] = min(len(keywords) / 20, 1.0)
+            # 17维: 句子复杂度
+            features[16] = raw_features.get('sentence_complexity', 0.0)
+
+            # 18维: 提问频率
+            features[17] = raw_features.get('question_frequency', 0.0)
+
+            # 19-22维: 教学关键词密度
+            keyword_density = raw_features.get('keyword_density', {})
+            keys = ['definition', 'example', 'explanation', 'summary']
+            for i, key in enumerate(keys):
+                features[18 + i] = keyword_density.get(key, 0.0)
+
+            # 23-25维: 逻辑连接词指标
+            logical = raw_features.get('logical_indicators', {})
+            logical_keys = ['causality', 'sequence', 'emphasis']
+            for i, key in enumerate(logical_keys):
+                features[22 + i] = logical.get(key, 0.0)
 
         except Exception as e:
             logger.error(f"编码文本特征失败: {e}")
@@ -289,39 +297,30 @@ class FeatureEncoder:
                 action_desc.append(f"{action}({level}: {freq:.1%})")
         interpretation.append("- 动作分布：" + ", ".join(action_desc) if action_desc else "- 动作分布：主要为standing")
 
-        motion = video[5]
+        motion = video[6]
         motion_level = "高" if motion > 0.6 else "中" if motion > 0.3 else "低"
         interpretation.append(f"- 运动能量：{motion_level} ({motion:.2f}) → 教师{'活跃度高' if motion > 0.6 else '活跃度中等' if motion > 0.3 else '相对静态'}")
 
         # 音频特征解读
         interpretation.append("\n**音频特征：**")
-        volume_mean = audio[0]
-        volume_std = audio[1]
-        volume_desc = "响亮且稳定" if volume_mean > 0.6 and volume_std < 0.2 else \
-                     "音量适中" if volume_mean > 0.4 else "音量较小"
-        interpretation.append(f"- 音量：{volume_desc} (均值={volume_mean:.2f}, 变化={volume_std:.2f})")
+        volume_level = audio[9]
+        volume_desc = "响亮" if volume_level > 0.6 else "适中" if volume_level > 0.4 else "偏小"
+        interpretation.append(f"- 音量：{volume_desc} (水平={volume_level:.2f})")
 
-        pitch_mean = audio[4]
-        pitch_std = audio[5]
-        pitch_desc = "音调变化丰富" if pitch_std > 0.15 else "音调相对平稳"
-        interpretation.append(f"- 音调：{pitch_desc} (均值={pitch_mean:.2f}, 变化={pitch_std:.2f})")
+        pitch_variation = audio[10]
+        pitch_desc = "音调变化丰富" if pitch_variation > 0.3 else "音调相对平稳"
+        interpretation.append(f"- 音调：{pitch_desc} (变化={pitch_variation:.2f})")
 
-        voice_ratio = audio[8]
+        voice_ratio = audio[7]
         interpretation.append(f"- 语音活动比例：{voice_ratio:.1%} → {'讲话为主' if voice_ratio > 0.7 else '互动较多' if voice_ratio > 0.5 else '停顿较多'}")
 
         # 文本特征解读
         interpretation.append("\n**文本特征：**")
-        word_count = int(text[22] * 1000)  # 反归一化
-        sentence_count = int(text[23] * 50)
-        interpretation.append(f"- 讲话内容量：约{word_count}词，{sentence_count}句")
+        vocab_richness = text[15]
+        sentence_complexity = text[16]
+        interpretation.append(f"- 词汇丰富度：{vocab_richness:.2f}, 句子复杂度：{sentence_complexity:.2f}")
 
-        if word_count > 0 and sentence_count > 0:
-            avg_sentence_len = word_count / sentence_count
-            sentence_desc = "句子较长，讲解详细" if avg_sentence_len > 25 else \
-                           "句子适中" if avg_sentence_len > 15 else "句子简短，节奏快"
-            interpretation.append(f"- 表达风格：{sentence_desc} (平均{avg_sentence_len:.1f}词/句)")
-
-        sentiment_score = text[20]
+        sentiment_score = text[14]
         sentiment_desc = "积极正向" if sentiment_score > 0.6 else "中性客观" if sentiment_score > 0.4 else "消极或批评性"
         interpretation.append(f"- 情感倾向：{sentiment_desc} (分数={sentiment_score:.2f})")
 

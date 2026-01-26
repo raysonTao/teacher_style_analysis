@@ -51,8 +51,14 @@ class MMANFusionEngine:
             self.model = None
             self.is_loaded = False
 
-    def compute_weights(self, video_features: Dict, audio_features: Dict, text_features: Dict) -> Dict:
-        """计算模态权重"""
+    def compute_outputs(self, video_features: Dict, audio_features: Dict, text_features: Dict):
+        """
+        计算模态权重与融合向量
+
+        Returns:
+            weights: 模态权重字典
+            embedding: 融合向量（numpy数组或None）
+        """
         encoded = {
             'video': self.encoder.encode_video_features(video_features),
             'audio': self.encoder.encode_audio_features(audio_features),
@@ -60,8 +66,8 @@ class MMANFusionEngine:
         }
 
         if not self.is_loaded or self.model is None:
-            logger.error("MMAN模型未加载，无法计算模态权重")
-            return None
+            logger.error("MMAN模型未加载，无法计算融合输出")
+            return None, None
 
         try:
             import torch
@@ -73,21 +79,31 @@ class MMANFusionEngine:
             }
             with torch.no_grad():
                 outputs = self.model(inputs, return_attention=True)
+                embedding = self.model.get_embedding(inputs).squeeze(0).cpu().numpy()
+
             attn = outputs.get('transformer_attention', [])
             if attn:
                 last_layer = attn[-1]  # [batch, heads, seq, seq]
                 weights = last_layer.mean(dim=1).mean(dim=1).squeeze(0)
                 weights = weights / (weights.sum() + 1e-6)
-                return {
+                weight_dict = {
                     'video': float(weights[0]),
                     'audio': float(weights[1]),
                     'text': float(weights[2])
                 }
-            logger.error("MMAN未返回注意力权重")
-            return None
+            else:
+                logger.error("MMAN未返回注意力权重")
+                weight_dict = None
+
+            return weight_dict, embedding
         except Exception as e:
-            logger.error(f"MMAN权重计算失败: {e}")
-            return None
+            logger.error(f"MMAN输出计算失败: {e}")
+            return None, None
+
+    def compute_weights(self, video_features: Dict, audio_features: Dict, text_features: Dict) -> Dict:
+        """计算模态权重（兼容旧接口）"""
+        weights, _ = self.compute_outputs(video_features, audio_features, text_features)
+        return weights
 
 class MultimodalFeatureFusion:
     """多模态特征融合类，用于融合视频、音频和文本特征"""
@@ -147,14 +163,19 @@ class MultimodalFeatureFusion:
             # 计算参与度
             self._calculate_engagement_level(fused_features)
 
-            # 计算多模态注意力权重
-            weights = self.mman_engine.compute_weights(video_features, audio_features, text_features)
+            # 计算多模态注意力权重与融合向量
+            weights, embedding = self.mman_engine.compute_outputs(
+                video_features, audio_features, text_features
+            )
             fused_features["fusion"]["modality_weights"] = weights
             if weights is None:
                 fused_features["fusion"]["error"] = "MMAN权重计算失败"
-            
-            # 生成融合向量
-            self._generate_fusion_vector(fused_features)
+
+            if embedding is not None:
+                fused_features["fusion_vector"] = embedding.tolist()
+            else:
+                # 生成融合向量（回退方案）
+                self._generate_fusion_vector(fused_features)
             
         except Exception as e:
             logger.error(f"多模态特征融合失败: {e}")

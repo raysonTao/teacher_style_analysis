@@ -121,19 +121,23 @@ class AudioFeatureExtractor:
             cache_dir = AUDIO_CONFIG.get('wav2vec2_cache_dir')
             base_name = AUDIO_CONFIG.get('wav2vec2_model_name')
             emotion_name = AUDIO_CONFIG.get('wav2vec2_emotion_model_name')
+            local_only = AUDIO_CONFIG.get('local_files_only', False)
 
             self.wav2vec2_processor = AutoFeatureExtractor.from_pretrained(
                 base_name,
-                cache_dir=cache_dir
+                cache_dir=cache_dir,
+                local_files_only=local_only
             )
             self.wav2vec2_model = AutoModel.from_pretrained(
                 base_name,
-                cache_dir=cache_dir
+                cache_dir=cache_dir,
+                local_files_only=local_only
             ).to(device).eval()
 
             self.wav2vec2_emotion_model = AutoModelForAudioClassification.from_pretrained(
                 emotion_name,
-                cache_dir=cache_dir
+                cache_dir=cache_dir,
+                local_files_only=local_only
             ).to(device).eval()
 
             logger.info(f"Wav2Vec2表征模型加载成功: {base_name}")

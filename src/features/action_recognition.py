@@ -196,11 +196,95 @@ class STGCNActionRecognizer:
 
             state = torch.load(model_path, map_location=self.device)
             state_dict = state.get('state_dict', state)
-            self.model.load_state_dict(state_dict, strict=False)
+            cleaned = {}
+            model_state = self.model.state_dict()
+            for key, value in state_dict.items():
+                key = key.replace('module.', '')
+                if key.startswith('backbone.'):
+                    key = key[len('backbone.'):]
+                if key.startswith('cls_head.') or key.startswith('head.'):
+                    continue
+                if key in model_state and model_state[key].shape == value.shape:
+                    cleaned[key] = value
+            self.model.load_state_dict(cleaned, strict=False)
             logger.info(f"ST-GCN模型加载成功: {model_path}")
         except Exception as e:
             logger.error(f"ST-GCN模型加载失败: {e}")
             self.model = None
+
+    @staticmethod
+    def _safe_point(sequence: np.ndarray, idx: int) -> np.ndarray:
+        if idx >= sequence.shape[1]:
+            return np.zeros(3, dtype=np.float32)
+        point = sequence[:, idx, :]
+        if point.shape[1] == 2:
+            vis = np.ones((point.shape[0], 1), dtype=np.float32)
+            return np.concatenate([point, vis], axis=1)
+        if point.shape[1] >= 3:
+            return point[:, :3]
+        return np.zeros((point.shape[0], 3), dtype=np.float32)
+
+    def _map_mediapipe_to_ntu(self, sequence: np.ndarray) -> np.ndarray:
+        """将MediaPipe 33关键点映射到NTU 25关键点"""
+        t = sequence.shape[0]
+        mapped = np.zeros((t, 25, 3), dtype=np.float32)
+
+        left_shoulder = self._safe_point(sequence, 11)
+        right_shoulder = self._safe_point(sequence, 12)
+        spine_shoulder = (left_shoulder + right_shoulder) / 2.0
+
+        left_hip = self._safe_point(sequence, 23)
+        right_hip = self._safe_point(sequence, 24)
+        spine_base = (left_hip + right_hip) / 2.0
+        spine_mid = (spine_base + spine_shoulder) / 2.0
+
+        nose = self._safe_point(sequence, 0)
+
+        left_elbow = self._safe_point(sequence, 13)
+        left_wrist = self._safe_point(sequence, 15)
+        left_hand = self._safe_point(sequence, 19)
+        left_thumb = self._safe_point(sequence, 21)
+
+        right_elbow = self._safe_point(sequence, 14)
+        right_wrist = self._safe_point(sequence, 16)
+        right_hand = self._safe_point(sequence, 20)
+        right_thumb = self._safe_point(sequence, 22)
+
+        left_knee = self._safe_point(sequence, 25)
+        left_ankle = self._safe_point(sequence, 27)
+        left_foot = self._safe_point(sequence, 31)
+
+        right_knee = self._safe_point(sequence, 26)
+        right_ankle = self._safe_point(sequence, 28)
+        right_foot = self._safe_point(sequence, 32)
+
+        mapped[:, 0, :] = spine_base
+        mapped[:, 1, :] = spine_mid
+        mapped[:, 2, :] = spine_shoulder
+        mapped[:, 3, :] = nose
+        mapped[:, 4, :] = left_shoulder
+        mapped[:, 5, :] = left_elbow
+        mapped[:, 6, :] = left_wrist
+        mapped[:, 7, :] = left_hand
+        mapped[:, 8, :] = right_shoulder
+        mapped[:, 9, :] = right_elbow
+        mapped[:, 10, :] = right_wrist
+        mapped[:, 11, :] = right_hand
+        mapped[:, 12, :] = left_hip
+        mapped[:, 13, :] = left_knee
+        mapped[:, 14, :] = left_ankle
+        mapped[:, 15, :] = left_foot
+        mapped[:, 16, :] = right_hip
+        mapped[:, 17, :] = right_knee
+        mapped[:, 18, :] = right_ankle
+        mapped[:, 19, :] = right_foot
+        mapped[:, 20, :] = spine_shoulder
+        mapped[:, 21, :] = left_hand
+        mapped[:, 22, :] = left_thumb
+        mapped[:, 23, :] = right_hand
+        mapped[:, 24, :] = right_thumb
+
+        return mapped
 
     def recognize_action_sequence(self, keypoints_sequence: np.ndarray) -> Tuple[str, float, Dict]:
         """
@@ -222,19 +306,15 @@ class STGCNActionRecognizer:
             sequence = np.array(keypoints_sequence, dtype=np.float32)
             if sequence.ndim != 3:
                 return 'unknown', 0.0, {}
-
-            # 仅使用x,y维度
-            if sequence.shape[2] >= 2:
-                sequence = sequence[:, :, :2]
-            else:
+            if sequence.shape[1] < 33:
                 return 'unknown', 0.0, {}
 
-            # 归一化到0-1范围
+            sequence = self._map_mediapipe_to_ntu(sequence)
             sequence = np.clip(sequence, 0.0, 1.0)
 
-            # 输入形状 [N, C, T, V]
+            # 输入形状 [N, C, T, V, M]
             sequence = np.transpose(sequence, (2, 0, 1))
-            tensor = torch.tensor(sequence, dtype=torch.float32).unsqueeze(0).to(self.device)
+            tensor = torch.tensor(sequence, dtype=torch.float32).unsqueeze(0).unsqueeze(-1).to(self.device)
 
             with torch.no_grad():
                 logits = self.model(tensor)

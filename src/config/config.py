@@ -93,10 +93,10 @@ MODEL_CONFIG = {
     'style_classifier_path': 'models/style_classifier.pth',  # 风格分类器模型
     'cmat_model_path': 'models/cmat_model.pkl',  # CMAT模型路径
     'wav2vec2_model_name': 'facebook/wav2vec2-base-960h',  # 自监督声学表征模型
-    'wav2vec2_emotion_model_name': 'wav2vec2-base-emotion',  # 情感识别模型
+    'wav2vec2_emotion_model_name': 'superb/wav2vec2-base-superb-er',  # 情感识别模型
     'dialogue_act_model_name': 'bert-base-chinese',  # 对话行为识别模型
-    'stgcn_model_path': 'models/weights/stgcn_teacher_actions.pt',  # ST-GCN模型路径
-    'deepsort_model_path': 'models/weights/deepsort_osnet_x0_25.ckpt',  # DeepSORT外观模型
+    'stgcn_model_path': 'models/weights/stgcn_8xb16-joint-u100-80e_ntu60-xsub-keypoint-2d_20221129-484a394a.pth',  # ST-GCN模型路径
+    'deepsort_model_path': 'models/weights/osnet_x0_25_msmt17.pth',  # DeepSORT外观模型
     # MediaPipe配置
     'mediapipe_model_complexity': 1,  # 模型复杂度 0, 1, 2
     'mediapipe_smooth_landmarks': True,  # 平滑关键点
@@ -160,14 +160,23 @@ AUDIO_CONFIG = {
     'whisper_model_size': 'medium',  # Whisper模型大小
     'wav2vec2_model_name': MODEL_CONFIG['wav2vec2_model_name'],
     'wav2vec2_emotion_model_name': MODEL_CONFIG['wav2vec2_emotion_model_name'],
-    'wav2vec2_cache_dir': str(BASE_DIR / 'models' / 'weights' / 'huggingface'),
-    'emotion_label_map': {}
+    'wav2vec2_cache_dir': str(BASE_DIR.parent / 'models' / 'weights' / 'huggingface'),
+    'emotion_label_map': {},
+    'local_files_only': True
 }
 
 # 文本配置
 TEXT_CONFIG = {
-    'bert_model_name': 'bert-base-chinese',
-    'dialogue_act_model_name': MODEL_CONFIG['dialogue_act_model_name'],
+    'bert_model_name': str(
+        BASE_DIR / 'models' / 'weights' / 'huggingface' / 'hub'
+        / 'models--bert-base-chinese' / 'snapshots'
+        / '8f23c25b06e129b6c986331a13d8d025a92cf0ea'
+    ),
+    'dialogue_act_model_name': str(
+        BASE_DIR / 'models' / 'weights' / 'huggingface' / 'hub'
+        / 'models--bert-base-chinese' / 'snapshots'
+        / '8f23c25b06e129b6c986331a13d8d025a92cf0ea'
+    ),
     'dialogue_act_labels': ['question', 'instruction', 'explanation', 'feedback'],
     'dialogue_act_label_map': {
         'question': '提问',
@@ -175,8 +184,14 @@ TEXT_CONFIG = {
         'explanation': '讲解',
         'feedback': '反馈'
     },
-    'max_length': 256
+    'max_length': 256,
+    'local_files_only': True
 }
+
+# 离线模式：避免运行时访问Hugging Face
+if AUDIO_CONFIG.get('local_files_only') or TEXT_CONFIG.get('local_files_only'):
+    os.environ.setdefault('HF_HUB_OFFLINE', '1')
+    os.environ.setdefault('TRANSFORMERS_OFFLINE', '1')
 
 # 多模态融合配置
 FUSION_CONFIG = {

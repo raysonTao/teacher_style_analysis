@@ -1,6 +1,7 @@
 """目标跟踪模块，仅使用DeepSORT"""
 import os
 import sys
+import types
 from typing import List, Dict, Optional
 
 import numpy as np
@@ -27,6 +28,7 @@ class TeacherTracker:
 
         try:
             from deep_sort_realtime.deepsort_tracker import DeepSort
+            self._ensure_torchreid_utils()
 
             model_path = MODEL_CONFIG.get('deepsort_model_path')
             model_path = model_path if model_path and os.path.exists(model_path) else None
@@ -35,8 +37,9 @@ class TeacherTracker:
                 max_age=VIDEO_CONFIG.get('tracker_max_age', 30),
                 n_init=2,
                 nn_budget=100,
-                embedder='osnet_x0_25',
-                embedder_model_filename=model_path,
+                embedder='torchreid',
+                embedder_model_name='osnet_x0_25',
+                embedder_wts=model_path,
                 half=False,
                 bgr=True
             )
@@ -44,6 +47,22 @@ class TeacherTracker:
         except Exception as e:
             logger.error(f"DeepSORT不可用: {e}")
             self.tracker = None
+
+    def _ensure_torchreid_utils(self):
+        """注入torchreid.utils.FeatureExtractor以兼容deep_sort_realtime"""
+        try:
+            import torchreid  # noqa: F401
+            try:
+                from torchreid.utils import FeatureExtractor  # type: ignore
+                return
+            except Exception:
+                from torchreid.reid.utils.feature_extractor import FeatureExtractor  # type: ignore
+
+            utils_mod = types.ModuleType("torchreid.utils")
+            utils_mod.FeatureExtractor = FeatureExtractor
+            sys.modules["torchreid.utils"] = utils_mod
+        except Exception as e:
+            raise ImportError(f"torchreid加载失败: {e}")
 
     def update(self, detections: List[Dict], frame: Optional[np.ndarray] = None) -> List[Dict]:
         """输入检测结果并更新跟踪状态"""

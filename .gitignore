@@ -82,3 +82,4 @@ CLAUDE.md
 IFLOW.md
 src/data/metadata.json
 yolov8n.pt
+checkpoints/best_model.pth

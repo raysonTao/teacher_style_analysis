@@ -51,13 +51,14 @@ class TextFeatureExtractor:
             # 加载预训练的BERT模型和分词器
             # force_download=False：避免使用已弃用的resume_download参数
             # ignore_mismatched_sizes=True：忽略未使用的CLS层权重警告，因为我们只使用编码器部分
+            local_only = TEXT_CONFIG.get('local_files_only', False)
             self.tokenizer = BertTokenizer.from_pretrained(
                 TEXT_CONFIG['bert_model_name'],
-                force_download=False
+                local_files_only=local_only
             )
             self.bert_model = BertModel.from_pretrained(
                 TEXT_CONFIG['bert_model_name'],
-                force_download=False,
+                local_files_only=local_only,
                 ignore_mismatched_sizes=True
             )
 
@@ -65,11 +66,11 @@ class TextFeatureExtractor:
             dialogue_act_name = TEXT_CONFIG.get('dialogue_act_model_name', TEXT_CONFIG['bert_model_name'])
             self.dialogue_act_tokenizer = BertTokenizer.from_pretrained(
                 dialogue_act_name,
-                force_download=False
+                local_files_only=local_only
             )
             self.dialogue_act_model = AutoModelForSequenceClassification.from_pretrained(
                 dialogue_act_name,
-                force_download=False,
+                local_files_only=local_only,
                 num_labels=len(TEXT_CONFIG.get('dialogue_act_labels', [])) or 4
             )
             self.dialogue_act_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

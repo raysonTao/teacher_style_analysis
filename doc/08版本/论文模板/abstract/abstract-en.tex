@@ -1,0 +1,33 @@
+\newpage
+\vspace{-1cm}
+\chapter*{\zihao{-3}\heiti{ABSTRACT}}
+\addcontentsline{toc}{chapter}{Abstract}
+\vspace{-0.5cm}
+
+In the wave of educational digital transformation, massive classroom video data urgently needs to be effectively utilized to empower teaching. Teacher teaching style is a key factor affecting classroom quality, but traditional evaluation methods suffer from strong subjectivity, delayed feedback, and narrow coverage, making it difficult to meet the demands for objective, real-time, and quantifiable classroom feedback in smart education environments. Therefore, this research designs and implements a teacher teaching style profiling analysis system based on multimodal deep learning, aiming to provide a new paradigm of objective, fine-grained, and interpretable intelligent evaluation.
+
+Existing classroom analysis technologies have limitations: (1) single-modal video or audio cannot comprehensively characterize teaching styles; (2) simple fusion strategies have limited effectiveness—feature concatenation or result weighting ignore the interactive relationships between modalities; (3) style recognition results lack interpretability—it is difficult to understand the model's decision basis and feature contribution.
+
+To address the above challenges, this research proposes \textbf{SHAPE (Semantic Hierarchical Attention Profiling Engine)}, which achieves adaptive fusion of features and accurate style profiling through semantic-driven segmentation, hierarchical teaching intent recognition, and cross-modal attention mechanisms. Specific innovations include:
+
+\begin{enumerate}
+    \item \textbf{Data Segmentation Strategy Optimization}: Proposes a semantic-driven discourse segmentation strategy that maintains the semantic integrity of teaching discourse through dependency syntax analysis and discourse boundary detection (completeness rate increased from 76.6\% to 95.3\%), improving teaching intent recognition F1 score by \textbf{5.2\%} and style recognition accuracy by \textbf{2.1\%};
+
+    \item \textbf{Audio Modality}: Not only uses audio for speech emotion recognition, fine-tuned in classroom scenarios, but also employs Automatic Speech Recognition (ASR) technology to convert audio into text modality, laying the foundation for intent recognition.
+
+    \item \textbf{Text Modality}: Introduces BERT-based Hierarchical Dialogue Act Recognition (H-DAR) with a two-level classification architecture (4 coarse classes + 10 fine classes), expanding the traditional 4-class rough classification to 10-class fine-grained classification (including heuristic questioning, logical reasoning, concept definition, case analysis, etc.), more effectively capturing characteristic language patterns of different teaching styles, with F1 score improved by \textbf{0.19} over keyword rule methods;
+
+    \item \textbf{Visual Modality}: Uses ReID algorithm for stable teacher identity tracking and employs Spatial-Temporal Graph Convolutional Networks for temporal modeling of skeleton sequences, improving accuracy by \textbf{17.7 percentage points} compared to single-frame rule recognition;
+
+    \item \textbf{Intelligent Fusion and Interpretation}: The designed SHAPE adaptively fuses visual, audio, and text features through cross-modal attention mechanisms, combined with attention weights and SHAP interpretability analysis, enhancing the traceability of model decision basis.
+\end{enumerate}
+
+On a self-built teacher style dataset (209 samples, 7 style categories), SHAPE achieves an accuracy of \textbf{93.5\%} in style recognition tasks, significantly outperforming single-modal methods (best single-modal 78.3\%, improvement of \textbf{15.2 percentage points}) and simple fusion methods (feature concatenation 85.2\%, improvement of \textbf{8.3 percentage points}; result weighting 87.6\%, improvement of \textbf{5.9 percentage points}). Ablation experiments further confirm that the semantic-driven segmentation strategy improves style recognition accuracy by \textbf{2.1 percentage points}, and removal of the cross-modal attention module leads to a performance decrease of \textbf{2.7 percentage points} ($p < 0.01$), validating the effectiveness of these improvements.
+
+\textbf{[Modality Importance Analysis]} Interpretability analysis reveals significant differences in the dependency patterns of different teaching styles on various modalities: emotion-expressive teachers rely most on audio features (weight \textbf{0.62}), interaction-oriented teachers rely most on visual features (weight \textbf{0.50}), and logic-reasoning teachers rely most on text features (weight \textbf{0.53}). These findings reveal the multimodal feature dependency patterns of different styles.
+
+This system can generate intuitive and traceable teacher style profiles (style radar charts, modality contribution analysis, typical segment playback), providing scientific, objective, and refined data support for teacher style cognition and teaching research.
+
+\vspace{0.5cm}
+\hspace{-1cm}
+{\bf{\sihao{Keywords:}}} \textit{Teacher Teaching Style; Multimodal Learning Analytics; Cross-modal Attention; Deep Learning; Explainable Artificial Intelligence}

@@ -1,0 +1,139 @@
+
+\documentclass[border=8pt, multi, tikz]{standalone}
+\usepackage{import}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xeCJK}
+\setCJKmainfont{Noto Sans CJK SC}
+
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric, calc, decorations.pathreplacing}
+
+% 定义颜色
+\definecolor{video}{RGB}{255,127,127}      % 视觉模态 - 红色系
+\definecolor{audio}{RGB}{127,255,127}      % 音频模态 - 绿色系
+\definecolor{text}{RGB}{127,127,255}       % 文本模态 - 蓝色系
+\definecolor{fusion}{RGB}{255,200,100}     % 融合层 - 橙色系
+\definecolor{output}{RGB}{200,200,200}     % 输出层 - 灰色系
+
+\begin{document}
+\begin{tikzpicture}[
+    node distance=1.5cm and 2cm,
+    layer/.style={rectangle, draw, minimum width=2cm, minimum height=1.2cm, align=center, font=\small},
+    modality/.style={rectangle, draw, minimum width=1.8cm, minimum height=1cm, align=center, font=\footnotesize, rounded corners=2pt},
+    arrow/.style={-Stealth, thick},
+    label/.style={font=\scriptsize, align=center}
+]
+
+% ==================== 第1层：输入特征 ====================
+\node[modality, fill=video!30] (input_v) at (0,0) {视觉特征\\$F_v \in \mathbb{R}^{20}$};
+\node[modality, fill=audio!30, below=0.8cm of input_v] (input_a) {音频特征\\$F_a \in \mathbb{R}^{15}$};
+\node[modality, fill=text!30, below=0.8cm of input_a] (input_t) {文本特征\\$F_t \in \mathbb{R}^{35}$};
+
+% 输入层标签
+\node[label, above=0.3cm of input_v] {\textbf{输入层}\\(多模态特征)};
+
+% ==================== 第2层：特征投影 ====================
+\node[modality, fill=video!50, right=2.5cm of input_v] (proj_v) {投影层\\$F'_v \in \mathbb{R}^{512}$};
+\node[modality, fill=audio!50, right=2.5cm of input_a] (proj_a) {投影层\\$F'_a \in \mathbb{R}^{512}$};
+\node[modality, fill=text!50, right=2.5cm of input_t] (proj_t) {投影层\\$F'_t \in \mathbb{R}^{512}$};
+
+% 投影层标签
+\node[label, above=0.3cm of proj_v] {\textbf{模块1}\\特征投影};
+
+% 投影箭头
+\draw[arrow] (input_v) -- node[above, label] {$W_v, b_v$} (proj_v);
+\draw[arrow] (input_a) -- node[above, label] {$W_a, b_a$} (proj_a);
+\draw[arrow] (input_t) -- node[above, label] {$W_t, b_t$} (proj_t);
+
+% ==================== 第3层：跨模态注意力 ====================
+\node[modality, fill=fusion!30, right=2.5cm of proj_v] (attn_v) {注意力融合\\$\tilde{F}_v \in \mathbb{R}^{512}$};
+\node[modality, fill=fusion!30, right=2.5cm of proj_a] (attn_a) {注意力融合\\$\tilde{F}_a \in \mathbb{R}^{512}$};
+\node[modality, fill=fusion!30, right=2.5cm of proj_t] (attn_t) {注意力融合\\$\tilde{F}_t \in \mathbb{R}^{512}$};
+
+% 注意力层标签
+\node[label, above=0.3cm of attn_v] {\textbf{模块2}\\跨模态注意力};
+
+% 跨模态注意力连接（核心创新）
+% Video -> Audio, Text
+\draw[arrow, bend left=15, color=video] (proj_v) to node[above, label, sloped] {\tiny $\alpha_{v \to a}$} (attn_a);
+\draw[arrow, bend left=20, color=video] (proj_v) to node[above, label, sloped] {\tiny $\alpha_{v \to t}$} (attn_t);
+
+% Audio -> Video, Text
+\draw[arrow, bend left=15, color=audio] (proj_a) to node[above, label, sloped] {\tiny $\alpha_{a \to v}$} (attn_v);
+\draw[arrow, bend left=15, color=audio] (proj_a) to node[below, label, sloped] {\tiny $\alpha_{a \to t}$} (attn_t);
+
+% Text -> Video, Audio
+\draw[arrow, bend left=20, color=text] (proj_t) to node[below, label, sloped] {\tiny $\alpha_{t \to v}$} (attn_v);
+\draw[arrow, bend left=15, color=text] (proj_t) to node[below, label, sloped] {\tiny $\alpha_{t \to a}$} (attn_a);
+
+% 残差连接
+\draw[arrow, dashed, color=gray] (proj_v) -- (attn_v);
+\draw[arrow, dashed, color=gray] (proj_a) -- (attn_a);
+\draw[arrow, dashed, color=gray] (proj_t) -- (attn_t);
+
+% ==================== 第4层：BiLSTM时序建模 ====================
+\node[layer, fill=fusion!50, right=2.5cm of attn_a, minimum width=2.2cm, minimum height=2cm] (bilstm) {
+    \textbf{BiLSTM}\\[0.2cm]
+    $\overrightarrow{h}, \overleftarrow{h}$\\[0.1cm]
+    $h \in \mathbb{R}^{1024}$
+};
+
+% BiLSTM标签
+\node[label, above=0.3cm of bilstm] {\textbf{模块3}\\时序建模};
+
+% 连接到BiLSTM
+\draw[arrow] (attn_v) -| (bilstm.170);
+\draw[arrow] (attn_a) -- (bilstm.180);
+\draw[arrow] (attn_t) -| (bilstm.190);
+
+% ==================== 第5层：注意力池化 ====================
+\node[layer, fill=fusion!70, right=2cm of bilstm] (pool) {
+    \textbf{注意力池化}\\[0.1cm]
+    $h_{\text{pooled}}$\\[0.1cm]
+    $\in \mathbb{R}^{1024}$
+};
+
+% 池化标签
+\node[label, above=0.3cm of pool] {\textbf{模块4}\\特征聚合};
+
+\draw[arrow] (bilstm) -- node[above, label] {$\beta_i$} (pool);
+
+% ==================== 第6层：风格分类器 ====================
+\node[layer, fill=output!70, right=2cm of pool, minimum width=2cm, minimum height=1.8cm] (classifier) {
+    \textbf{分类器}\\[0.2cm]
+    Softmax\\[0.1cm]
+    $P(y) \in \mathbb{R}^7$
+};
+
+% 分类器标签
+\node[label, above=0.3cm of classifier] {\textbf{模块5}\\风格预测};
+
+\draw[arrow] (pool) -- (classifier);
+
+% ==================== 输出 ====================
+\node[label, right=0.5cm of classifier, align=left] (output) {
+    \textbf{输出：}\\
+    • 风格类别 $y$\\
+    • 概率分布 $p$\\
+    • 注意力权重 $\alpha$
+};
+
+\draw[arrow] (classifier) -- (output);
+
+% ==================== 图例说明 ====================
+\node[label, below=3cm of input_t, align=left, draw, dashed, minimum width=14cm, minimum height=1.5cm] (legend) {
+    \textbf{图例说明：}\\
+    \tikz \draw[arrow, color=video] (0,0) -- (0.3,0); 视觉模态连接 \quad
+    \tikz \draw[arrow, color=audio] (0,0) -- (0.3,0); 音频模态连接 \quad
+    \tikz \draw[arrow, color=text] (0,0) -- (0.3,0); 文本模态连接 \quad
+    \tikz \draw[arrow, dashed, color=gray] (0,0) -- (0.3,0); 残差连接\\
+    \textbf{核心创新：}跨模态注意力机制 ($\alpha_{i \to j}$) 实现模态间自适应交互，相比简单拼接准确率提升 \textbf{8.3\%}
+};
+
+% ==================== 整体标题 ====================
+\node[above=0.8cm of input_v, font=\large\bfseries] {SHAPE网络架构图 (Semantic Hierarchical Attention Profiling Engine)};
+
+\end{tikzpicture}
+\end{document}

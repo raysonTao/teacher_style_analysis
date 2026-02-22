@@ -1,0 +1,15 @@
+\newpage
+\vspace{-1cm}
+\chapter*{\zihao{-3}\heiti{ABSTRACT}}
+\addcontentsline{toc}{chapter}{Abstract}
+\vspace{-0.5cm}
+
+In the wave of educational digitalization, massive classroom video data urgently needs to be effectively utilized to empower teaching. Teacher teaching style is a key factor influencing classroom quality, but traditional evaluation methods are highly subjective and have delayed feedback, making it difficult to meet the demand for objective, real-time, and quantifiable classroom feedback in smart education environments. To this end, this study designs and implements a teacher teaching style profiling analysis system based on multimodal deep learning, aiming to provide objective, fine-grained, and interpretable intelligent style portrait analysis.
+
+This study proposes SHAPE (Semantic Hierarchical Attention Profiling Engine), which achieves adaptive feature fusion and accurate style profiling through semantic-driven segmentation, hierarchical teaching intent recognition, and cross-modal attention mechanisms. Specifically: (1) A semantic-driven utterance segmentation strategy is proposed to maintain semantic integrity of teaching utterances; (2) The audio modality uses Wav2Vec 2.0 for deep acoustic representation extraction and emotion recognition; (3) The text modality introduces BERT-based Hierarchical Dialogue Act Recognition (H-DAR) with a two-level classification architecture (4 coarse classes + 10 fine classes); (4) The visual modality uses DeepSORT for stable teacher identity tracking and ST-GCN for skeleton sequence modeling; (5) SHAPE adaptively fuses visual, audio, and text features through cross-modal attention mechanism.
+
+On a self-built teacher style dataset (209 samples, 7 style categories), SHAPE achieves an accuracy of 93.5\% in style recognition, significantly outperforming single-modal methods and simple fusion methods. Ablation experiments further confirm that the semantic-driven segmentation strategy improves style recognition accuracy by 2.1 percentage points. A teacher classroom portrait system is also constructed to visualize the algorithm results, generating intuitive and traceable teacher style portraits.
+
+\vspace{0.5cm}
+\hspace{-1cm}
+{\bf{\sihao{Keywords:}}} \textit{Teacher Teaching Style; Multimodal Learning Analytics; Cross-modal Attention; Deep Learning}

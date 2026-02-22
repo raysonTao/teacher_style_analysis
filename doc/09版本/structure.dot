@@ -1,0 +1,46 @@
+digraph thesis_structure {
+    # 图表设置
+    rankdir=TB;
+    dpi=300;
+    bgcolor="white";
+    node [fontname="SimHei,Arial", fontsize=16, style=filled, fillcolor=white, 
+          shape=box, width=3.5, height=0.6];
+    edge [penwidth=2.5, arrowsize=0.8];
+    
+    # 定义节点
+    ch1 [label="第一章 绪论", shape=box, style="rounded,filled"];
+    ch2 [label="第二章 理论基础与相关研究", width=4, style="rounded,filled"];
+    ch3 [label="第三章 研究方法与总体设计", width=4, style="rounded,filled"];
+    ch4 [label="第四章 多模态特征提取", width=3.8, style="rounded,filled"];
+    ch5 [label="第五章 教师风格画像分析系统\n设计与实现", width=4.5, style="rounded,filled"];
+    ch6 [label="第六章 总结与展望", width=3.5, style="rounded,filled"];
+    
+    # 定义边（箭头）
+    ch1 -> ch2;
+    ch2 -> {ch3 ch4};
+    ch3 -> ch5;
+    ch4 -> ch5;
+    ch5 -> ch6;
+    
+    # 子图：理论与实验部分（虚线框）
+    subgraph cluster_theory {
+        label="理论与实验";
+        fontname="SimHei,Arial";
+        fontsize=14;
+        style=dashed;
+        color=gray;
+        penwidth=2;
+        labelloc=b;
+        
+        ch3;
+        ch4;
+        
+        # 添加说明文字
+        note [label="方法设计 + 特征提取 + 融合建模", 
+              shape=plaintext, fontsize=12, fontcolor=gray, 
+              style=filled, fillcolor=lightyellow];
+    }
+    
+    # 调整布局
+    {rank=same; ch3; ch4;}
+}

@@ -1,0 +1,54 @@
+=== 参考文献 Key → 原始文件名 对应表 ===
+
+模块论文（中文）:
+ref_hu2024         → 多场景融合的教师数字画像_模式建构与应用方法.pdf
+ref_zhang2022      → 多模态数据支持的课堂教学行为 分析模型与实践框架.pdf
+ref_hu2024b        → 基于画像技术的教师研修路径智能推荐研究.pdf
+ref_chen2021       → 教师画像的前沿探讨_定义、概念框架与研究边界.pdf
+ref_bai2024        → 小学人工智能教师画像构建研究.pdf
+ref_k12            → 面向K12教师的智能教育素养框架构建.pdf
+
+模块论文（英文）:
+ref_actionformer_ego4d  → ActionFormer for Ego4D.pdf
+ref_actionformer        → ActionFormer.pdf
+ref_canovas2023         → AI-driven_Teacher_Analytics_Informative_Insights_on_Classroom_Activities.pdf
+ref_li2022              → A_Method_for_Analyzing_Teacher_Behavior_in_Classroom_Based_on_the_Long-_and_Short-Term_Features_of_Pose_Sequences.pdf
+ref_liu2023             → A_Teacher_and_Student_Facial_Expression_Recognition_Model_Based_on_Classroom_Teaching_Videos.pdf
+ref_donnelly            → Automatic Teacher Modeling from Live Classroom Audio.pdf
+ref_zhang2021speech     → Classification_of_Classroom_Teachers_Speech_Intention_Based_on_Deep_Learning.pdf
+ref_classmind           → ClassMind Scaling Classroom Observation and Instructional Feedback with Multimodal AI.pdf
+ref_csbyolo             → Csb-yolo a rapid and efficient real-time algorithm for classroom student behavior detection.pdf
+ref_zhao2024            → Design_of_Teacher_Portrait_System_Based_on_Knowledge_Graph.pdf
+ref_rafique             → Employing automatic content recognition for teaching methodology analysis in classroom videos.pdf
+ref_intent              → Intent, Action and Feedback A Preparation for Teaching.pdf
+ref_iseeyou             → I See You Teacher Analytics with GPT-4 Vision Powered Observational Assessment.pdf
+ref_lecture2notes       → lecture2notes-paper-v1.pdf
+ref_liu2022rfm          → Mathematical Problems in Engineering - 2022 - Liu - Animation User Value Portrait Based on RFM Model under Big Data.pdf
+ref_wu2024mctm          → Motion_Complement_and_Temporal_Multifocusing_for_Skeleton-Based_Action_Recognition.pdf
+ref_sapena              → Multimodal Classification of Teaching Activities from University Lecture Recordings.pdf
+ref_riordan2025         → Multimodal classroom interaction analysis using video-based methods of the pedagogical tactic of un grouping.pdf
+ref_han                 → Research_on_Teachers_Behavior_in_the_Class_Recognition_on_Based_on_Text_Classification_Technology.pdf
+ref_borchers2023        → Revealing Networks Understanding Effective Teacher Practices in AI-Supported Classrooms using Transmodal Ordered Network Analysis.pdf
+ref_sitmlp2024          → SiT-MLP_A_Simple_MLP_With_Point-Wise_Topology_Feature_Learning_for_Skeleton-Based_Action_Recognition.pdf
+ref_snag                → SnAG.pdf
+ref_liang               → Speech_Emotion_Recognition_of_Teachers_in_Classroom_Teaching.pdf
+ref_anderson1939        → THE MEASUREMENT OF DOMINATION AND OF SOCIALLY INTEGRATIVE BEHAVIOR IN TEACHERS' CONTACTS WITH CHILDREN.pdf
+ref_tridet              → TriDet.pdf
+ref_zhou2019            → Understanding the Teaching Styles by an Attention based Multi-task Cross-media Dimensional modelling.pdf
+
+综述性论文（英文）:
+ref_guerrero            → A_Comprehensive_Review_of_Multimodal_Analysis_in_E.pdf
+ref_zhao2024review      → A_Review_of _State_of_the_Art_Methodologies_and_Applications_Action_Recognition.pdf
+ref_pardo2025audio      → Audio Features in Education A Systematic Review of Computational Applications and Research Gaps.pdf
+ref_hu2024portrait      → Constructing a teacher portrait for the artificial intelligence age based on the micro ecological system theory A systematic review.pdf
+ref_ahmad2024           → Data-Driven_Artificial_Intelligence_in_Education_A_Comprehensive_Review.pdf
+ref_saket2025           → Deep learning applied for abnormal human behavior recognition in video surveillance systems A systematic review.pdf
+ref_shafizadegan2024    → Multimodal vision-based human action recognition using deep learning_ a review.pdf
+ref_schiappa2023        → Self-Supervised Learning for Videos A Survey.pdf
+ref_yurum2025           → Technology-Enhanced_Multimodal_Learning_Analytics_.pdf
+ref_cai2025             → The+TBU+dataset+and+performance+.pdf
+ref_howard              → Using_Data_Mining_and_Machine_Learning_Approaches_to_Observe_Technology-Enhanced_Learning.pdf
+
+注：以下为重复文件（译文版），已合并至同一条目：
+  AI-driven_Teacher_Analytics_Informative_Insights_on_Classroom_Activities_1_8_translate → 同 ref_canovas2023
+  Constructing a teacher portrait_translate → 同 ref_hu2024portrait

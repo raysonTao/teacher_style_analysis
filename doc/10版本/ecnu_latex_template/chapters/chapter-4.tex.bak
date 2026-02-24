@@ -228,7 +228,6 @@ Prometheus与Grafana是云原生监控的经典组合。Prometheus负责从各�
 
 \begin{table}[htbp]
 \centering
-\resizebox{\linewidth}{!}{%
 \begin{tabular}{|l|l|l|l|l|}
 \hline
 功能模块 & 测试项 & 输入 & 预期结果 & 测试结果 \\
@@ -269,7 +268,7 @@ SHAP分析 & 特征归因计算 & 单次预测特征向量 & 返回70维SHAP值 
 \hline
 任务管理 & 失败任务重试 & 模拟服务异常后重试 & 自动重试后成功完成 & 通过 \\
 \hline
-\end{tabular}}
+\end{tabular}
 \end{table}
 
 全部18项功能测试用例均通过验证，系统核心功能运行正常。
@@ -304,9 +303,7 @@ SHAP归因计算 & 单样本耗时 & ≤200毫秒 & 120毫秒 \\
 \end{tabular}
 \end{table}
 
-\begin{sloppypar}
 单片段1.34秒的端到端处理时间中，视频流水线（YOLOv8+DeepSORT+MediaPipe+ST-GCN）耗时0.82秒，音频流水线耗时0.37秒，SHAPE推理耗时0.15秒，三条流水线并行执行，总时间由最慢的视频流水线决定。各项性能指标均达到设计目标。
-\end{sloppypar}
 
 \textbf{（二）安全性测试}
 

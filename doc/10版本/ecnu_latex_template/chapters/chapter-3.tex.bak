@@ -510,7 +510,7 @@ F_{a} = \left\lbrack \underset{\text{6维情感}}{\underbrace{p_{\text{neutral}}
 
 \textbf{人员身份追踪识别}
 
-课堂场景存在多人干扰（学生走动、举手），单纯依赖YOLO检测会导致教师ID在遮挡后跳变为学生ID。本研究采用DeepSORT\cite{ref_wojke2017}算法，通过结合外观特征（ReID）和运动模型（卡尔曼滤波）实现稳定追踪。
+课堂场景存在多人干扰（学生走动、举手），单纯依赖YOLO检测会导致教师ID在遮挡后跳变为学生ID。本研究采用DeepSORT算法，通过结合外观特征（ReID）和运动模型（卡尔曼滤波）实现稳定追踪。
 
 
 \subsection{ST-GCN时序动作识别}
@@ -529,7 +529,7 @@ X_{3} & = \text{ST-GCN-Block}\left( X_{2},C_{\text{out}} = 256 \right) \\
 \end{matrix}
 \]
 
-其中，GAP是全局平均池化，$\mathbf{y}$是6类动作的概率分布（standing/\allowbreak{}walking/\allowbreak{}gesturing/\allowbreak{}writing/\allowbreak{}pointing/\allowbreak{}raise\_hand）。最终编码为20维视频特征向量$F_{v} \in \mathbb{R}^{20}$（详见4.3.3节）。
+其中，GAP是全局平均池化，$\mathbf{y}$是6类动作的概率分布（standing/walking/gesturing/writing/pointing/raise\_hand）。最终编码为20维视频特征向量$F_{v} \in \mathbb{R}^{20}$（详见4.3.3节）。
 
 
 
@@ -865,7 +865,7 @@ v_{t} = \beta_{2}v_{t - 1} + \left( 1 - \beta_{2} \right)g_{t}^{2}
 
 \subsubsection{(1) SHAP值分析}
 
-使用SHAP（SHapley Additive exPlanations\cite{ref_lundberg2017}）分析每个特征对预测结果的边际贡献：
+使用SHAP（SHapley Additive exPlanations）分析每个特征对预测结果的边际贡献：
 
 \[
 \phi_{i} = \sum_{S \subseteq F \smallsetminus \{ i\}}^{}\frac{|S|!\left( |F| - |S| - 1 \right)!}{|F|!}\left\lbrack f_{S \cup \{ i\}}(x) - f_{S}(x) \right\rbrack
@@ -1111,7 +1111,7 @@ $n_{k}$ 是类别 $k$ 的样本数，$N$ 是总样本数。
 \end{itemize}
 \textbf{（三）ST-GCN动作识别模块}
 
-使用mm-tba数据集（6类教师动作：standing/\allowbreak{}walking/\allowbreak{}gesturing/\allowbreak{}writing/\allowbreak{}pointing/\allowbreak{}raise\_hand）进行端到端训练：
+使用mm-tba数据集（6类教师动作：standing/walking/gesturing/writing/pointing/raise\_hand）进行端到端训练：
 
 \begin{itemize}
 \item 初始化：随机初始化（无预训练权重）
@@ -1127,7 +1127,6 @@ $n_{k}$ 是类别 $k$ 的样本数，$N$ 是总样本数。
 
 \begin{table}[htbp]
 \centering
-\resizebox{\linewidth}{!}{%
 \begin{tabular}{|l|l|l|l|l|}
 \hline
 子模块 & 预训练数据 & 策略 & 学习率 & 目标性能 \\
@@ -1138,7 +1137,7 @@ BERT H-DAR & 自建课堂话语语料（10类意图） & 冻结前8层，微调�
 \hline
 ST-GCN动作识别 & mm-tba（6类教师动作） & 端到端训练 & $1 \times 10^{-3}$ & 准确率 $\geq 85\%$ \\
 \hline
-\end{tabular}}
+\end{tabular}
 \end{table}
 
 
@@ -1291,14 +1290,13 @@ Cohen's Kappa（$\kappa$） & \textbf{[待填]} \\
 \item \textbf{配置B（去掉语义驱动分段）}：将语义完整分段策略替换为固定10s滑动窗口
 \item \textbf{配置C（去掉跨模态注意力）}：将跨模态注意力层替换为简单特征拼接（70维直接送入BiLSTM）
 \item \textbf{配置D（4类DAR替代H-DAR）}：将10类细粒度H-DAR替换为4类粗粒度对话行为识别
-\item \textbf{配置E（去掉DeepSORT\cite{ref_wojke2017}追踪）}：将DeepSORT身份追踪替换为YOLO每帧独立检测
+\item \textbf{配置E（去掉DeepSORT追踪）}：将DeepSORT身份追踪替换为YOLO每帧独立检测
 
 \end{itemize}
 \textbf{表3-E：消融实验结果}
 
 \begin{table}[htbp]
 \centering
-\resizebox{\linewidth}{!}{%
 \begin{tabular}{|l|l|l|l|l|l|}
 \hline
 配置 & 准确率（\%） & Macro-F1 & 较完整系统差值（\%） & McNemar $\chi^2$ & 显著性 \\
@@ -1313,7 +1311,7 @@ D：4类DAR替代H-DAR & [待填] & [待填] & -[待填] & [待填] & [待填] \
 \hline
 E：去掉DeepSORT追踪 & [待填] & [待填] & -[待填] & [待填] & [待填] \\
 \hline
-\end{tabular}}
+\end{tabular}
 \end{table}
 
 McNemar检验阈值：$\chi^2 > 3.84$（$\alpha = 0.05$，自由度df=1）时认为差异显著。

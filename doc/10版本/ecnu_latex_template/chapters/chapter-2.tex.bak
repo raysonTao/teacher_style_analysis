@@ -11,7 +11,7 @@
 
 \subsection{教师教学风格的量化测量}
 
-教学风格的量化研究起源于20世纪60年代的课堂互动分析。Flanders提出的互动分析系统（FIAS\cite{ref_intent}，Flanders Interaction Analysis System）是最早、最具代表性课堂行为编码工具，通过10类编码对课堂互动进行量化记录。FIAS将课堂互动分为三大类：
+教学风格的量化研究起源于20世纪60年代的课堂互动分析。Flanders提出的互动分析系统（FIAS，Flanders Interaction Analysis System）是最早、最具代表性课堂行为编码工具，通过10类编码对课堂互动进行量化记录。FIAS将课堂互动分为三大类：
 
 \textbf{（1）教师言语行为（7类编码）}
 
@@ -103,7 +103,7 @@ S.  \textbf{T分析法（Student-Teacher Interaction Analysis）}
 
     S-T 分析法（Student-Teacher Interaction Analysis，简称 S-T 分析法）是一种简化型课堂教学互动定量分析方法，由日本教育学者藤田英典等人提出，旨在通过对课堂中 "教师行为" 与 "学生行为" 的二元划分，客观刻画课堂互动结构与教学模式。
 
-    与传统的弗兰德斯互动分析系统（FIAS\cite{ref_intent}）等多维度编码体系不同，S-T 分析法采用极简二元分类，仅将课堂行为划分为两类：
+    与传统的弗兰德斯互动分析系统（FIAS）等多维度编码体系不同，S-T 分析法采用极简二元分类，仅将课堂行为划分为两类：
 
     T（Teacher）行为：教师讲授、板书、演示、提问、指导、评价等由教师主导的教学行为；
 
@@ -119,9 +119,9 @@ S.  \textbf{T分析法（Student-Teacher Interaction Analysis）}
 
     S-T 分析法的优势在于编码规则简单、主观性低、易操作、可重复，能够有效降低课堂观察的复杂度，适用于各类学科课堂教学互动的实证分析与教学评价。
 
-\textbf{CLASS评价工具\cite{ref_pianta2008}：从行为编码到多维评分}
+\textbf{CLASS评价工具：从行为编码到多维评分}
 
-Pianta等人（2008\cite{ref_pianta2008}）开发的CLASS评价工具（Classroom Assessment Scoring System）代表了教学风格评价的重要进步。CLASS不再采用逐秒编码的方式，而是通过标准化观察量表从三个维度评估教学质量：
+Pianta等人（2008）开发的CLASS评价工具（Classroom Assessment Scoring System）代表了教学风格评价的重要进步。CLASS不再采用逐秒编码的方式，而是通过标准化观察量表从三个维度评估教学质量：
 
 \textbf{CLASS三维评价体系}
 
@@ -180,7 +180,7 @@ Pianta等人（2008\cite{ref_pianta2008}）开发的CLASS评价工具（Classroo
 
 \textbf{Grasha教学风格量表（Teaching Style Inventory, TSI）}
 
-Grasha（1996\cite{ref_grasha1996}）提出了著名的五类教学风格模型，将教师划分为：
+Grasha（1996）提出了著名的五类教学风格模型，将教师划分为：
 
 \begin{enumerate}
 \item \textbf{专家型（Expert）}：强调知识传授与学科深度，以教师为知识权威
@@ -194,7 +194,7 @@ Grasha（1996\cite{ref_grasha1996}）提出了著名的五类教学风格模型�
 \item \textbf{委派型（Delegator）}：最大化学生自主权，教师作为顾问角色
 
 \end{enumerate}
-Grasha开发了教学风格量表（TSI）来量化测量这五种\cite{ref_grasha1996}风格。TSI包含40个题项，每个风格8个题项，采用5点Likert量表（1=非常不同意，5=非常同意）。例如：
+Grasha开发了教学风格量表（TSI）来量化测量这五种风格。TSI包含40个题项，每个风格8个题项，采用5点Likert量表（1=非常不同意，5=非常同意）。例如：
 
 \begin{itemize}
 \item \textbf{专家型题项}："我希望学生将我视为某一领域的专家"（I want students to perceive me as an expert in the field）
@@ -216,15 +216,14 @@ Grasha提出了基于得分阈值的分类规则： - 如果 $S_{k} \geq 4.0$，
 
 大多数教师表现为\textbf{混合风格}，例如：
 
-\begin{multline*}
-\text{Style Profile} = \{\text{Expert}:4.2,\ \text{Authority}:3.8,\ \text{Personal Model}:3.5, \\
-\text{Facilitator}:2.8,\ \text{Delegator}:2.3\}
-\end{multline*}
+\[
+\text{Style Profile} = \{\text{Expert}:4.2,\text{Authority}:3.8,\text{Personal Model}:3.5,\text{Facilitator}:2.8,\text{Delegator}:2.3\}
+\]
 
 这表示教师以专家型为主导，辅以权威型和示范型特征。
 
 
-信息技术的发展推动了课堂分析方法的革新。顾小清等（2007）基于Flanders互动分析系统\cite{ref_intent}，针对多媒体教学环境的特点，设计出了ITIAS（Information Technology-based Interaction Analysis System，基于信息技术的互动分析编码系统）。
+信息技术的发展推动了课堂分析方法的革新。顾小清等（2007）基于Flanders互动分析系统，针对多媒体教学环境的特点，设计出了ITIAS（Information Technology-based Interaction Analysis System，基于信息技术的互动分析编码系统）。
 
 \textbf{ITIAS的"师-生-技"三元互动模型}
 
@@ -254,7 +253,7 @@ TII > 30\% 表示技术深度整合，15\% < TII < 30\% 为中度整合，TII < 
 
 其中，$N_{12 \rightarrow 4}$ 表示"技术呈现内容"后紧接"教师提问"的转移次数。高协同值（> 0.5）表示技术工具与教学策略有机结合。
 
-随着教育大数据技术和学习分析（Learning Analytics）的兴起，数据驱动的教师画像（Teacher Profiling）成为新的研究方向。\textbf{胡小勇等（2018）的教师画像\cite{ref_hu2024}框架}
+随着教育大数据技术和学习分析（Learning Analytics）的兴起，数据驱动的教师画像（Teacher Profiling）成为新的研究方向。\textbf{胡小勇等（2018）的教师画像框架}
 
 胡小勇等从教研数据采集、分类以及有效关联等角度，提出了数据驱动下的教师画像实施框架：
 
@@ -395,9 +394,9 @@ Wang等人(2016)提出的时序分段网络（TSN，Temporal Segment Networks）
 
 \textbf{（4）基于骨骼序列的图卷积网络}
 
-基于骨骼序列的图卷积网络（GCN）方法提供了一种更高效的视频分析方案。OpenPose(2017)通过自底向上的方法实现了实时的多人姿态估计，提取人体的关键点坐标（如头部、肩膀、肘部、手腕、臀部、膝盖、脚踝等）。MediaPipe(2020\cite{ref_lugaresi2019})进一步提供了轻量化的姿态估计解决方案，能够在移动设备上实时运行。
+基于骨骼序列的图卷积网络（GCN）方法提供了一种更高效的视频分析方案。OpenPose(2017)通过自底向上的方法实现了实时的多人姿态估计，提取人体的关键点坐标（如头部、肩膀、肘部、手腕、臀部、膝盖、脚踝等）。MediaPipe(2020)进一步提供了轻量化的姿态估计解决方案，能够在移动设备上实时运行。
 
-Yan等人(2018\cite{ref_yan2018})提出的ST-GCN（Spatial Temporal Graph Convolutional Networks）将人体骨骼序列建模为时空图结构，节点表示关节点，边表示关节间的连接关系（骨骼连接和时间连接），通过图卷积捕捉关节间的空间依赖和时间演化。相比于基于RGB的方法，骨骼序列表征具有以下优势：
+Yan等人(2018)提出的ST-GCN（Spatial Temporal Graph Convolutional Networks）将人体骨骼序列建模为时空图结构，节点表示关节点，边表示关节间的连接关系（骨骼连接和时间连接），通过图卷积捕捉关节间的空间依赖和时间演化。相比于基于RGB的方法，骨骼序列表征具有以下优势：
 
 \begin{enumerate}
 \item \textbf{计算效率高}：特征维度从百万级（2.76M维的RGB视频帧）降至百级（99维的骨骼序列）
@@ -421,7 +420,7 @@ Transformer架构的引入进一步提升了视频理解能力。Dosovitskiy等�
 
 在教育场景的具体应用中，Gupta等人(2021)使用姿态估计结合LSTM时序建模识别教师的典型动作（如讲解、板书、走动、指向等）。最新的MM-TBA数据集(2024)收集了超过300位教师的4,839个教学视频片段，涵盖讲解、板书、走动、互动、手势、指向等6类典型教学动作，为教师行为识别算法的训练和验证提供了标准化的基准。该数据集发表于Nature Scientific Data期刊，包含丰富的标注信息（动作类别、时间戳、边界框、姿态关键点等），成为该领域重要的公开资源。
 
-YOLOv8结合可变形大核注意力（DLKA）机制(2024)能够在复杂场景下准确识别小目标（如教师的手势细节、学生的举手动作），显著提升了课堂行为检测的鲁棒性。ClassMind系统(2024\cite{ref_classmind})采用多模态大语言模型（LLM）作为核心分析引擎，通过AVA-Align流水线实现了对课堂视频的长上下文推理和时序定位，能够自动生成教师的等待时长、师生对话平衡、学生参与度等量化指标。EduSpatioNet(2025)将YOLOv8目标检测与时空图神经网络（GNN）结合，通过建模师生的空间关系和时序交互，实现了教师行为识别与专家评估的高一致性。
+YOLOv8结合可变形大核注意力（DLKA）机制(2024)能够在复杂场景下准确识别小目标（如教师的手势细节、学生的举手动作），显著提升了课堂行为检测的鲁棒性。ClassMind系统(2024)采用多模态大语言模型（LLM）作为核心分析引擎，通过AVA-Align流水线实现了对课堂视频的长上下文推理和时序定位，能够自动生成教师的等待时长、师生对话平衡、学生参与度等量化指标。EduSpatioNet(2025)将YOLOv8目标检测与时空图神经网络（GNN）结合，通过建模师生的空间关系和时序交互，实现了教师行为识别与专家评估的高一致性。
 
 综上，视频行为识别技术已能支持从教师录像中提取动作类别、持续时间、空间分布及频率等指标，为教师风格画像提供稳定的行为维度输入。
 
@@ -479,7 +478,7 @@ Chan等人(2016)提出的Listen, Attend and Spell（LAS）模型引入了注意�
 
 \textbf{（3）自监督学习：Wav2Vec 2.0与HuBERT}
 
-自监督学习的兴起进一步突破了对大量标注数据的依赖。Baevski等人(2020\cite{ref_baevski2020})提出的Wav2Vec 2.0通过自监督对比学习从无标注音频中学习通用的声学表征。该方法首先使用卷积神经网络提取音频的局部特征，然后通过Transformer网络建模长程依赖，最后通过对比学习目标（contrastive learning）学习区分真实语音片段和负样本：
+自监督学习的兴起进一步突破了对大量标注数据的依赖。Baevski等人(2020)提出的Wav2Vec 2.0通过自监督对比学习从无标注音频中学习通用的声学表征。该方法首先使用卷积神经网络提取音频的局部特征，然后通过Transformer网络建模长程依赖，最后通过对比学习目标（contrastive learning）学习区分真实语音片段和负样本：
 
 \[
 \mathcal{L}_{\text{contrastive}} = - log\frac{\exp\left( \text{sim}\left( c_{t},q_{t} \right)/\tau \right)}{\sum_{i = 1}^{K}\exp\left( \text{sim}\left( c_{t},{\widetilde{q}}_{i} \right)/\tau \right)}
@@ -540,7 +539,7 @@ Wav2Vec 2.0在仅使用少量标注数据的情况下，在多种下游任务（
 
 注意力机制（Attention Mechanism）的引入进一步提升了序列建模能力。Bahdanau等人(2015)在机器翻译任务中首次引入注意力机制，使得模型能够在生成每个输出词时动态地关注输入序列的不同部分。
 
-自注意力机制（Self-Attention）通过计算序列中每个元素与其他元素的关联程度，捕捉长程依赖和全局信息。Vaswani等人(2017\cite{ref_vaswani2017})提出的Transformer架构完全基于自注意力机制，抛弃了循环结构。Transformer通过自注意力机制建模序列中任意两个位置的依赖关系：
+自注意力机制（Self-Attention）通过计算序列中每个元素与其他元素的关联程度，捕捉长程依赖和全局信息。Vaswani等人(2017)提出的Transformer架构完全基于自注意力机制，抛弃了循环结构。Transformer通过自注意力机制建模序列中任意两个位置的依赖关系：
 
 \[
 \text{Attention}(Q,K,V) = \text{softmax}\left( \frac{QK^{T}}{\sqrt{d_{k}}} \right)V
@@ -564,7 +563,7 @@ Wav2Vec 2.0在仅使用少量标注数据的情况下，在多种下游任务（
 
 \textbf{（4）预训练语言模型：BERT及其变体}
 
-预训练语言模型的兴起带来了自然语言理解的突破。Devlin等人(2018\cite{ref_devlin2018})提出的BERT（Bidirectional Encoder Representations from Transformers）通过在大规模语料上进行掩码语言模型（Masked Language Model，MLM）和下一句预测（Next Sentence Prediction，NSP）的预训练，学习到了丰富的语言知识。
+预训练语言模型的兴起带来了自然语言理解的突破。Devlin等人(2018)提出的BERT（Bidirectional Encoder Representations from Transformers）通过在大规模语料上进行掩码语言模型（Masked Language Model，MLM）和下一句预测（Next Sentence Prediction，NSP）的预训练，学习到了丰富的语言知识。
 
 BERT采用双向Transformer编码器，能够同时利用左侧和右侧的上下文信息。掩码语言模型通过随机掩盖15\%的词，预测被掩盖的词：
 

@@ -1,10 +1,150 @@
 \chapter{研究方法与总体设计}
 
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=0.30cm,
+  %% 全宽框
+  wbox/.style={rectangle, rounded corners=3pt,
+               draw=#1!70, fill=#1!10,
+               text width=12.5cm, minimum height=0.72cm,
+               align=center, font=\small},
+  %% 模态列框
+  cbox/.style={rectangle, rounded corners=3pt,
+               draw=#1!65, fill=#1!8,
+               text width=3.6cm, minimum height=0.68cm,
+               align=center, font=\scriptsize},
+  %% 模态列标题
+  hbox/.style={rectangle, rounded corners=3pt,
+               draw=#1!80, fill=#1!22,
+               text width=3.6cm, minimum height=0.68cm,
+               align=center, font=\small\bfseries},
+  %% 维度标签（每列底部）
+  dbox/.style={rectangle, rounded corners=2pt,
+               draw=#1!85, fill=#1!28,
+               text width=3.6cm, minimum height=0.58cm,
+               align=center, font=\footnotesize},
+  arr/.style={-Stealth, semithick},
+]
+%% ─── 输入 ───
+\node[wbox=gray] (IN)
+  {\textbf{输入}：课堂录像（视频流 + 音频流）};
 
+%% ─── 预处理 ───
+\node[wbox=blue, below=0.40cm of IN] (PRE)
+  {语义驱动分段\quad 依存句法分析 + 话语边界检测
+   $\;\to\;$ 语义单元序列
+   $\mathcal{U}=\{U_i=(T_i,A_i,V_i,t^\text{s}_i,t^\text{e}_i)\}_{i=1}^{N}$};
+
+%% ─── 列标题 ───
+\node[hbox=teal,           below=0.90cm of PRE, xshift=-4.3cm] (HV) {视觉模态};
+\node[hbox=orange,         below=0.90cm of PRE, xshift=  0cm]  (HA) {音频模态};
+\node[hbox=green!65!black, below=0.90cm of PRE, xshift=+4.3cm] (HT) {文本模态};
+
+%% ─── 视觉列 ───
+\node[cbox=teal, below=0.30cm of HV] (V1)
+  {人体目标检测\\边界框提取与过滤};
+\node[cbox=teal, below=0.30cm of V1] (V2)
+  {教师身份追踪\\运动预测 + 外观匹配};
+\node[cbox=teal, below=0.30cm of V2] (V3)
+  {人体骨骼估计\\17关键点提取};
+\node[cbox=teal, below=0.30cm of V3] (V4)
+  {时空图卷积网络（ST-GCN）\\$\times$3层：$64\!\to\!128\!\to\!256\,$d\\全局平均池化 $\to$ 20d};
+\node[dbox=teal, below=0.30cm of V4] (FV)
+  {$F_v \in \mathbb{R}^{20}$};
+
+%% ─── 音频列 ───
+\node[cbox=orange, below=0.30cm of HA] (A1)
+  {声学预训练编码器\\自监督语音表示学习};
+\node[cbox=orange, below=0.30cm of A1] (A2)
+  {语音情感识别（SER）\\微调·6类情感 $\to$ 15d};
+\node[dbox=orange, below=0.30cm of A2] (FA)
+  {$F_a \in \mathbb{R}^{15}$};
+
+%% ─── 文本列 ───
+\node[cbox=green!65!black, below=0.30cm of HT] (T1)
+  {自动语音识别（ASR）\\语音 $\to$ 全文文本转写};
+\node[cbox=green!65!black, below=0.30cm of T1] (T2)
+  {预训练语言编码器\\Transformer·$[\text{CLS}]\!\to\!768\,$d};
+\node[cbox=green!65!black, below=0.30cm of T2] (T3)
+  {H-DAR 意图识别\\粗分类（4类）\\细分类（10类）$\to$ 35d};
+\node[dbox=green!65!black, below=0.30cm of T3] (FT)
+  {$F_t \in \mathbb{R}^{35}$};
+
+%% ─── 特征投影层 ───
+\node[wbox=blue!75!black, below=1.00cm of FV, xshift=+4.3cm] (PROJ)
+  {特征投影层\quad
+   $F'_m = \mathrm{ReLU}(W_m F_m + b_m)$\quad
+   $F'_v,\,F'_a,\,F'_t \in \mathbb{R}^{512}$};
+
+%% ─── 跨模态注意力 ───
+\node[wbox=orange!85!black, below=0.35cm of PROJ] (CMA)
+  {跨模态注意力层\quad
+   $\alpha_{i\to j}=\mathrm{softmax}(Q_iK_j^\top\!/\!\sqrt{d_k}),\;d_k\!=\!64$\quad
+   6个注意力权重：$\alpha_{v\leftrightarrow a},\;\alpha_{v\leftrightarrow t},\;\alpha_{a\leftrightarrow t}$};
+
+%% ─── BiLSTM + 注意力池化 ───
+\node[wbox=green!65!black, below=0.35cm of CMA] (LSTM)
+  {BiLSTM 时序建模\quad
+   $h_n=[\overrightarrow{h}_n;\overleftarrow{h}_n]\in\mathbb{R}^{1024}$（hidden$\!=\!512\!\times\!2$）\quad
+   注意力池化 $F_\text{pooled}=\textstyle\sum_n\!\beta_n h_n$};
+
+%% ─── 分类器 ───
+\node[wbox=red!80!black, below=0.35cm of LSTM] (CLS)
+  {风格分类器\quad
+   $\mathrm{FC}(1024\!\to\!256)+\mathrm{Dropout}(0.3)+\mathrm{FC}(256\!\to\!7)+\mathrm{Softmax}$};
+
+%% ─── 输出 ───
+\node[wbox=gray, below=0.35cm of CLS] (OUT)
+  {\textbf{输出}：7类风格概率分布 $P(y|X)\!\in\!\mathbb{R}^7$\;+\;
+   注意力权重 $\{\alpha_{i\to j}\}$\;+\;片段权重 $\{\beta_n\}$};
+
+%% ─── 箭头 ───
+\draw[arr] (IN) -- (PRE);
+
+%% PRE 分叉 → 三列（主干 + 三分支）
+\coordinate (trunk) at ([yshift=-0.48cm]PRE.south);
+\draw[semithick] (PRE.south) -- (trunk);
+\draw[arr] (trunk) -| (HV.north);
+\draw[arr] (trunk) -- (HA.north);
+\draw[arr] (trunk) -| (HT.north);
+
+%% 视觉列内部
+\draw[arr] (HV) -- (V1);
+\draw[arr] (V1) -- (V2);
+\draw[arr] (V2) -- (V3);
+\draw[arr] (V3) -- (V4);
+\draw[arr] (V4) -- (FV);
+
+%% 音频列内部
+\draw[arr] (HA) -- (A1);
+\draw[arr] (A1) -- (A2);
+\draw[arr] (A2) -- (FA);
+
+%% 文本列内部
+\draw[arr] (HT) -- (T1);
+\draw[arr] (T1) -- (T2);
+\draw[arr] (T2) -- (T3);
+\draw[arr] (T3) -- (FT);
+
+%% 三列底部 → 投影层（竖向汇聚）
+\draw[arr] (FV.south) -- ([xshift=-4.3cm]PROJ.north);
+\draw[arr] (FA.south) -- (PROJ.north);
+\draw[arr] (FT.south) -- ([xshift=+4.3cm]PROJ.north);
+
+%% 融合层顺序箭头
+\draw[arr] (PROJ) -- (CMA);
+\draw[arr] (CMA)  -- (LSTM);
+\draw[arr] (LSTM) -- (CLS);
+\draw[arr] (CLS)  -- (OUT);
+\end{tikzpicture}
+\caption{SHAPE系统整体架构（端到端流水线）}
+\label{fig:shape-overview}
+\end{figure}
 
 \section{系统总体架构}
 
-本研究以"基于课堂录像的教师风格画像分析"为核心目标，提出SHAPE (Semantic Hierarchical Attention Profiling Engine，语义层次化注意力画像引擎)，构建一个集多模态特征提取、风格映射建模、画像生成与可视化反馈于一体的分析体系。
+本研究以"基于课堂录像的教师风格画像分析"为核心目标，提出SHAPE (Semantic Hierarchical Attention Profiling Engine，语义层次化注意力画像引擎)，构建一个集多模态特征提取、风格映射建模、画像生成与可视化反馈于一体的分析体系（如图~\ref{fig:shape-overview}所示）。
 
 \textbf{3.1.1 现有方法的局限性分析}
 
@@ -776,9 +916,9 @@ SHAPE由五个核心模块组成：
   arr/.style={-Stealth, semithick},
 ]
   %% 三模态输入列
-  \node[box=gray]  (Fv) {视频特征\\$F_v\!\in\!\mathbb{R}^{20}$\\{\tiny ST-GCN}};
-  \node[box=gray,  right=1.1cm of Fv] (Fa) {音频特征\\$F_a\!\in\!\mathbb{R}^{15}$\\{\tiny Wav2Vec 2.0}};
-  \node[box=gray,  right=1.1cm of Fa] (Ft) {文本特征\\$F_t\!\in\!\mathbb{R}^{35}$\\{\tiny BERT+H-DAR}};
+  \node[box=gray]  (Fv) {视频特征\\$F_v\!\in\!\mathbb{R}^{20}$};
+  \node[box=gray,  right=1.1cm of Fv] (Fa) {音频特征\\$F_a\!\in\!\mathbb{R}^{15}$};
+  \node[box=gray,  right=1.1cm of Fa] (Ft) {文本特征\\$F_t\!\in\!\mathbb{R}^{35}$};
 
   %% 特征投影
   \node[box=blue, below=of Fv] (Pv) {特征投影\\$F_v'\!\in\!\mathbb{R}^{512}$};
@@ -1637,7 +1777,7 @@ r = \text{Pearson}\left( \phi_{\text{modal}}^{\text{SHAP}},\ w_{\text{modal}}^{\
 \begin{enumerate}
 \item \textbf{语义驱动分段策略}（3.2节）：以教学意图边界替代固定时间窗口，显著提升片段的语义完整性，为后续特征提取提供质量更高的输入单元。
 
-\item \textbf{多模态深度特征提取}（3.3节）：视频采用DeepSORT+MediaPipe+ST-GCN组合，音频采用Wav2Vec 2.0+情感识别，文本采用BERT+层次对话行为识别（H-DAR），分别生成20维、15维、35维特征向量，形成70维联合表示。
+\item \textbf{多模态深度特征提取}（3.3节）：视频采用目标追踪+骨骼估计+时空图卷积网络（ST-GCN）组合，音频采用声学预训练编码器+语音情感识别，文本采用预训练语言编码器+层次对话行为识别（H-DAR），分别生成20维、15维、35维特征向量，形成70维联合表示。
 
 \item \textbf{跨模态注意力融合}（3.4节）：SHAPE融合网络通过Query-Key-Value机制实现三模态间的自适应交互，避免简单拼接造成的模态主导问题，配合BiLSTM时序建模和注意力池化，输出7类风格分类结果。
 

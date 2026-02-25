@@ -1,17 +1,17 @@
 \addvspace {10.0pt}
 \addvspace {10.0pt}
 \addvspace {10.0pt}
-\contentsline {table}{\numberline {3.1}{\ignorespaces H-DAR细粒度对话行为分类体系（4粗类·10细类）}}{49}{table.caption.20}%
-\contentsline {table}{\numberline {3.2}{\ignorespaces 七类教学风格的模态依赖模式（注意力权重分析）}}{62}{table.caption.39}%
-\contentsline {table}{\numberline {3.3}{\ignorespaces 子模块预训练配置}}{66}{table.caption.40}%
-\contentsline {table}{\numberline {3.4}{\ignorespaces SHAPE系统整体性能（测试集，$N=53$）}}{68}{table.caption.41}%
-\contentsline {table}{\numberline {3.5}{\ignorespaces 各教学风格类别的分类性能}}{68}{table.caption.42}%
-\contentsline {table}{\numberline {3.6}{\ignorespaces 多模态融合对比实验结果}}{70}{table.caption.44}%
-\contentsline {table}{\numberline {3.7}{\ignorespaces 消融实验结果}}{70}{table.caption.45}%
-\contentsline {table}{\numberline {3.8}{\ignorespaces SHAP特征重要性Top-10（测试集，$N=53$）}}{71}{table.caption.46}%
+\contentsline {table}{\numberline {3.1}{\ignorespaces H-DAR细粒度对话行为分类体系（4粗类·10细类）}}{50}{table.caption.21}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces 七类教学风格的模态依赖模式（注意力权重分析）}}{63}{table.caption.40}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces 子模块预训练配置}}{67}{table.caption.41}%
+\contentsline {table}{\numberline {3.4}{\ignorespaces SHAPE系统整体性能（测试集，$N=53$）}}{69}{table.caption.42}%
+\contentsline {table}{\numberline {3.5}{\ignorespaces 各教学风格类别的分类性能}}{69}{table.caption.43}%
+\contentsline {table}{\numberline {3.6}{\ignorespaces 多模态融合对比实验结果}}{71}{table.caption.45}%
+\contentsline {table}{\numberline {3.7}{\ignorespaces 消融实验结果}}{71}{table.caption.46}%
+\contentsline {table}{\numberline {3.8}{\ignorespaces SHAP特征重要性Top-10（测试集，$N=53$）}}{72}{table.caption.47}%
 \addvspace {10.0pt}
-\contentsline {table}{\numberline {4.1}{\ignorespaces 测试环境配置}}{92}{table.caption.58}%
-\contentsline {table}{\numberline {4.2}{\ignorespaces 功能性测试用例}}{93}{table.caption.59}%
-\contentsline {table}{\numberline {4.3}{\ignorespaces 性能测试结果}}{93}{table.caption.60}%
+\contentsline {table}{\numberline {4.1}{\ignorespaces 测试环境配置}}{93}{table.caption.59}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces 功能性测试用例}}{94}{table.caption.60}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces 性能测试结果}}{94}{table.caption.61}%
 \addvspace {10.0pt}
 \contentsfinish 

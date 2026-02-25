@@ -678,7 +678,6 @@ INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futb8t.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/fourier-bb.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/fourier-bb.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/fourier-bb.tfm
-INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futr8t.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futmii.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futsy.tfm
@@ -693,7 +692,6 @@ INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futmi.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futb8t.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futb8t.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/fourier-bb.tfm
-INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futr8t.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futmii.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futsy.tfm
@@ -708,6 +706,8 @@ INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futmi.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futb8t.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futb8t.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/fourier-bb.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm
 INPUT ./chapters/fig-3/fig-3-3.png
 INPUT ./chapters/fig-3/fig-3-3.png
 INPUT ./chapters/fig-3/fig-3-3.png

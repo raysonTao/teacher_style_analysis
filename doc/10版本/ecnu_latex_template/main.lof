@@ -3,7 +3,7 @@
 \addvspace {10.0pt}
 \contentsline {figure}{\numberline {3.1}{\ignorespaces SHAPE引擎四层架构}}{40}{figure.caption.6}%
 \contentsline {figure}{\numberline {3.2}{\ignorespaces SHAPE多模态网络详细架构}}{53}{figure.caption.19}%
-\contentsline {figure}{\numberline {3.3}{\ignorespaces SHAPE模型7类风格分类混淆矩阵（测试集，$N=53$，占位示例数据）}}{68}{figure.caption.38}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces SHAPE模型7类风格分类混淆矩阵（测试集，$N=53$）}}{68}{figure.caption.38}%
 \addvspace {10.0pt}
 \contentsline {figure}{\numberline {4.1}{\ignorespaces 教师风格画像分析系统五层架构}}{74}{figure.caption.42}%
 \contentsline {figure}{\numberline {4.2}{\ignorespaces 课程级风格评分向量七边形雷达图（示例：教师A，第3节课，占位数据）}}{76}{figure.caption.43}%

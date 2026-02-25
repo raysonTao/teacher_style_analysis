@@ -115,14 +115,7 @@ SHAP值的计算使用KernelSHAP方法，以测试集全部样本的模型输出
 
 \textbf{关键词云图}（Word Cloud）从Whisper转写的全课文本中提取高频教学术语，经jieba分词和停用词过滤后生成词云，直观展示教师的核心词汇使用模式（如逻辑推导型教师词云中"因为""所以""因此"等逻辑连接词频率显著高于其他类型）。
 
-\textbf{典型片段自动提取}功能从模型预测结果中选取每类风格置信度最高的前3个片段，提供原始视频回放链接，使教师能够直观对照自身被识别为某一风格的具体行为表现，增强画像结果的可信度与教育反馈价值（如图~\ref{fig:typical-seg}所示）。
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.90\textwidth]{chapters/fig-4/fig-4-4.png}
-\caption{各风格置信度Top-3典型片段展示（3类风格×3片段）}
-\label{fig:typical-seg}
-\end{figure}
+\textbf{典型片段自动提取}功能从模型预测结果中选取每类风格置信度最高的前3个片段，提供原始视频回放链接，使教师能够直观对照自身被识别为某一风格的具体行为表现，增强画像结果的可信度与教育反馈价值。
 
 
 \subsection{风格分析功能}
@@ -258,20 +251,6 @@ Prometheus与Grafana是云原生监控的经典组合。Prometheus负责从各�
 \includegraphics[width=0.90\textwidth]{chapters/fig-4/fig-4-10.png}
 \caption{风格演变追踪页面界面原型}
 \label{fig:ui-trend}
-\end{figure}
-
-
-\subsection{批量分析与教研对比页面}
-
-批量分析页面（如图~\ref{fig:ui-batch}所示）面向教研人员，支持对多名教师或多节课程的批量处理与横向对比。
-
-用户在此页面可选择多个已上传的视频任务或批量导入视频文件列表，提交批量分析任务后，系统将任务拆分分发至多个Celery工作进程并行执行，处理35节课的预计耗时约58分钟。批量分析完成后，页面展示多教师风格分布对比雷达图（多组数据叠加在同一雷达图中）和各维度的均值与方差统计，辅助教研人员发现群体共性规律或个体差异特征。结果支持导出为Excel报表，包含每位教师的完整风格评分和主要特征指标。
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.90\textwidth]{chapters/fig-4/fig-4-11.png}
-\caption{批量分析与教研对比页面界面原型（教研管理员视图）}
-\label{fig:ui-batch}
 \end{figure}
 
 

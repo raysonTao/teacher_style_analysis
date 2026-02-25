@@ -561,12 +561,6 @@ INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/futmi.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/fourier-bb.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/fourier-bb.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/fourier/fourier-bb.tfm
-INPUT ./preface/copyright.tex
-INPUT ./preface/copyright.tex
-INPUT preface/copyright.tex
-INPUT ./preface/member-list.tex
-INPUT ./preface/member-list.tex
-INPUT preface/member-list.tex
 INPUT ./abstract/abstract.tex
 INPUT ./abstract/abstract.tex
 INPUT abstract/abstract.tex
@@ -720,9 +714,6 @@ INPUT ./chapters/fig-4/fig-4-2.png
 INPUT ./chapters/fig-4/fig-4-3.png
 INPUT ./chapters/fig-4/fig-4-3.png
 INPUT ./chapters/fig-4/fig-4-3.png
-INPUT ./chapters/fig-4/fig-4-4.png
-INPUT ./chapters/fig-4/fig-4-4.png
-INPUT ./chapters/fig-4/fig-4-4.png
 INPUT ./chapters/fig-4/fig-4-5.png
 INPUT ./chapters/fig-4/fig-4-5.png
 INPUT ./chapters/fig-4/fig-4-5.png
@@ -741,9 +732,6 @@ INPUT ./chapters/fig-4/fig-4-9.png
 INPUT ./chapters/fig-4/fig-4-10.png
 INPUT ./chapters/fig-4/fig-4-10.png
 INPUT ./chapters/fig-4/fig-4-10.png
-INPUT ./chapters/fig-4/fig-4-11.png
-INPUT ./chapters/fig-4/fig-4-11.png
-INPUT ./chapters/fig-4/fig-4-11.png
 INPUT ./chapters/chapter-5.tex
 INPUT ./chapters/chapter-5.tex
 INPUT chapters/chapter-5.tex
@@ -753,12 +741,6 @@ INPUT references/paper-manual.bib
 INPUT ./chapters/appendix.tex
 INPUT ./chapters/appendix.tex
 INPUT chapters/appendix.tex
-INPUT ./acknowledgement/acknowledgement.tex
-INPUT ./acknowledgement/acknowledgement.tex
-INPUT acknowledgement/acknowledgement.tex
-INPUT ./achievements/achievements.tex
-INPUT ./achievements/achievements.tex
-INPUT achievements/achievements.tex
 INPUT ./main.ind
 INPUT ./main.ind
 INPUT main.ind

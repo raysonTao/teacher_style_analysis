@@ -74,11 +74,11 @@
 \contentsline {subsection}{\numberline {3.7.1}数据集说明}{65}{subsection.3.7.1}%
 \contentsline {section}{\numberline {3.8}实验过程}{66}{section.3.8}%
 \contentsline {subsection}{\numberline {3.8.1}子模块预训练设置}{66}{subsection.3.8.1}%
-\contentsline {subsection}{\numberline {3.8.2}SHAPE端到端训练设置}{68}{subsection.3.8.2}%
+\contentsline {subsection}{\numberline {3.8.2}SHAPE端到端训练设置}{67}{subsection.3.8.2}%
 \contentsline {section}{\numberline {3.9}实验结果分析}{68}{section.3.9}%
-\contentsline {subsection}{\numberline {3.9.1}整体性能}{69}{subsection.3.9.1}%
-\contentsline {subsection}{\numberline {3.9.2}多模态融合对比}{69}{subsection.3.9.2}%
-\contentsline {subsection}{\numberline {3.9.3}消融实验}{70}{subsection.3.9.3}%
+\contentsline {subsection}{\numberline {3.9.1}整体性能}{68}{subsection.3.9.1}%
+\contentsline {subsection}{\numberline {3.9.2}多模态融合对比}{70}{subsection.3.9.2}%
+\contentsline {subsection}{\numberline {3.9.3}消融实验}{71}{subsection.3.9.3}%
 \contentsline {subsection}{\numberline {3.9.4}可解释性验证}{72}{subsection.3.9.4}%
 \contentsline {section}{\numberline {3.10}本章小结}{73}{section.3.10}%
 \contentsline {chapter}{\numberline {第四章\hspace {.3em}}教师风格画像分析系统设计与实现}{75}{chapter.4}%
@@ -91,28 +91,25 @@
 \contentsline {subsection}{\numberline {4.2.3}可解释性分析模块}{79}{subsection.4.2.3}%
 \contentsline {subsection}{\numberline {4.2.4}风格画像生成模块}{80}{subsection.4.2.4}%
 \contentsline {subsection}{\numberline {4.2.5}风格分析功能}{80}{subsection.4.2.5}%
-\contentsline {section}{\numberline {4.3}技术栈选型}{83}{section.4.3}%
-\contentsline {subsection}{\numberline {4.3.1}前端技术}{83}{subsection.4.3.1}%
-\contentsline {subsection}{\numberline {4.3.2}后端技术}{83}{subsection.4.3.2}%
-\contentsline {subsection}{\numberline {4.3.3}模型推理技术}{84}{subsection.4.3.3}%
-\contentsline {subsection}{\numberline {4.3.4}数据存储技术}{84}{subsection.4.3.4}%
-\contentsline {subsection}{\numberline {4.3.5}容器化与监控}{85}{subsection.4.3.5}%
-\contentsline {section}{\numberline {4.4}界面功能描述}{85}{section.4.4}%
-\contentsline {subsection}{\numberline {4.4.1}视频上传与任务管理页面}{85}{subsection.4.4.1}%
-\contentsline {subsection}{\numberline {4.4.2}风格画像综合展示页面}{88}{subsection.4.4.2}%
-\contentsline {subsection}{\numberline {4.4.3}可解释性与特征详情页面}{88}{subsection.4.4.3}%
-\contentsline {subsection}{\numberline {4.4.4}风格演变追踪页面}{91}{subsection.4.4.4}%
-\contentsline {subsection}{\numberline {4.4.5}批量分析与教研对比页面}{92}{subsection.4.4.5}%
-\contentsline {section}{\numberline {4.5}系统测试与试运行}{93}{section.4.5}%
-\contentsline {subsection}{\numberline {4.5.1}测试环境}{93}{subsection.4.5.1}%
-\contentsline {subsection}{\numberline {4.5.2}功能性测试}{93}{subsection.4.5.2}%
-\contentsline {subsection}{\numberline {4.5.3}非功能性测试}{93}{subsection.4.5.3}%
-\contentsline {subsection}{\numberline {4.5.4}系统试运行}{95}{subsection.4.5.4}%
-\contentsline {section}{\numberline {4.6}本章小结}{96}{section.4.6}%
-\contentsline {chapter}{\numberline {第五章\hspace {.3em}}总结与展望}{97}{chapter.5}%
-\contentsline {section}{\numberline {5.1}工作总结}{97}{section.5.1}%
-\contentsline {section}{\numberline {5.2}未来展望}{98}{section.5.2}%
-\contentsline {chapter}{参考文献}{99}{section.5.2}%
-\contentsline {chapter}{致谢}{107}{chapter*.62}%
-\contentsline {chapter}{发表论文和科研情况}{109}{appendix*.63}%
+\contentsline {section}{\numberline {4.3}技术栈选型}{82}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}前端技术}{82}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}后端技术}{82}{subsection.4.3.2}%
+\contentsline {subsection}{\numberline {4.3.3}模型推理技术}{83}{subsection.4.3.3}%
+\contentsline {subsection}{\numberline {4.3.4}数据存储技术}{83}{subsection.4.3.4}%
+\contentsline {subsection}{\numberline {4.3.5}容器化与监控}{84}{subsection.4.3.5}%
+\contentsline {section}{\numberline {4.4}界面功能描述}{84}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}视频上传与任务管理页面}{84}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}风格画像综合展示页面}{87}{subsection.4.4.2}%
+\contentsline {subsection}{\numberline {4.4.3}可解释性与特征详情页面}{87}{subsection.4.4.3}%
+\contentsline {subsection}{\numberline {4.4.4}风格演变追踪页面}{90}{subsection.4.4.4}%
+\contentsline {section}{\numberline {4.5}系统测试与试运行}{91}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}测试环境}{91}{subsection.4.5.1}%
+\contentsline {subsection}{\numberline {4.5.2}功能性测试}{91}{subsection.4.5.2}%
+\contentsline {subsection}{\numberline {4.5.3}非功能性测试}{91}{subsection.4.5.3}%
+\contentsline {subsection}{\numberline {4.5.4}系统试运行}{93}{subsection.4.5.4}%
+\contentsline {section}{\numberline {4.6}本章小结}{94}{section.4.6}%
+\contentsline {chapter}{\numberline {第五章\hspace {.3em}}总结与展望}{95}{chapter.5}%
+\contentsline {section}{\numberline {5.1}工作总结}{95}{section.5.1}%
+\contentsline {section}{\numberline {5.2}未来展望}{96}{section.5.2}%
+\contentsline {chapter}{参考文献}{97}{section.5.2}%
 \contentsfinish 

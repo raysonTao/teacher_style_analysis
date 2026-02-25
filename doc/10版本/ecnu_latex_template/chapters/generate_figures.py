@@ -342,8 +342,8 @@ def draw_navbar(ax, fig_w, title='教师风格画像分析系统', username='张
             fontsize=10.5, color=NAV_TXT, va='center', fontweight='bold', zorder=11)
     ax.text(0.88, 0.965, username, transform=ax.transAxes,
             fontsize=9, color=NAV_TXT, va='center', zorder=11)
-    ax.text(0.96, 0.965, '⏻', transform=ax.transAxes,
-            fontsize=11, color=NAV_TXT, va='center', zorder=11)
+    ax.text(0.96, 0.965, '[退出]', transform=ax.transAxes,
+            fontsize=7, color=NAV_TXT, va='center', zorder=11)
 
 
 def draw_card(ax, x, y, w, h, title='', bg=CARD_BG, bd=CARD_BD,
@@ -373,17 +373,19 @@ def draw_button(ax, x, y, w, h, label, color=BTN_BLUE):
 
 
 def draw_input_row(ax, x, y, w, label, value='', h=0.038):
-    """表单输入行"""
-    ax.text(x, y + h * 0.6, label, transform=ax.transAxes,
-            fontsize=7.5, color=GRAY, va='center')
-    field = FancyBboxPatch((x, y - h * 0.1), w, h * 0.8,
+    """表单输入行：标签在上，输入框在下"""
+    # 标签在输入框上方
+    ax.text(x, y + h + 0.004, label, transform=ax.transAxes,
+            fontsize=7.5, color=GRAY, va='bottom', zorder=6)
+    # 输入框
+    field = FancyBboxPatch((x, y), w, h * 0.85,
                            boxstyle='round,pad=0.002',
                            facecolor=FIELD_BG, edgecolor=CARD_BD, linewidth=0.6,
                            transform=ax.transAxes, zorder=4)
     ax.add_patch(field)
     if value:
-        ax.text(x + 0.01, y + h * 0.25, value, transform=ax.transAxes,
-                fontsize=7.5, color=DGRAY, va='center')
+        ax.text(x + 0.01, y + h * 0.40, value, transform=ax.transAxes,
+                fontsize=7.5, color=DGRAY, va='center', zorder=5)
 
 
 def placeholder_chart(ax, x, y, w, h, label='[图表区域]', color=LBLUE):
@@ -417,7 +419,7 @@ def gen_fig4_6():
     fig, ax = new_ui_fig()
 
     # 页面标题
-    ax.text(0.5, 0.88, '📤  上传课堂视频', transform=ax.transAxes,
+    ax.text(0.5, 0.88, '上传课堂视频', transform=ax.transAxes,
             fontsize=13, color=DGRAY, ha='center', va='center', fontweight='bold')
 
     # 左侧：课程信息表单
@@ -430,7 +432,7 @@ def gen_fig4_6():
         ('年级/班级', '高二(3)班'),
     ]
     for i, (label, val) in enumerate(fields):
-        draw_input_row(ax, 0.06, 0.71 - i * 0.11, 0.30, label + '：', val)
+        draw_input_row(ax, 0.06, 0.68 - i * 0.11, 0.30, label + '：', val)
 
     # 中央：拖拽上传区域
     draw_card(ax, 0.45, 0.35, 0.50, 0.49, '视频文件上传', title_color=BLUE)
@@ -440,8 +442,22 @@ def gen_fig4_6():
                                  linestyle='dashed', linewidth=1.5,
                                  transform=ax.transAxes, zorder=5)
     ax.add_patch(upload_area)
-    ax.text(0.70, 0.60, '🎬', transform=ax.transAxes,
-            fontsize=28, ha='center', va='center', color=BLUE, zorder=6)
+    # 用 matplotlib 图形模拟视频图标（替代不可渲染的 emoji）
+    icon_x, icon_y = 0.70, 0.615
+    # 胶片框
+    film = FancyBboxPatch((icon_x - 0.055, icon_y - 0.038), 0.11, 0.076,
+                          boxstyle='round,pad=0.004',
+                          facecolor='#CCDFF5', edgecolor=BLUE, linewidth=1.2,
+                          transform=ax.transAxes, zorder=6)
+    ax.add_patch(film)
+    # 播放三角
+    tri = plt.Polygon(
+        [[icon_x - 0.018, icon_y - 0.022],
+         [icon_x - 0.018, icon_y + 0.022],
+         [icon_x + 0.028, icon_y]],
+        closed=True, facecolor=BLUE, edgecolor='none',
+        transform=ax.transAxes, zorder=7)
+    ax.add_patch(tri)
     ax.text(0.70, 0.52, '将视频文件拖拽至此处', transform=ax.transAxes,
             fontsize=10, ha='center', va='center', color=BLUE, zorder=6)
     ax.text(0.70, 0.47, '支持 MP4 / MOV / AVI  最大 8 GB', transform=ax.transAxes,
@@ -476,12 +492,12 @@ def gen_fig4_6():
 def gen_fig4_7():
     fig, ax = new_ui_fig()
 
-    ax.text(0.5, 0.88, '📋  分析任务管理', transform=ax.transAxes,
+    ax.text(0.5, 0.88, '分析任务管理', transform=ax.transAxes,
             fontsize=13, color=DGRAY, ha='center', fontweight='bold')
 
     # 工具栏
     draw_button(ax, 0.03, 0.83, 0.12, 0.038, '+ 新建任务', BTN_BLUE)
-    draw_button(ax, 0.16, 0.83, 0.10, 0.038, '🔄 刷新', GRAY)
+    draw_button(ax, 0.16, 0.83, 0.10, 0.038, '刷新', GRAY)
     ax.text(0.80, 0.845, '状态筛选：', transform=ax.transAxes,
             fontsize=8.5, color=DGRAY, va='center')
     for i, (s, c) in enumerate([('全部', BLUE), ('进行中', BTN_ORANGE),
@@ -503,12 +519,12 @@ def gen_fig4_7():
 
     # 数据行
     tasks = [
-        ('T-2025031502', '张明远 / 电磁感应（高二）', '03-15 14:32', '推理中', '62%'),
-        ('T-2025031501', '张明远 / 牛顿第二定律（高二）', '03-15 09:18', '已完成', '100%'),
-        ('T-2025031403', '李晓燕 / 函数极值（高三）', '03-14 16:45', '已完成', '100%'),
-        ('T-2025031402', '王大鹏 / 古诗词鉴赏（初三）', '03-14 11:20', '排队中', '0%'),
-        ('T-2025031401', '李晓燕 / 数列求和（高三）', '03-14 08:55', '已完成', '100%'),
-        ('T-2025031305', '王大鹏 / 文言文阅读（初三）', '03-13 15:40', '失败', '—'),
+        ('T-1502', '张三 / 电磁感应（高二）', '03-15 14:32', '推理中', '62%'),
+        ('T-1501', '张三 / 牛顿第二定律（高二）', '03-15 09:18', '已完成', '100%'),
+        ('T-1403', '李四 / 函数极值（高三）', '03-14 16:45', '已完成', '100%'),
+        ('T-1402', '王五 / 古诗词鉴赏（初三）', '03-14 11:20', '排队中', '0%'),
+        ('T-1401', '李四 / 数列求和（高三）', '03-14 08:55', '已完成', '100%'),
+        ('T-1305', '王五 / 文言文阅读（初三）', '03-13 15:40', '失败', '—'),
     ]
 
     for row_i, (tid, course, t, status, prog) in enumerate(tasks):
@@ -552,7 +568,7 @@ def gen_fig4_8():
     ax.add_patch(plt.Rectangle((0.03, 0.84), 0.94, 0.06,
                                 facecolor='#EBF4FF', edgecolor=CARD_BD,
                                 linewidth=0.7, transform=ax.transAxes, zorder=3))
-    ax.text(0.05, 0.872, '张明远老师  |  高中物理·电磁感应（高二3班）', transform=ax.transAxes,
+    ax.text(0.05, 0.872, '张三老师  |  高中物理·电磁感应（高二3班）', transform=ax.transAxes,
             fontsize=9.5, color=DGRAY, va='center', fontweight='bold')
     badge = FancyBboxPatch((0.55, 0.853), 0.22, 0.030,
                            boxstyle='round,pad=0.003',
@@ -576,7 +592,7 @@ def gen_fig4_8():
 
     # 下半：Tab 面板
     draw_card(ax, 0.03, 0.08, 0.94, 0.27, '')
-    for i, tab in enumerate(['📈 语音情绪时序曲线', '☁ 教学关键词云图']):
+    for i, tab in enumerate(['语音情绪时序曲线', '教学关键词云图']):
         tab_bg = '#EBF4FF' if i == 0 else CARD_BG
         ax.add_patch(plt.Rectangle((0.03 + i * 0.47, 0.31), 0.47, 0.030,
                                     facecolor=tab_bg, edgecolor=CARD_BD,
@@ -601,7 +617,7 @@ def gen_fig4_8():
 def gen_fig4_9():
     fig, ax = new_ui_fig()
 
-    ax.text(0.5, 0.88, '🔍  可解释性分析 — 张明远老师 · 电磁感应',
+    ax.text(0.5, 0.88, '可解释性分析 — 张三老师 · 电磁感应',
             transform=ax.transAxes, fontsize=11, color=DGRAY,
             ha='center', fontweight='bold')
 
@@ -650,7 +666,7 @@ def gen_fig4_9():
 def gen_fig4_10():
     fig, ax = new_ui_fig()
 
-    ax.text(0.5, 0.88, '📈  风格演变追踪 — 张明远老师',
+    ax.text(0.5, 0.88, '风格演变追踪 — 张三老师',
             transform=ax.transAxes, fontsize=12, color=DGRAY,
             ha='center', fontweight='bold')
 

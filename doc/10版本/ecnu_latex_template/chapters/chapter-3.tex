@@ -552,16 +552,14 @@ H-DAR整体架构如图~\ref{fig:hdar-arch}所示：
      $c=\arg\max(\mathbf{p}_\text{coarse})$};
 
   %% 四个细分类器（第2层）—— 横向排列，顶部对齐
-  \coordinate (branch) at ([yshift=-0.9cm]COARSE.south);
-
   \node[finebox=purple,
-        below=0.9cm of COARSE, xshift=-3.45cm] (FQ)
+        below=1.8cm of COARSE, xshift=-3.45cm] (FQ)
     {\textbf{Q（提问）}\\[3pt]
      Heuristic-Q\\启发性提问\\[3pt]
      Factual-Q\\事实性提问};
 
   \node[finebox=orange,
-        below=0.9cm of COARSE, xshift=-1.15cm] (FE)
+        below=1.8cm of COARSE, xshift=-1.15cm] (FE)
     {\textbf{E（解释）}\\[3pt]
      Definition\\[2pt]
      Reasoning\\[2pt]
@@ -569,13 +567,13 @@ H-DAR整体架构如图~\ref{fig:hdar-arch}所示：
      Case-Study};
 
   \node[finebox=teal,
-        below=0.9cm of COARSE, xshift=+1.15cm] (FI)
+        below=1.8cm of COARSE, xshift=+1.15cm] (FI)
     {\textbf{I（指令）}\\[3pt]
      Organization\\组织指令\\[3pt]
      Task\\任务指令};
 
   \node[finebox=red,
-        below=0.9cm of COARSE, xshift=+3.45cm] (FF)
+        below=1.8cm of COARSE, xshift=+3.45cm] (FF)
     {\textbf{F（反馈）}\\[3pt]
      Positive-FB\\正向反馈\\[3pt]
      Corrective-FB\\纠正反馈};
@@ -584,12 +582,19 @@ H-DAR整体架构如图~\ref{fig:hdar-arch}所示：
   \draw[arr]  (IN)     -- (BERT);
   \draw[arr]  (BERT)   -- (COARSE);
 
-  %% 分支箭头（树形）
-  \draw[darr] (COARSE.south) -- (branch);
-  \draw[darr] (branch) -| (FQ.north);
-  \draw[darr] (branch) -| (FE.north);
-  \draw[darr] (branch) -| (FI.north);
-  \draw[darr] (branch) -| (FF.north);
+  %% 分支箭头（树形：竖干 → 横干 → 四个竖支箭头）
+  \coordinate (branch) at ([yshift=-0.45cm]COARSE.south);
+  % 竖向主干（无箭头）
+  \draw[densely dashed, semithick, draw=black!55]
+        (COARSE.south) -- (branch);
+  % 横向连接线（无箭头）
+  \draw[densely dashed, semithick, draw=black!55]
+        ([xshift=-3.45cm]branch) -- ([xshift=+3.45cm]branch);
+  % 四个竖向分支箭头
+  \draw[darr] ([xshift=-3.45cm]branch) -- (FQ.north);
+  \draw[darr] ([xshift=-1.15cm]branch) -- (FE.north);
+  \draw[darr] ([xshift=+1.15cm]branch) -- (FI.north);
+  \draw[darr] ([xshift=+3.45cm]branch) -- (FF.north);
 
   %% 底部说明文字
   \node[font=\scriptsize, text=black!60,
@@ -662,7 +667,7 @@ F_{a} = \left\lbrack \underset{\text{6维情感}}{\underbrace{p_{\text{neutral}}
 \begin{itemize}
 \item 前6维：Wav2Vec 2.0情感分布
 
-\item 第7维：语速 $v_{\text{speed}} = N_{\text{words}}/T$（归一化到\[0,1\]）
+\item 第7维：语速 $v_{\text{speed}} = N_{\text{words}}/T$（归一化到$[0,1]$）
 
 \item 第8-9维：语音活动比、静音比
 

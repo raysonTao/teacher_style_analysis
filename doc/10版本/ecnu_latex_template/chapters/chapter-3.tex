@@ -190,7 +190,65 @@ SHAPE引擎采用四层架构设计，如图~\ref{fig:shape-4layer}所示：
 
     数据分段策略：语义驱动分段
 
-    我们提出语义驱动的话语分段策略，以保证每个分析单元是一个语义完整的教学话语单元（Semantic Unit）。具体流程如下：
+    我们提出语义驱动的话语分段策略，以保证每个分析单元是一个语义完整的教学话语单元（Semantic Unit）。具体流程如图~\ref{fig:semantic-seg}所示：
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=0.55cm,
+  proc/.style={rectangle, draw=blue!60, fill=blue!8,
+               text width=6.8cm, minimum height=0.78cm,
+               align=center, font=\small},
+  iobox/.style={rectangle, rounded corners=4pt,
+                draw=black!55, fill=gray!10,
+                text width=6.8cm, minimum height=0.72cm,
+                align=center, font=\small},
+  annot/.style={text width=4.6cm, align=left,
+                font=\scriptsize, text=black!65},
+  arr/.style={-Stealth, semithick},
+]
+  \node[iobox] (IN)
+    {课堂音视频（连续时域信号）};
+
+  \node[proc, below=0.5cm of IN] (S1)
+    {\textcircled{1}\ ASR全文转写（Whisper Large-v3）};
+  \node[annot, right=0.5cm of S1]
+    {$\mathcal{T}=\{(w_1,t_1),\ldots,(w_M,t_M)\}$};
+
+  \node[proc, below=0.5cm of S1] (S2)
+    {\textcircled{2}\ 句子边界检测（标点 + 停顿 $>300$ms）};
+  \node[annot, right=0.5cm of S2]
+    {句子序列 $\mathcal{S}=\{s_1,\ldots,s_K\}$};
+
+  \node[proc, below=0.5cm of S2] (S3)
+    {\textcircled{3}\ 依存句法分析（HanLP）};
+  \node[annot, right=0.5cm of S3]
+    {逻辑连接词及其作用域};
+
+  \node[proc, below=0.5cm of S3] (S4)
+    {\textcircled{4}\ 话语边界检测};
+  \node[annot, right=0.5cm of S4]
+    {逻辑链完整\,/\,话题转换\,/\,时长$>30$s};
+
+  \node[proc, below=0.5cm of S4] (S5)
+    {\textcircled{5}\ 合并形成语义单元 $U_i$};
+  \node[annot, right=0.5cm of S5]
+    {$U_i=(T_i,\,A_i,\,V_i,\,t^i_\text{start},\,t^i_\text{end})$};
+
+  \node[iobox, below=0.5cm of S5] (OUT)
+    {语义单元序列 $\mathcal{U}=\{U_1,\ldots,U_N\}$
+     （$N\approx150\text{--}200$个/45分钟课）};
+
+  \draw[arr] (IN)  -- (S1);
+  \draw[arr] (S1)  -- (S2);
+  \draw[arr] (S2)  -- (S3);
+  \draw[arr] (S3)  -- (S4);
+  \draw[arr] (S4)  -- (S5);
+  \draw[arr] (S5)  -- (OUT);
+\end{tikzpicture}
+\caption{语义驱动分段处理流程}
+\label{fig:semantic-seg}
+\end{figure}
 
     \textcircled{1} ASR全文转写：使用Whisper Large-v3模型对完整课堂音频进行转写，获得带时间戳的文本序列 $\mathcal{T} = \{\left( w_{1},t_{1} \right),\left( w_{2},t_{2} \right),...,\left( w_{M},t_{M} \right)\}$，其中 $w_{i}$ 是词语，$t_{i}$ 是时间戳；
 
@@ -220,7 +278,7 @@ SHAPE引擎采用四层架构设计，如图~\ref{fig:shape-4layer}所示：
 \subsection{视频预处理}
 
 
-\subsection{（1）视频解码与抽帧}
+\subsubsection{（1）视频解码与抽帧}
 
 使用FFmpeg库解码视频流，按25fps提取RGB帧：
 
@@ -403,29 +461,37 @@ p_{\text{act}} = \text{softmax}\left( \text{MLP}\left( \text{BERT}(T) \right) \r
 
 将教师话语分为\textbf{4个粗类、10个细类}：
 
-  --------------------------------------------------------------------------------------------------------------------------
-  粗类           细类                          定义                              示例                             典型风格
-  -------------- ----------------------------- --------------------------------- -------------------------------- ----------
-  \textbf{Question}   Heuristic-Q 引 (启发性提问)   导学生深度思考的 "为 开放性问题   什么会出现 启发 这种现象？"      引导型
-
-                 Factual-Q 检 (事实性提问)     查知识掌握的 "这 封闭性问题       个概念是 传统 什么？"            讲授型
-
-  Explanation    Definition 明 (概念定义)      确、精准地解释 "所 核心概念       谓牛顿第一 理论 定律，就是..."   讲授型
-
-                 Reasoning 展 (逻辑推导)       示推理过程和 "因 因果关系         为A，所以B， 逻辑 因此C"         推导型
-
-                 Theory 系 (理论讲授)          统性地讲解 "根 理论框架           据信息论， 理论 我们可以..."     讲授型
-
-                 Case-Study 通 (案例分析)      过具体例子说明 "比 抽象概念       如说，在实际 案例 生产中..."     讲授型
-
-  Instruction    Organization 组 (组织指令)    织课堂活动、调整 "请 教学流程     大家打开 组织 课本第50页"        导向型
-
-                 Task 布 (任务指令)            置学习任务和练习 "请              完成课后习题 任务 1-5题"         导向型
-
-  \textbf{Feedback}   Positive-FB 肯 (正向反馈)     定、鼓励学生回答 "很              好！这个回答 情感 非常准确"      表达型
-
-                 Corrective-FB 指 (纠正反馈)   出错误并给予纠正 "这              里有个小 纠正 错误，应该是..."   导向型
-  --------------------------------------------------------------------------------------------------------------------------
+\begin{table}[htbp]
+\centering
+\caption{H-DAR细粒度对话行为分类体系（4粗类·10细类）}
+\label{tab:hdar-taxonomy}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{|p{1.8cm}|p{3.6cm}|p{4.0cm}|p{3.8cm}|p{2.0cm}|}
+\hline
+\textbf{粗类} & \textbf{细类} & \textbf{定义} & \textbf{示例} & \textbf{典型风格} \\
+\hline
+\multirow{2}{*}{\textbf{Q（提问）}} & Heuristic-Q（启发性提问） & 引导学生深度思考的开放性问题 & ``为什么会出现这种现象？'' & 启发引导型 \\
+\cline{2-5}
+ & Factual-Q（事实性提问） & 检查知识掌握的封闭性问题 & ``这个概念是什么？'' & 题目驱动型 \\
+\hline
+\multirow{4}{*}{\textbf{E（解释）}} & Definition（概念定义） & 明确、精准地解释核心概念 & ``所谓牛顿第一定律，就是\ldots'' & 理论讲授型 \\
+\cline{2-5}
+ & Reasoning（逻辑推导） & 展示推理过程和因果关系 & ``因为A，所以B，因此C'' & 逻辑推导型 \\
+\cline{2-5}
+ & Theory（理论讲授） & 系统性地讲解理论框架 & ``根据信息论，我们可以\ldots'' & 理论讲授型 \\
+\cline{2-5}
+ & Case-Study（案例分析） & 通过具体例子说明抽象概念 & ``比如说，在实际生产中\ldots'' & 耐心细致型 \\
+\hline
+\multirow{2}{*}{\textbf{I（指令）}} & Organization（组织指令） & 组织课堂活动、调整教学流程 & ``请大家打开课本第50页'' & 互动导向型 \\
+\cline{2-5}
+ & Task（任务指令） & 布置学习任务和练习 & ``请完成课后习题1-5题'' & 题目驱动型 \\
+\hline
+\multirow{2}{*}{\textbf{F（反馈）}} & Positive-FB（正向反馈） & 肯定、鼓励学生回答 & ``很好！这个回答非常准确'' & 情感表达型 \\
+\cline{2-5}
+ & Corrective-FB（纠正反馈） & 指出错误并给予纠正 & ``这里有个小错误，应该是\ldots'' & 耐心细致型 \\
+\hline
+\end{tabular}}
+\end{table}
 
 \textbf{设计原则}：
 
@@ -453,6 +519,86 @@ p_{\text{act}} = \text{softmax}\left( \text{MLP}\left( \text{BERT}(T) \right) \r
 \text{Fine Classifier}_{F} \rightarrow \{\text{Positive-FB},\text{Corrective-FB}\}
 \end{matrix} \right.\
 \]
+
+H-DAR整体架构如图~\ref{fig:hdar-arch}所示：
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=0.55cm and 0.3cm,
+  topbox/.style={rectangle, rounded corners=3pt,
+                 draw=#1!70, fill=#1!10,
+                 text width=9.2cm, minimum height=0.82cm,
+                 align=center, font=\small},
+  finebox/.style={rectangle, rounded corners=3pt,
+                  draw=#1!70, fill=#1!8,
+                  text width=2.05cm, minimum height=0pt,
+                  align=center, font=\scriptsize,
+                  inner sep=4pt},
+  arr/.style={-Stealth, semithick},
+  darr/.style={densely dashed, -Stealth, semithick, draw=black!55},
+]
+  %% 顶部三层（输入 → BERT → 粗分类器）
+  \node[topbox=gray]   (IN)
+    {话语文本 $s=[w_1,w_2,\ldots,w_n]$};
+
+  \node[topbox=blue, below=0.5cm of IN]  (BERT)
+    {BERT编码器\\[2pt]
+     $\mathbf{h}_s=\text{BERT}([\text{CLS}],w_1,\ldots,w_n,[\text{SEP}])\in\mathbb{R}^{768}$};
+
+  \node[topbox=orange, below=0.5cm of BERT] (COARSE)
+    {粗分类器（第1层）\\[2pt]
+     $\mathbf{p}_\text{coarse}=\text{softmax}(W_c\mathbf{h}_s)\in\mathbb{R}^4$，
+     $c=\arg\max(\mathbf{p}_\text{coarse})$};
+
+  %% 四个细分类器（第2层）—— 横向排列，顶部对齐
+  \coordinate (branch) at ([yshift=-0.9cm]COARSE.south);
+
+  \node[finebox=purple,
+        below=0.9cm of COARSE, xshift=-3.45cm] (FQ)
+    {\textbf{Q（提问）}\\[3pt]
+     Heuristic-Q\\启发性提问\\[3pt]
+     Factual-Q\\事实性提问};
+
+  \node[finebox=orange,
+        below=0.9cm of COARSE, xshift=-1.15cm] (FE)
+    {\textbf{E（解释）}\\[3pt]
+     Definition\\[2pt]
+     Reasoning\\[2pt]
+     Theory\\[2pt]
+     Case-Study};
+
+  \node[finebox=teal,
+        below=0.9cm of COARSE, xshift=+1.15cm] (FI)
+    {\textbf{I（指令）}\\[3pt]
+     Organization\\组织指令\\[3pt]
+     Task\\任务指令};
+
+  \node[finebox=red,
+        below=0.9cm of COARSE, xshift=+3.45cm] (FF)
+    {\textbf{F（反馈）}\\[3pt]
+     Positive-FB\\正向反馈\\[3pt]
+     Corrective-FB\\纠正反馈};
+
+  %% 主流箭头
+  \draw[arr]  (IN)     -- (BERT);
+  \draw[arr]  (BERT)   -- (COARSE);
+
+  %% 分支箭头（树形）
+  \draw[darr] (COARSE.south) -- (branch);
+  \draw[darr] (branch) -| (FQ.north);
+  \draw[darr] (branch) -| (FE.north);
+  \draw[darr] (branch) -| (FI.north);
+  \draw[darr] (branch) -| (FF.north);
+
+  %% 底部说明文字
+  \node[font=\scriptsize, text=black!60,
+        below=0.25cm of FE.south, xshift=1.15cm]
+    {根据粗类别 $c$ 动态选择对应细分类器（$K_c=2$ 或 $4$）};
+\end{tikzpicture}
+\caption{H-DAR层次化对话行为识别架构（4粗类·10细类）}
+\label{fig:hdar-arch}
+\end{figure}
 
 \textbf{步骤1：BERT编码}
 
@@ -539,9 +685,9 @@ F_{a} = \left\lbrack \underset{\text{6维情感}}{\underbrace{p_{\text{neutral}}
 课堂场景存在多人干扰（学生走动、举手），单纯依赖YOLO检测会导致教师ID在遮挡后跳变为学生ID。本研究采用DeepSORT\cite{ref_wojke2017}算法，通过结合外观特征（ReID）和运动模型（卡尔曼滤波）实现稳定追踪。
 
 
-\subsection{ST-GCN时序动作识别}
+\subsection{时序动作识别}
 
-本研究采用ST-GCN进行骨骼序列时序建模。ST-GCN将骨骼序列建模为时空图结构，通过图卷积捕捉关节间的依赖关系。相比单帧规则识别准确率提升17.7个百分点，推理速度快2.5倍，且骨骼表征具有隐私保护优势。
+本研究采用骨骼序列时序建模。将骨骼序列建模为时空图结构，通过图卷积捕捉关节间的依赖关系。相比单帧规则识别准确率提升17.7个百分点，推理速度快2.5倍，且骨骼表征具有隐私保护优势。
 
 对于输入骨骼序列$X \in \mathbb{R}^{C \times T \times V}$（$C = 3$坐标维度，$T = 32$帧，$V = 25$关节点），网络结构为：
 

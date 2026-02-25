@@ -138,7 +138,7 @@ Vaswani等人（2017\cite{ref_vaswani2017}）提出的Transformer架构将自注
 
 多模态Transformer架构经历了从双流到单流的演进。双流架构（如ViLBERT、LXMERT）为每个模态设计独立的编码器，然后通过跨模态交互层进行融合。这种设计保留了各模态的特定表示，但计算开销较大，且模态间的交互深度有限。
 
-单流架构将所有模态的token统一输入到一个Transformer编码器中，通过自注意力机制同时建模模态内和模态间的依赖。Kim等人（2021）提出的ViLT（Vision-and-Language Transformer）是单流架构的代表，将图像patch和文本token拼接后输入Transformer，通过自注意力机制实现深层的跨模态交互。ViLT的优势在于：（1）简化了网络结构，减少了参数量；（2）通过端到端训练实现了更深层的模态融合；（3）在多个视觉-语言任务上取得了SOTA性能。
+单流架构将所有模态的token统一输入到一个Transformer编码器中，通过自注意力机制同时建模模态内和模态间的依赖。Kim等人（2021）提出的ViLT（Vision-and-Language Transformer）是单流架构的代表，将图像patch和文本token拼接后输入Transformer，通过自注意力机制实现深层的跨模态交互。ViLT的优势在于：（1）简化了网络结构，减少了参数量；（2）通过端到端训练实现了更深层的模态融合；
 
 Li等人（2021）提出的ALBEF（Align Before Fuse）引入了momentum distillation策略，通过教师模型指导学生模型学习更鲁棒的跨模态表示。Li等人（2022）提出的BLIP（Bootstrapping Language-Image Pre-training）通过caption和filter两个模块迭代优化，从噪声网络数据中学习高质量的图文对齐。BLIP在图像描述、视觉问答、图像-文本检索等任务上取得了显著提升。
 

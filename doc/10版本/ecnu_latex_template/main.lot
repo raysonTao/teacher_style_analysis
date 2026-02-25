@@ -1,6 +1,15 @@
 \addvspace {10.0pt}
 \addvspace {10.0pt}
 \addvspace {10.0pt}
+\contentsline {table}{\numberline {3.1}{\ignorespaces 子模块预训练配置}}{65}{table.caption.35}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces SHAPE系统整体性能（测试集，$N=53$）}}{67}{table.caption.36}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces 各教学风格类别的分类性能}}{67}{table.caption.37}%
+\contentsline {table}{\numberline {3.4}{\ignorespaces 多模态融合对比实验结果}}{69}{table.caption.39}%
+\contentsline {table}{\numberline {3.5}{\ignorespaces 消融实验结果}}{69}{table.caption.40}%
+\contentsline {table}{\numberline {3.6}{\ignorespaces SHAP特征重要性Top-10（测试集，$N=53$）}}{70}{table.caption.41}%
 \addvspace {10.0pt}
+\contentsline {table}{\numberline {4.1}{\ignorespaces 测试环境配置}}{91}{table.caption.53}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces 功能性测试用例}}{92}{table.caption.54}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces 性能测试结果}}{92}{table.caption.55}%
 \addvspace {10.0pt}
 \contentsfinish 

@@ -46,7 +46,33 @@
 \end{itemize}
 \textbf{3.1.2 四层系统架构}
 
-SHAPE引擎采用四层架构设计，如图3.1所示：
+SHAPE引擎采用四层架构设计，如图~\ref{fig:shape-4layer}所示：
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=0.6cm,
+  layer/.style={rectangle, rounded corners=4pt, draw=black!60, fill=#1,
+                text width=13cm, minimum height=1.1cm,
+                align=center, font=\small},
+  arrow/.style={-Stealth, thick, draw=black!70},
+]
+  \node[layer=blue!15]   (L4) {\textbf{第四层：画像生成层（Profiling \& Application Layer）}\\[2pt]
+    风格分类结果 \textbar\ 模态贡献度分析 \textbar\ 典型片段回放 \textbar\ SHAP可解释性};
+  \node[layer=green!15, below=of L4]  (L3) {\textbf{第三层：融合分类层（Fusion \& Classification Layer）}\\[2pt]
+    特征投影 → 跨模态注意力（6个$\alpha_{i\to j}$）→ BiLSTM时序建模 → 注意力池化 → 7类分类器};
+  \node[layer=orange!15, below=of L3] (L2) {\textbf{第二层：特征提取层（Feature Extraction Layer）}\\[2pt]
+    视觉模态（ST-GCN，$F_v\in\mathbb{R}^{20}$）\quad 音频模态（Wav2Vec 2.0，$F_a\in\mathbb{R}^{15}$）\quad 文本模态（BERT+H-DAR，$F_t\in\mathbb{R}^{35}$）};
+  \node[layer=gray!15,  below=of L2] (L1) {\textbf{第一层：数据采集与预处理层（Data Acquisition \& Preprocessing）}\\[2pt]
+    视频解码/增强 \textbar\ 音频重采样/降噪/VAD \textbar\ ASR转写/文本清洗 \textbar\ 时间对齐};
+
+  \draw[arrow] (L1.north) -- (L2.south);
+  \draw[arrow] (L2.north) -- (L3.south);
+  \draw[arrow] (L3.north) -- (L4.south);
+\end{tikzpicture}
+\caption{SHAPE引擎四层架构}
+\label{fig:shape-4layer}
+\end{figure}
 
 
 \subsubsection{第一层：数据采集与预处理层}
@@ -588,9 +614,64 @@ F_{\text{weighted}} = w_{v}F_{v} + w_{a}F_{a} + w_{t}F_{t}
 
 SHAPE由五个核心模块组成：
 
-\textbf{【建议插入图3.2：SHAPE详细架构图】}
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=0.45cm and 0.55cm,
+  box/.style={rectangle, rounded corners=3pt, draw=#1!70, fill=#1!12,
+              text width=3.0cm, minimum height=0.9cm, align=center, font=\footnotesize},
+  mbox/.style={rectangle, rounded corners=3pt, draw=#1!70, fill=#1!12,
+               text width=9.8cm, minimum height=0.8cm, align=center, font=\footnotesize},
+  arr/.style={-Stealth, semithick},
+]
+  %% 三模态输入列
+  \node[box=gray]  (Fv) {视频特征\\$F_v\!\in\!\mathbb{R}^{20}$\\{\tiny ST-GCN}};
+  \node[box=gray,  right=1.1cm of Fv] (Fa) {音频特征\\$F_a\!\in\!\mathbb{R}^{15}$\\{\tiny Wav2Vec 2.0}};
+  \node[box=gray,  right=1.1cm of Fa] (Ft) {文本特征\\$F_t\!\in\!\mathbb{R}^{35}$\\{\tiny BERT+H-DAR}};
 
-（图应包含：特征投影 → 跨模态注意力 → 时序建模 → 特征融合 → 分类器）
+  %% 特征投影
+  \node[box=blue, below=of Fv] (Pv) {特征投影\\$F_v'\!\in\!\mathbb{R}^{512}$};
+  \node[box=blue, below=of Fa] (Pa) {特征投影\\$F_a'\!\in\!\mathbb{R}^{512}$};
+  \node[box=blue, below=of Ft] (Pt) {特征投影\\$F_t'\!\in\!\mathbb{R}^{512}$};
+
+  %% 跨模态注意力（横跨三列）
+  \node[mbox=orange, below=0.7cm of Pa] (CMA)
+        {跨模态注意力层\\$\alpha_{i\to j}=\mathrm{softmax}(Q_iK_j^T/\sqrt{d_k})$，共6个注意力权重};
+
+  %% 时序建模
+  \node[mbox=green, below=0.45cm of CMA] (LSTM)
+        {BiLSTM时序建模\ \ $h_n=[\overrightarrow{h}_n;\overleftarrow{h}_n]\in\mathbb{R}^{1024}$};
+
+  %% 注意力池化
+  \node[mbox=purple, below=0.45cm of LSTM] (Pool)
+        {注意力池化\ \ $F_{\text{pooled}}=\sum_n\beta_n h_n$};
+
+  %% 分类器
+  \node[mbox=red, below=0.45cm of Pool] (Cls)
+        {风格分类器（2层MLP + Dropout）→ $P(y|X)\in\mathbb{R}^7$};
+
+  %% 输出
+  \node[mbox=gray, below=0.45cm of Cls] (Out)
+        {输出：7类风格概率分布\ +\ 跨模态注意力权重$\alpha$\ +\ 片段权重$\beta$};
+
+  %% 箭头：输入→投影
+  \foreach \s/\t in {Fv/Pv, Fa/Pa, Ft/Pt}
+    \draw[arr] (\s) -- (\t);
+
+  %% 箭头：投影→CMA（汇聚）
+  \draw[arr] (Pv.south) -- ++(0,-0.25) -| (CMA.north west);
+  \draw[arr] (Pa.south) -- (CMA.north);
+  \draw[arr] (Pt.south) -- ++(0,-0.25) -| (CMA.north east);
+
+  %% 顺序箭头
+  \draw[arr] (CMA) -- (LSTM);
+  \draw[arr] (LSTM) -- (Pool);
+  \draw[arr] (Pool) -- (Cls);
+  \draw[arr] (Cls) -- (Out);
+\end{tikzpicture}
+\caption{SHAPE多模态网络详细架构}
+\label{fig:shape-detail}
+\end{figure}
 
 
 \subsubsection{模块1：特征投影层（Feature Projection Layer）}
@@ -1123,10 +1204,10 @@ $n_{k}$ 是类别 $k$ 的样本数，$N$ 是总样本数。
 \end{itemize}
 \textbf{预训练汇总}（见表3-A）：
 
-\textbf{表3-A：子模块预训练配置}
-
 \begin{table}[htbp]
 \centering
+\caption{子模块预训练配置}
+\label{tab:pretrain}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{|l|l|l|l|l|}
 \hline
@@ -1186,10 +1267,10 @@ ST-GCN动作识别 & mm-tba（6类教师动作） & 端到端训练 & $1 \times 
 
 SHAPE在测试集上的整体分类性能如表3-B所示。
 
-\textbf{表3-B：SHAPE系统整体性能（测试集，$N=53$）}
-
 \begin{table}[htbp]
 \centering
+\caption{SHAPE系统整体性能（测试集，$N=53$）}
+\label{tab:overall-perf}
 \begin{tabular}{|l|l|}
 \hline
 评价指标 & 数值 \\
@@ -1209,10 +1290,10 @@ Cohen's Kappa（$\kappa$） & \textbf{[待填]} \\
 
 各类别分类性能详见表3-C（Per-class F1）：
 
-\textbf{表3-C：各教学风格类别的分类性能}
-
 \begin{table}[htbp]
 \centering
+\caption{各教学风格类别的分类性能}
+\label{tab:per-class}
 \begin{tabular}{|l|l|l|l|l|}
 \hline
 风格类别 & Precision & Recall & F1 & 支持样本数 \\
@@ -1236,7 +1317,14 @@ Cohen's Kappa（$\kappa$） & \textbf{[待填]} \\
 \end{tabular}
 \end{table}
 
-混淆矩阵（见图3-X，7×7矩阵）用于分析类别间的混淆模式，预期混淆最多的类别对为[待分析后填入]。
+混淆矩阵（见图~\ref{fig:confusion-matrix}，7×7矩阵）用于分析类别间的混淆模式，预期混淆最多的类别对为[待分析后填入]。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{chapters/fig-3/fig-3-3.png}
+\caption{SHAPE模型7类风格分类混淆矩阵（测试集，$N=53$，占位示例数据）}
+\label{fig:confusion-matrix}
+\end{figure}
 
 
 \subsection{多模态融合对比}
@@ -1254,10 +1342,10 @@ Cohen's Kappa（$\kappa$） & \textbf{[待填]} \\
 \item \textbf{SHAPE（本研究）}：完整系统，含语义驱动分段与跨模态注意力融合
 
 \end{itemize}
-\textbf{表3-D：多模态融合对比实验结果}
-
 \begin{table}[htbp]
 \centering
+\caption{多模态融合对比实验结果}
+\label{tab:fusion-compare}
 \begin{tabular}{|l|l|l|l|}
 \hline
 方法 & 准确率（\%） & Macro-F1 & 较SHAPE差值（\%） \\
@@ -1294,10 +1382,10 @@ Cohen's Kappa（$\kappa$） & \textbf{[待填]} \\
 \item \textbf{配置E（去掉DeepSORT\cite{ref_wojke2017}追踪）}：将DeepSORT身份追踪替换为YOLO每帧独立检测
 
 \end{itemize}
-\textbf{表3-E：消融实验结果}
-
 \begin{table}[htbp]
 \centering
+\caption{消融实验结果}
+\label{tab:ablation}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{|l|l|l|l|l|l|}
 \hline
@@ -1329,10 +1417,10 @@ McNemar检验阈值：$\chi^2 > 3.84$（$\alpha = 0.05$，自由度df=1）时认
 
 对53个测试样本计算SHAP值（使用TreeExplainer），得到70维特征的贡献度排序。表3-F报告重要性Top-10特征：
 
-\textbf{表3-F：SHAP特征重要性Top-10（测试集，$N=53$）}
-
 \begin{table}[htbp]
 \centering
+\caption{SHAP特征重要性Top-10（测试集，$N=53$）}
+\label{tab:shap-top10}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
 排名 & 特征名称 & 所属模态 & 平均\ & SHAP值\ &  & 方向 \\

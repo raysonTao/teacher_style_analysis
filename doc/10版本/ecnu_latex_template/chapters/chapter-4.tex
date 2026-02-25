@@ -20,7 +20,31 @@
 
 \subsection{系统总体架构}
 
-系统采用五层架构设计（见图4-1），自底向上依次为：数据管理层、特征提取层、模型推理层、应用服务层和用户交互层。
+系统采用五层架构设计（见图~\ref{fig:sys-5layer}），自底向上依次为：数据管理层、特征提取层、模型推理层、应用服务层和用户交互层。
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=0.5cm,
+  layer/.style={rectangle, rounded corners=4pt, draw=black!60, fill=#1,
+                text width=13.5cm, minimum height=1.05cm,
+                align=center, font=\small},
+  arrow/.style={-Stealth, thick, draw=black!60},
+]
+  \node[layer=blue!20]   (L5) {\textbf{Layer 5：用户交互层}\ \ Vue 3 + ECharts 5.4，RESTful API，教师端 / 教研端双视图};
+  \node[layer=green!18, below=of L5]  (L4) {\textbf{Layer 4：应用服务层}\ \ Flask 2.3 + Gunicorn，Celery + RabbitMQ，画像生成 / 风格分析服务};
+  \node[layer=orange!18, below=of L4] (L3) {\textbf{Layer 3：模型推理层}\ \ SHAPE跨模态注意力融合网络（PyTorch 2.0 + TensorRT 8.5），SHAP解释器};
+  \node[layer=purple!15, below=of L3] (L2) {\textbf{Layer 2：特征提取层}\ \ 视频流水线（YOLOv8+DeepSORT+MediaPipe+ST-GCN）\ \textbar\ 音频（Wav2Vec 2.0）\ \textbar\ 文本（Whisper+BERT+H-DAR）};
+  \node[layer=gray!20,  below=of L2] (L1) {\textbf{Layer 1：数据管理层}\ \ MinIO对象存储（视频）\ \textbar\ Redis缓存（特征/任务）\ \textbar\ MySQL（元数据）};
+
+  \draw[arrow] (L1.north) -- (L2.south);
+  \draw[arrow] (L2.north) -- (L3.south);
+  \draw[arrow] (L3.north) -- (L4.south);
+  \draw[arrow] (L4.north) -- (L5.south);
+\end{tikzpicture}
+\caption{教师风格画像分析系统五层架构}
+\label{fig:sys-5layer}
+\end{figure}
 
 \textbf{数据管理层}（Layer 1）负责原始数据的存储与管理。视频文件通过MinIO对象存储系统保存，支持断点续传和大文件分片上传；特征向量与模型输出缓存于Redis，设置差异化的过期策略；课程信息、教师档案和分析记录等结构化元数据存储于MySQL关系型数据库。
 
@@ -51,7 +75,14 @@
 
 风格分类推理服务接收特征提取模块输出的70维特征向量序列，完成从特征到风格标签的映射，是系统的核心计算单元。
 
-推理服务加载预训练的SHAPE模型检查点（最优验证集F1对应的参数），对每个语义片段的70维输入依次完成跨模态注意力计算、BiLSTM时序建模和注意力池化，最终通过Softmax分类层输出7类风格的概率分布 $P(y=k|X) \in [0,1]^7$。对于一节完整课程，服务将所有片段的预测结果按置信度加权聚合，生成课程级风格评分向量（见图4-2），并以主导风格（最高概率类别）作为该节课的风格标签。
+推理服务加载预训练的SHAPE模型检查点（最优验证集F1对应的参数），对每个语义片段的70维输入依次完成跨模态注意力计算、BiLSTM时序建模和注意力池化，最终通过Softmax分类层输出7类风格的概率分布 $P(y=k|X) \in [0,1]^7$。对于一节完整课程，服务将所有片段的预测结果按置信度加权聚合，生成课程级风格评分向量（见图~\ref{fig:radar-score}），并以主导风格（最高概率类别）作为该节课的风格标签。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.55\textwidth]{chapters/fig-4/fig-4-2.png}
+\caption{课程级风格评分向量七边形雷达图（示例：教师A，第3节课，占位数据）}
+\label{fig:radar-score}
+\end{figure}
 
 在推理性能方面，服务采用TensorRT对SHAPE模型进行FP16精度量化，单片段推理耗时约0.15秒，整节课（约150个片段）的推理阶段总耗时约22秒。服务通过Flask接口对外暴露，上游的Celery任务工作进程调用该接口，并将结果写入MySQL数据库供前端查询。
 
@@ -62,7 +93,14 @@
 
 SHAP值的计算使用KernelSHAP方法，以测试集全部样本的模型输出均值作为基准值（baseline），通过采样不同特征子集的边际贡献来估算各特征的Shapley值。由于SHAPE模型的输入维度为70维，每次归因计算约需120毫秒，为避免对用户响应时间造成影响，该计算以异步任务的形式执行，用户在查看分析报告时可按需触发。
 
-模块的可视化输出包含三类图表：其一为全局特征重要性条形图（Global Bar Chart），按模态分组展示70维特征的平均绝对SHAP值，帮助用户了解哪类特征对当前教师的风格识别最具判别力；其二为特征分布散点图（Summary Beeswarm），展示各特征取值与SHAP贡献度的对应关系，反映特征对风格判断的方向性影响；其三为单次预测瀑布图（Waterfall Chart），将从基准值到最终预测概率的累积贡献路径完整呈现，使教师能够追踪具体片段的识别依据（如图4-3所示）。
+模块的可视化输出包含三类图表：其一为全局特征重要性条形图（Global Bar Chart），按模态分组展示70维特征的平均绝对SHAP值，帮助用户了解哪类特征对当前教师的风格识别最具判别力；其二为特征分布散点图（Summary Beeswarm），展示各特征取值与SHAP贡献度的对应关系，反映特征对风格判断的方向性影响；其三为单次预测瀑布图（Waterfall Chart），将从基准值到最终预测概率的累积贡献路径完整呈现，使教师能够追踪具体片段的识别依据（如图~\ref{fig:shap-waterfall}所示）。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.82\textwidth]{chapters/fig-4/fig-4-3.png}
+\caption{单片段预测"启发引导型"的SHAP瀑布图（示例占位数据）}
+\label{fig:shap-waterfall}
+\end{figure}
 
 
 \subsection{风格画像生成模块}
@@ -77,7 +115,14 @@ SHAP值的计算使用KernelSHAP方法，以测试集全部样本的模型输出
 
 \textbf{关键词云图}（Word Cloud）从Whisper转写的全课文本中提取高频教学术语，经jieba分词和停用词过滤后生成词云，直观展示教师的核心词汇使用模式（如逻辑推导型教师词云中"因为""所以""因此"等逻辑连接词频率显著高于其他类型）。
 
-\textbf{典型片段自动提取}功能从模型预测结果中选取每类风格置信度最高的前3个片段，提供原始视频回放链接，使教师能够直观对照自身被识别为某一风格的具体行为表现，增强画像结果的可信度与教育反馈价值（如图4-4所示）。
+\textbf{典型片段自动提取}功能从模型预测结果中选取每类风格置信度最高的前3个片段，提供原始视频回放链接，使教师能够直观对照自身被识别为某一风格的具体行为表现，增强画像结果的可信度与教育反馈价值（如图~\ref{fig:typical-seg}所示）。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.90\textwidth]{chapters/fig-4/fig-4-4.png}
+\caption{各风格置信度Top-3典型片段展示（3类风格×3片段，占位示例）}
+\label{fig:typical-seg}
+\end{figure}
 
 
 \subsection{风格分析功能}
@@ -92,7 +137,14 @@ SMI = 1 - \frac{\displaystyle\sum_{i=1}^{7}\left| S_{\text{target}}^{(i)} - S_{\
 
 其中，$S_{\text{target}}^{(i)}$ 为参考风格的第 $i$ 类评分，$S_{\text{actual}}^{(i)}$ 为当前教师的实际评分，分母 $14$ 为归一化因子。SMI值域为 $[0,1]$，越接近1表示与参考风格越相近。系统内置了四类课型的参考风格模板（理论课、探究课、习题课、复习课），教研人员也可自定义参考风格用于专项研究。需说明的是，SMI仅用于量化风格相似度，不代表教学质量优劣，不同情境下教师需要采用与课型相适配的风格。
 
-\textbf{风格稳定性分析}支持对同一教师跨多节课的风格评分进行时序追踪，计算各风格维度的标准差 $\sigma_k$，反映教师风格的一致性与演变规律。$\sigma_k < 0.10$ 表示高度稳定，$0.10 \leq \sigma_k < 0.20$ 表示较为稳定，$\sigma_k \geq 0.20$ 表示存在明显波动，可能反映教师的风格在不同课型下发生了适应性调整。系统将风格稳定性分析结果以折线图形式呈现（如图4-5所示），并可叠加显示学期内的课型标注，辅助教师理解风格波动的情境原因。
+\textbf{风格稳定性分析}支持对同一教师跨多节课的风格评分进行时序追踪，计算各风格维度的标准差 $\sigma_k$，反映教师风格的一致性与演变规律。$\sigma_k < 0.10$ 表示高度稳定，$0.10 \leq \sigma_k < 0.20$ 表示较为稳定，$\sigma_k \geq 0.20$ 表示存在明显波动，可能反映教师的风格在不同课型下发生了适应性调整。系统将风格稳定性分析结果以折线图形式呈现（如图~\ref{fig:style-stability}所示），并可叠加显示学期内的课型标注，辅助教师理解风格波动的情境原因。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.90\textwidth]{chapters/fig-4/fig-4-5.png}
+\caption{教师A跨学期风格稳定性追踪折线图（含线性趋势线，占位示例数据）}
+\label{fig:style-stability}
+\end{figure}
 
 
 \section{技术栈选型}
@@ -142,43 +194,85 @@ Prometheus与Grafana是云原生监控的经典组合。Prometheus负责从各�
 
 \subsection{视频上传与任务管理页面}
 
-视频上传页面（如图4-6所示）是用户使用系统的入口。页面左侧提供课程信息填写区域，用户在此输入教师姓名、课程名称、授课日期和课型（理论课/习题课/探究课/复习课）等基本信息。页面中央为拖拽式文件上传区，支持MP4、MOV、AVI等主流视频格式，最大支持单文件8GB的断点续传上传。上传进度以百分比进度条实时显示，上传完成后系统自动创建分析任务并返回任务编号。
+视频上传页面（如图~\ref{fig:ui-upload}所示）是用户使用系统的入口。页面左侧提供课程信息填写区域，用户在此输入教师姓名、课程名称、授课日期和课型（理论课/习题课/探究课/复习课）等基本信息。页面中央为拖拽式文件上传区，支持MP4、MOV、AVI等主流视频格式，最大支持单文件8GB的断点续传上传。上传进度以百分比进度条实时显示，上传完成后系统自动创建分析任务并返回任务编号。
 
-任务管理页面（如图4-7所示）以列表形式展示用户提交的全部分析任务，每条记录显示任务编号、课程信息、提交时间、当前状态（排队中/特征提取中/模型推理中/画像生成中/已完成/失败）和进度百分比。用户可在此页面查看实时进度、取消排队中的任务或重新提交失败任务。对于已完成的任务，点击"查看报告"按钮可跳转至对应的风格画像页面。
+任务管理页面（如图~\ref{fig:ui-task}所示）以列表形式展示用户提交的全部分析任务，每条记录显示任务编号、课程信息、提交时间、当前状态（排队中/特征提取中/模型推理中/画像生成中/已完成/失败）和进度百分比。用户可在此页面查看实时进度、取消排队中的任务或重新提交失败任务。对于已完成的任务，点击"查看报告"按钮可跳转至对应的风格画像页面。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.90\textwidth]{chapters/fig-4/fig-4-6.png}
+\caption{视频上传页面界面原型}
+\label{fig:ui-upload}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.90\textwidth]{chapters/fig-4/fig-4-7.png}
+\caption{分析任务管理页面界面原型}
+\label{fig:ui-task}
+\end{figure}
 
 
 \subsection{风格画像综合展示页面}
 
-风格画像页面（如图4-8所示）是系统的核心展示界面，以"一图概览、四维详情"的布局呈现分析结果。
+风格画像页面（如图~\ref{fig:ui-profile}所示）是系统的核心展示界面，以"一图概览、四维详情"的布局呈现分析结果。
 
 页面顶部为课程基本信息栏，显示教师姓名、课程名称、主导风格标签（如"启发引导型（置信度87.3\%）"）及分析完成时间。页面主体分为左右两区：左侧占60\%宽度，展示风格雷达图（7类风格评分的七边形可视化），鼠标悬停于各顶点时弹出该风格的详细说明和代表性特征指标；右侧占40\%宽度，展示行为分布柱状图，以双轴形式并列显示6类动作的频率（\%）和持续时长（分钟），支持点击动作类别定位至时序详情。
 
 页面下半部分分为两个Tab面板：第一个Tab展示语音情绪曲线，以折线图呈现课程全程的情感强度时序变化，用户可拖拽时间轴缩放查看；第二个Tab展示关键词云图，词语大小与出现频率正相关，点击词语可在转写文本中定位该词语的出现位置。
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.90\textwidth]{chapters/fig-4/fig-4-8.png}
+\caption{风格画像综合展示页面界面原型}
+\label{fig:ui-profile}
+\end{figure}
+
 
 \subsection{可解释性与特征详情页面}
 
-可解释性页面（如图4-9所示）为有进一步分析需求的用户提供特征级的解释工具，面向教研人员和有数据分析能力的教师。
+可解释性页面（如图~\ref{fig:ui-explain}所示）为有进一步分析需求的用户提供特征级的解释工具，面向教研人员和有数据分析能力的教师。
 
 页面顶部展示模态贡献度饼图，直观呈现视觉、音频、文本三种模态在本次预测中的权重占比，数值来源于跨模态注意力权重 $\alpha_{i \to j}$ 的聚合计算（详见第3.5节）。页面主体展示SHAP全局特征重要性条形图，按绝对SHAP值降序列出Top-20特征，不同模态的特征以不同颜色区分（视频特征为蓝色、音频特征为橙色、文本特征为绿色）。将鼠标悬停于条形上，可查看该特征的具体取值及其对预测结果的方向性影响（正向/负向贡献）。
 
 页面下方提供典型片段回放区域，按风格类别分组展示置信度最高的3个视频片段缩略图，点击可在线播放对应的课堂视频片段，使教师能够将系统的量化描述与自身实际行为直接对照。
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.90\textwidth]{chapters/fig-4/fig-4-9.png}
+\caption{可解释性与特征详情页面界面原型}
+\label{fig:ui-explain}
+\end{figure}
+
 
 \subsection{风格演变追踪页面}
 
-风格演变追踪页面（如图4-10所示）面向已积累多节课分析记录的教师，提供跨时间段的风格变化分析。
+风格演变追踪页面（如图~\ref{fig:ui-trend}所示）面向已积累多节课分析记录的教师，提供跨时间段的风格变化分析。
 
 页面顶部为课程筛选区，用户可通过日期范围选择器和课型筛选器确定分析区间，支持对最近一个月、一学期或自定义时间段的课程记录进行追踪。页面主体展示成长曲线图，以折线图呈现各风格维度的评分随时间的变化趋势，同时叠加显示线性回归拟合线，直观反映风格演变的整体方向。用户可通过图例选择显示或隐藏特定风格维度的曲线，避免多线重叠影响可读性。
 
 页面右侧展示风格稳定性分析结果，以热力图形式呈现7类风格在选定时间段内的标准差分布，稳定性较高的维度以深色表示，波动较大的维度以浅色表示，辅助教师识别自身风格的稳定特征与动态调整空间。
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.90\textwidth]{chapters/fig-4/fig-4-10.png}
+\caption{风格演变追踪页面界面原型}
+\label{fig:ui-trend}
+\end{figure}
+
 
 \subsection{批量分析与教研对比页面}
 
-批量分析页面（如图4-11所示）面向教研人员，支持对多名教师或多节课程的批量处理与横向对比。
+批量分析页面（如图~\ref{fig:ui-batch}所示）面向教研人员，支持对多名教师或多节课程的批量处理与横向对比。
 
 用户在此页面可选择多个已上传的视频任务或批量导入视频文件列表，提交批量分析任务后，系统将任务拆分分发至多个Celery工作进程并行执行，处理35节课的预计耗时约58分钟。批量分析完成后，页面展示多教师风格分布对比雷达图（多组数据叠加在同一雷达图中）和各维度的均值与方差统计，辅助教研人员发现群体共性规律或个体差异特征。结果支持导出为Excel报表，包含每位教师的完整风格评分和主要特征指标。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.90\textwidth]{chapters/fig-4/fig-4-11.png}
+\caption{批量分析与教研对比页面界面原型（教研管理员视图）}
+\label{fig:ui-batch}
+\end{figure}
 
 
 \section{系统测试与试运行}
@@ -188,10 +282,10 @@ Prometheus与Grafana是云原生监控的经典组合。Prometheus负责从各�
 
 系统测试在单机部署模式下进行，软硬件环境配置如表4-1所示。
 
-\textbf{表4-1：测试环境配置}
-
 \begin{table}[htbp]
 \centering
+\caption{测试环境配置}
+\label{tab:test-env}
 \begin{tabular}{|l|l|l|}
 \hline
 类别 & 配置项 & 具体配置 \\
@@ -224,10 +318,10 @@ Prometheus与Grafana是云原生监控的经典组合。Prometheus负责从各�
 
 功能性测试依据系统需求规格，覆盖视频上传、特征提取、风格识别、画像生成和用户交互等核心功能模块。测试采用黑盒方法，依据测试用例的预期输出验证实际输出的正确性。主要测试用例及结果如表4-2所示。
 
-\textbf{表4-2：功能性测试用例}
-
 \begin{table}[htbp]
 \centering
+\caption{功能性测试用例}
+\label{tab:func-test}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{|l|l|l|l|l|}
 \hline
@@ -281,10 +375,10 @@ SHAP分析 & 特征归因计算 & 单次预测特征向量 & 返回70维SHAP值 
 
 性能测试重点评估系统在不同负载条件下的处理能力与响应时间，结果如表4-3所示。
 
-\textbf{表4-3：性能测试结果}
-
 \begin{table}[htbp]
 \centering
+\caption{性能测试结果}
+\label{tab:perf-test}
 \begin{tabular}{|l|l|l|l|}
 \hline
 测试场景 & 测试指标 & 目标值 & 实测值 \\

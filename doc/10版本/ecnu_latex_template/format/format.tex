@@ -222,11 +222,7 @@ urlcolor=black
   \forlistloop{\lodbib@bibitem}{\lodbib@citeorder}%
   \ifdefvoid{\lodbib@notcited}
     {}
-    {\forlistloop{
-    \lodbib@bibitem 
-    }{
-    \lodbib@notcited % Whether listing uncited bib at the end of the references?
-    }}}
+    {\forlistloop{\lodbib@bibitem}{\lodbib@notcited}}}
     
 % Modify the \cite num. in the book.
 \def\lodbib@bibitem#1{%

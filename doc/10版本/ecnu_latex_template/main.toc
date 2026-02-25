@@ -113,6 +113,6 @@
 \contentsline {section}{\numberline {5.1}工作总结}{85}{section.5.1}%
 \contentsline {section}{\numberline {5.2}未来展望}{86}{section.5.2}%
 \contentsline {chapter}{参考文献}{87}{section.5.2}%
-\contentsline {chapter}{致谢}{89}{chapter*.42}%
-\contentsline {chapter}{发表论文和科研情况}{91}{appendix*.43}%
+\contentsline {chapter}{致谢}{95}{chapter*.42}%
+\contentsline {chapter}{发表论文和科研情况}{97}{appendix*.43}%
 \contentsfinish 

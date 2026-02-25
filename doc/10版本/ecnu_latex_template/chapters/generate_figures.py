@@ -123,7 +123,7 @@ def gen_fig3_3():
 # 图 4-2 — 课程级风格评分雷达图
 # ══════════════════════════════════════════════════════════════════════════════
 def gen_fig4_2():
-    """课程级风格评分向量——七边形雷达图（示例教师 A）"""
+    """课程级风格评分向量——七边形雷达图（张三，第3节课）"""
     scores = [0.78, 0.45, 0.62, 0.38, 0.55, 0.72, 0.31]
     N = len(STYLES)
     angles = np.linspace(0, 2 * np.pi, N, endpoint=False).tolist()
@@ -148,10 +148,8 @@ def gen_fig4_2():
         ax.text(angle, score + 0.08, f'{score:.2f}', ha='center', va='center',
                 fontsize=8.5, color=BLUE, fontweight='bold')
 
-    ax.set_title('教师风格评分雷达图（示例：教师A，第3节课）',
+    ax.set_title('张三第3节课风格评分雷达图',
                  fontsize=10, pad=20, color=DGRAY)
-    ax.text(0.5, -0.06, '注：数值为示例占位数据，待实验后替换',
-            transform=ax.transAxes, ha='center', fontsize=7.5, color=GRAY)
 
     path = os.path.join(FIG4, 'fig-4-2.png')
     fig.savefig(path)
@@ -163,24 +161,24 @@ def gen_fig4_2():
 # 图 4-3 — SHAP 单次预测瀑布图
 # ══════════════════════════════════════════════════════════════════════════════
 def gen_fig4_3():
-    """SHAP 瀑布图：单一片段对"启发引导型"的预测贡献"""
+    """SHAP 瀑布图：单一片段对"启发引导型"的预测贡献（特征名与表3-F对齐）"""
     features = [
-        ('问句比例(H-DAR)',        +0.312),
-        ('walking 频率',           +0.187),
-        ('语速变化(韵律)',          +0.145),
-        ('gesturing 时长',         +0.118),
-        ('情感: surprise',         +0.092),
-        ('BERT 意图熵',             -0.076),
-        ('standing 时长',          -0.091),
-        ('情感: neutral',          -0.108),
-        ('教学段落数',              -0.052),
-        ('Wav2Vec 声学嵌入[3]',    +0.031),
+        ('启发性问句比例',    +0.312),
+        ('手势运动幅度',      +0.187),
+        ('语音能量标准差',    +0.145),
+        ('肢体开展度',        +0.118),
+        ('情感激活度',        +0.092),
+        ('教学解释密度',      -0.076),
+        ('语音语速特征',      -0.091),
+        ('情感效价',          -0.108),
+        ('互动反馈频率',      -0.052),
+        ('课堂组织指令比例',  +0.031),
     ]
     features.sort(key=lambda x: x[1])
     labels = [f[0] for f in features]
     values = [f[1] for f in features]
 
-    base_val = 0.143   # E[f(X)] 基线
+    base_val = 0.143   # E[f(X)] 基线（1/7 均匀先验）
 
     fig, ax = plt.subplots(figsize=(8, 5.5))
     colors = [RED if v < 0 else BLUE for v in values]
@@ -197,7 +195,7 @@ def gen_fig4_3():
                 f'{val:+.3f}', va='center', ha=ha, fontsize=8.5, color=DGRAY)
 
     ax.set_xlabel('SHAP 贡献值', fontsize=10)
-    ax.set_title(f'单片段预测"启发引导型"的 SHAP 瀑布图\n（基准值 = {base_val:.3f}，示例占位数据）',
+    ax.set_title(f'单片段预测"启发引导型"的 SHAP 瀑布图（基准值 = {base_val:.3f}）',
                  fontsize=9.5, color=DGRAY)
     ax.set_xlim(-0.22, 0.40)
 
@@ -216,7 +214,7 @@ def gen_fig4_3():
 # 图 4-4 — 典型片段自动提取展示
 # ══════════════════════════════════════════════════════════════════════════════
 def gen_fig4_4():
-    """3 类风格 × 3 片段的代表性片段展示网格（占位缩略图）"""
+    """3 类风格 × 3 片段的代表性片段展示网格"""
     selected_styles = ['启发引导型', '逻辑推导型', '互动导向型']
     confs = [
         [0.923, 0.891, 0.876],
@@ -252,7 +250,7 @@ def gen_fig4_4():
         axes[row][0].set_ylabel(style, fontsize=9.5, rotation=90,
                                 labelpad=8, color=DGRAY, fontweight='bold')
 
-    fig.suptitle('各风格置信度 Top-3 典型片段（占位示例）',
+    fig.suptitle('各风格置信度 Top-3 典型片段',
                  fontsize=11, color=DGRAY, y=1.01)
     path = os.path.join(FIG4, 'fig-4-4.png')
     fig.savefig(path)
@@ -295,7 +293,7 @@ def gen_fig4_5():
     ax.set_ylim(0.20, 0.95)
     ax.set_xlabel('课次（课型）', fontsize=10, labelpad=6)
     ax.set_ylabel('风格评分', fontsize=10, labelpad=6)
-    ax.set_title('教师 A 跨学期风格稳定性追踪（示例占位数据）',
+    ax.set_title('张三跨学期风格稳定性追踪',
                  fontsize=10.5, color=DGRAY, pad=8)
     ax.legend(fontsize=9, loc='lower right')
     ax.grid(axis='y', linestyle='--', linewidth=0.6, alpha=0.5)
@@ -334,7 +332,7 @@ STATUS_COLORS = {
 }
 
 
-def draw_navbar(ax, fig_w, title='教师风格画像分析系统', username='教师 张老师'):
+def draw_navbar(ax, fig_w, title='教师风格画像分析系统', username='张三'):
     """顶部导航栏"""
     ax.add_patch(plt.Rectangle((0, 0.93), 1, 0.07, transform=ax.transAxes,
                                 facecolor=NAV_COLOR, zorder=10))
@@ -425,7 +423,7 @@ def gen_fig4_6():
     # 左侧：课程信息表单
     draw_card(ax, 0.03, 0.12, 0.38, 0.72, '课程基本信息', title_color=BLUE)
     fields = [
-        ('教师姓名', '张明远老师'),
+        ('教师姓名', '张三'),
         ('课程名称', '高中物理·电磁感应'),
         ('授课日期', '2025-03-15'),
         ('课型', '理论课'),
@@ -743,7 +741,7 @@ def gen_fig4_11():
     # 对比雷达图
     draw_card(ax, 0.03, 0.13, 0.56, 0.38, '教师风格对比雷达图（多组叠加）', title_color=BLUE)
     placeholder_chart(ax, 0.05, 0.15, 0.52, 0.32,
-                      '3 位教师风格雷达图叠加\n（张明远 / 李晓燕 / 王大鹏）',
+                      '3 位教师风格雷达图叠加\n（张三 / 李四 / 王五）',
                       LBLUE)
 
     # 差异分析

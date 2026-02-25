@@ -70,15 +70,15 @@
 \contentsline {subsubsection}{(2) 注意力热图}{61}{subsubsection*.37}%
 \contentsline {subsubsection}{(3) 模态重要和依赖性分析}{61}{subsubsection*.38}%
 \contentsline {section}{\numberline {3.6}实验条件}{62}{section.3.6}%
-\contentsline {section}{\numberline {3.7}数据集处理}{65}{section.3.7}%
-\contentsline {subsection}{\numberline {3.7.1}数据集说明}{65}{subsection.3.7.1}%
+\contentsline {section}{\numberline {3.7}数据集处理}{64}{section.3.7}%
+\contentsline {subsection}{\numberline {3.7.1}数据集说明}{64}{subsection.3.7.1}%
 \contentsline {section}{\numberline {3.8}实验过程}{65}{section.3.8}%
 \contentsline {subsection}{\numberline {3.8.1}子模块预训练设置}{65}{subsection.3.8.1}%
-\contentsline {subsection}{\numberline {3.8.2}SHAPE端到端训练设置}{66}{subsection.3.8.2}%
-\contentsline {section}{\numberline {3.9}实验结果分析}{68}{section.3.9}%
+\contentsline {subsection}{\numberline {3.8.2}SHAPE端到端训练设置}{67}{subsection.3.8.2}%
+\contentsline {section}{\numberline {3.9}实验结果分析}{67}{section.3.9}%
 \contentsline {subsection}{\numberline {3.9.1}整体性能}{68}{subsection.3.9.1}%
-\contentsline {subsection}{\numberline {3.9.2}多模态融合对比}{69}{subsection.3.9.2}%
-\contentsline {subsection}{\numberline {3.9.3}消融实验}{70}{subsection.3.9.3}%
+\contentsline {subsection}{\numberline {3.9.2}多模态融合对比}{68}{subsection.3.9.2}%
+\contentsline {subsection}{\numberline {3.9.3}消融实验}{69}{subsection.3.9.3}%
 \contentsline {subsection}{\numberline {3.9.4}可解释性验证}{71}{subsection.3.9.4}%
 \contentsline {section}{\numberline {3.10}本章小结}{72}{section.3.10}%
 \contentsline {chapter}{\numberline {第四章\hspace {.3em}}教师风格画像分析系统设计与实现}{74}{chapter.4}%
@@ -113,6 +113,6 @@
 \contentsline {section}{\numberline {5.1}工作总结}{96}{section.5.1}%
 \contentsline {section}{\numberline {5.2}未来展望}{97}{section.5.2}%
 \contentsline {chapter}{参考文献}{99}{section.5.2}%
-\contentsline {chapter}{致谢}{107}{chapter*.60}%
-\contentsline {chapter}{发表论文和科研情况}{109}{appendix*.61}%
+\contentsline {chapter}{致谢}{107}{chapter*.61}%
+\contentsline {chapter}{发表论文和科研情况}{109}{appendix*.62}%
 \contentsfinish 

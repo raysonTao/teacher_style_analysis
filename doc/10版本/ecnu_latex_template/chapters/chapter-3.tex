@@ -302,7 +302,12 @@ SHAPE引擎采用四层架构设计，如图~\ref{fig:shape-4layer}所示：
 
 \subsection{数据采集流程}
 
-\textbf{硬件要求：} - 视频：1280×720分辨率，25fps，H.264编码 - 音频：16kHz采样率，单声道，PCM编码 - 存储：每节课（40分钟）约占用500MB空间
+\textbf{硬件要求：}
+\begin{itemize}
+\item 视频：1280×720分辨率，25fps，H.264编码
+\item 音频：16kHz采样率，单声道，PCM编码
+\item 存储：每节课（40分钟）约占用500MB空间
+\end{itemize}
 
 \textbf{采集策略：}
 
@@ -313,9 +318,10 @@ SHAPE引擎采用四层架构设计，如图~\ref{fig:shape-4layer}所示：
 
 \item 同步记录时间戳，精度达到毫秒级
 
-    3.2.2 数据分段处理
-
 \end{enumerate}
+
+\subsection{数据分段处理}
+
     数据同步机制：采用音频波形匹配算法（Cross-Correlation）实现视频与音频的精确对齐。设视频音轨为 $a_{v}(t)$，独立音频为 $a_{s}(t)$，时间偏移量 $\tau$ 通过最大化互相关函数获得：
 
     \[
@@ -396,7 +402,12 @@ SHAPE引擎采用四层架构设计，如图~\ref{fig:shape-4layer}所示：
 
     \textcircled{3} 依存句法分析：使用预训练的中文句法分析模型（HanLP）识别句子间的逻辑连接关系，提取逻辑连接词（"因为""所以""但是"等）及其作用域；
 
-    \textcircled{4} 话语边界检测：基于以下规则判断话语单元结束： - 逻辑链完整（如"因为...所以..."结构完成） - 出现话题转换标记（"那么""接下来""现在"） - 单元时长超过上限（$\Delta t > 30$s）
+    \textcircled{4} 话语边界检测：基于以下规则判断话语单元结束：
+\begin{itemize}
+\item 逻辑链完整（如"因为...所以..."结构完成）
+\item 出现话题转换标记（"那么""接下来""现在"）
+\item 单元时长超过上限（$\Delta t > 30$s）
+\end{itemize}
 
     \textcircled{5} 形成语义单元：将一个或多个连续句子合并为一个语义单元 $U_{i}$，设完整课堂时长为 $L$，则生成 $N$ 个语义单元（通常 $N \approx 150 \sim 200$ 个/45分钟课）：
 
@@ -431,7 +442,12 @@ V = \{ v_{1},v_{2},...,v_{T}\},\quad v_{i} \in \mathbb{R}^{720 \times 1280 \time
 
 \subsubsection{（2）视频增强}
 
-为提升模型鲁棒性，对训练数据应用以下增强策略： - \textbf{随机裁剪}：以0.8-1.0的缩放比例裁剪 - \textbf{颜色抖动}：亮度、对比度、饱和度随机扰动（±20\%） - \textbf{时间抖动}：随机丢帧以模拟帧率不稳定
+为提升模型鲁棒性，对训练数据应用以下增强策略：
+\begin{itemize}
+\item \textbf{随机裁剪}：以0.8-1.0的缩放比例裁剪
+\item \textbf{颜色抖动}：亮度、对比度、饱和度随机扰动（±20\%）
+\item \textbf{时间抖动}：随机丢帧以模拟帧率不稳定
+\end{itemize}
 
 \[
 v_{i}\prime = \text{ColorJitter}\left( \text{RandomCrop}\left( v_{i},\text{scale} = 0.8 \right) \right)
@@ -449,7 +465,13 @@ v_{i}\prime = \text{ColorJitter}\left( \text{RandomCrop}\left( v_{i},\text{scale
 S_{\text{clean}}(f) = \max\left( \left| S_{\text{noisy}}(f) \right| - \alpha \cdot \left| N(f) \right|,\beta \cdot \left| S_{\text{noisy}}(f) \right| \right)
 \]
 
-其中： - $S_{\text{noisy}}(f)$ 是带噪语音的频谱 - $N(f)$ 是噪声频谱估计（从静音段提取） - $\alpha = 2.0$ 是过减因子 - $\beta = 0.01$ 是谱下限
+其中：
+\begin{itemize}
+\item $S_{\text{noisy}}(f)$ 是带噪语音的频谱
+\item $N(f)$ 是噪声频谱估计（从静音段提取）
+\item $\alpha = 2.0$ 是过减因子
+\item $\beta = 0.01$ 是谱下限
+\end{itemize}
 
 
 \subsection{文本预处理}
@@ -574,19 +596,22 @@ p_{\text{emotion}} = [p_{\text{neutral}},\ p_{\text{happy}},\ p_{\text{sad}},\ p
 \subsection{文本模态特征提取}
 
 
-层次化细粒度对话行为识别
+\subsubsection{层次化细粒度对话行为识别（H-DAR）}
 
 本研究采用BERT进行文本语义编码，并在此基础上提出\textbf{层次化细粒度对话行为识别（H-DAR）}。传统对话行为识别多采用粗粒度四分类（提问、指令、讲解、反馈），但这无法有效区分不同教学风格的特征性语言模式。例如，"讲解"类过于宽泛，无法区分"逻辑推导型"教师的推理讲解与"理论讲授型"教师的概念定义。H-DAR将教学意图扩展为\textbf{10类细粒度分类}。
 
-（3）对话行为识别
-
-使用BERT模型将每个句子分类为4类对话行为：
+传统粗粒度对话行为识别使用BERT模型将每个句子分类为4类对话行为：
 
 \[
 p_{\text{act}} = \text{softmax}\left( \text{MLP}\left( \text{BERT}(T) \right) \right)
 \]
 
-其中： - $\text{BERT}(T) \in \mathbb{R}^{768}$ 是句子的BERT嵌入 - $\text{MLP}$ 是两层全连接网络 - $p_{\text{act}} = \left\lbrack p_{Q},p_{I},p_{E},p_{F} \right\rbrack$ 对应Question, Instruction, Explanation, Feedback
+其中：
+\begin{itemize}
+\item $\text{BERT}(T) \in \mathbb{R}^{768}$ 是句子的BERT嵌入
+\item $\text{MLP}$ 是两层全连接网络
+\item $p_{\text{act}} = \left\lbrack p_{Q},p_{I},p_{E},p_{F} \right\rbrack$ 对应Question, Instruction, Explanation, Feedback
+\end{itemize}
 
 对话行为分布统计：
 
@@ -818,7 +843,13 @@ F_{a} = \left\lbrack \underset{\text{6维情感}}{\underbrace{p_{\text{neutral}}
 \item 第13-15维：Wav2Vec 2.0嵌入的分段均值（768维→3维）
 
 \end{itemize}
-文本模态同样生成 \textbf{35维编码向量} $F_{t} \in \mathbb{R}^{35}$，包含： - \textbf{10维细粒度对话行为编码}（10类one-hot） - \textbf{4维粗分类编码}（4类one-hot） - \textbf{1维意图置信度} - \textbf{20维NLP统计特征}（词数、句数、逻辑连接词频率、专业术语数等）
+文本模态同样生成 \textbf{35维编码向量} $F_{t} \in \mathbb{R}^{35}$，包含：
+\begin{itemize}
+\item \textbf{10维细粒度对话行为编码}（10类one-hot）
+\item \textbf{4维粗分类编码}（4类one-hot）
+\item \textbf{1维意图置信度}
+\item \textbf{20维NLP统计特征}（词数、句数、逻辑连接词频率、专业术语数等）
+\end{itemize}
 
 
 \subsection{视频模态特征提取}
@@ -875,7 +906,12 @@ F_{v} = \left\lbrack \underset{\text{6类动作频率}}{\underbrace{p_{1},...,p_
 F_{\text{concat}} = \left\lbrack F_{v};F_{a};F_{t} \right\rbrack \in \mathbb{R}^{20 + 15 + 35} = \mathbb{R}^{70}
 \]
 
-\textbf{局限性}： - 不同模态的维度和尺度差异大，高维模态会主导融合结果 - 无法建模模态间的交互关系 - 缺乏对不同模态重要性的自适应调整
+\textbf{局限性}：
+\begin{itemize}
+\item 不同模态的维度和尺度差异大，高维模态会主导融合结果
+\item 无法建模模态间的交互关系
+\item 缺乏对不同模态重要性的自适应调整
+\end{itemize}
 
 \textbf{(2) 晚期融合（Late Fusion）}：分别训练单模态分类器，结果加权平均
 
@@ -883,7 +919,11 @@ F_{\text{concat}} = \left\lbrack F_{v};F_{a};F_{t} \right\rbrack \in \mathbb{R}^
 P_{\text{final}} = w_{v}P_{v} + w_{a}P_{a} + w_{t}P_{t}
 \]
 
-\textbf{局限性}： - 权重 $w_{v},w_{a},w_{t}$ 固定，无法根据样本内容自适应调整 - 忽略了模态间的互补信息
+\textbf{局限性}：
+\begin{itemize}
+\item 权重 $w_{v},w_{a},w_{t}$ 固定，无法根据样本内容自适应调整
+\item 忽略了模态间的互补信息
+\end{itemize}
 
 \textbf{(3) 中间融合（Middle Fusion）}：在特征层进行加权融合
 
@@ -891,15 +931,18 @@ P_{\text{final}} = w_{v}P_{v} + w_{a}P_{a} + w_{t}P_{t}
 F_{\text{weighted}} = w_{v}F_{v} + w_{a}F_{a} + w_{t}F_{t}
 \]
 
-\textbf{局限性}： - 仍然是固定权重 - 不同模态的特征空间不一致，直接相加不合理
+\textbf{局限性}：
+\begin{itemize}
+\item 仍然是固定权重
+\item 不同模态的特征空间不一致，直接相加不合理
+\end{itemize}
 
-采用\textbf{跨模态注意力机制}：
-
-1. 不同模态在不同样本上的重要性（样本自适应）
-
-2. 模态之间的交互关系（跨模态增强）
-
-3. 决策依据的可解释性（注意力权重可视化）
+采用\textbf{跨模态注意力机制}，能够自适应建模：
+\begin{enumerate}
+\item 不同模态在不同样本上的重要性（样本自适应）
+\item 模态之间的交互关系（跨模态增强）
+\item 决策依据的可解释性（注意力权重可视化）
+\end{enumerate}
 
 
 \clearpage
@@ -985,7 +1028,11 @@ F_{t}\prime = \text{ReLU}\left( W_{t}F_{t} + b_{t} \right),\quad F_{t}\prime \in
 
 其中，$W_{v} \in \mathbb{R}^{512 \times 20},W_{a} \in \mathbb{R}^{512 \times 15},W_{t} \in \mathbb{R}^{512 \times 35}$ 是可学习的投影矩阵。
 
-\textbf{设计考量}： - ReLU激活函数引入非线性，提升特征表达能力 - 统一维度便于后续的注意力计算
+\textbf{设计考量}：
+\begin{itemize}
+\item ReLU激活函数引入非线性，提升特征表达能力
+\item 统一维度便于后续的注意力计算
+\end{itemize}
 
 
 \subsubsection{模块2：跨模态注意力层（Cross-Modal Attention Layer）}
@@ -1079,7 +1126,11 @@ h_{n} = \left\lbrack {\overrightarrow{h}}_{n};{\overleftarrow{h}}_{n} \right\rbr
 
 （每个方向的隐状态维度为512）
 
-\textbf{设计考量}： - BiLSTM能够捕捉片段之间的前后依赖关系 - 例如，教师在讲授后通常会进行提问互动，这种模式可以被LSTM学习
+\textbf{设计考量}：
+\begin{itemize}
+\item BiLSTM能够捕捉片段之间的前后依赖关系
+\item 例如，教师在讲授后通常会进行提问互动，这种模式可以被LSTM学习
+\end{itemize}
 
 
 \subsubsection{模块4：注意力池化层（Attention Pooling Layer）}
@@ -1094,9 +1145,18 @@ h_{n} = \left\lbrack {\overrightarrow{h}}_{n};{\overleftarrow{h}}_{n} \right\rbr
 F_{\text{pooled}} = \sum_{n = 1}^{N}\beta_{n}h_{n}
 \]
 
-其中： - $W_{p} \in \mathbb{R}^{256 \times 1024}$ 是注意力权重矩阵 - $v \in \mathbb{R}^{256}$ 是注意力向量 - $\beta_{n}$ 是第 $n$ 个片段的重要性权重
+其中：
+\begin{itemize}
+\item $W_{p} \in \mathbb{R}^{256 \times 1024}$ 是注意力权重矩阵
+\item $v \in \mathbb{R}^{256}$ 是注意力向量
+\item $\beta_{n}$ 是第 $n$ 个片段的重要性权重
+\end{itemize}
 
-\textbf{设计考量}： - 不同片段对风格识别的贡献不同（例如，提问片段对"启发引导型"更重要） - 注意力池化能够自适应地关注关键片段
+\textbf{设计考量}：
+\begin{itemize}
+\item 不同片段对风格识别的贡献不同（例如，提问片段对"启发引导型"更重要）
+\item 注意力池化能够自适应地关注关键片段
+\end{itemize}
 
 
 \subsubsection{模块5：风格分类器（Style Classifier）}
@@ -1121,7 +1181,11 @@ P\left( y|X \right) = \text{softmax}(z)
 
 其中，$z$ 是logits，$P\left( y|X \right)$ 是7类教学风格的概率分布。
 
-\textbf{设计考量}： - Dropout（$p = 0.3$）防止过拟合 - 两层网络（而不是单层）增强非线性拟合能力
+\textbf{设计考量}：
+\begin{itemize}
+\item Dropout（$p = 0.3$）防止过拟合
+\item 两层网络（而不是单层）增强非线性拟合能力
+\end{itemize}
 
 
 \subsection{损失函数与优化}
@@ -1143,7 +1207,11 @@ y_{i,k}\prime = (1 - \epsilon)y_{i,k} + \frac{\epsilon}{7}
 
 本研究中，平滑参数 $\epsilon = 0.1$。
 
-\textbf{设计考量}： - 标签平滑防止模型对某个类别过于自信 - 提高模型的泛化能力
+\textbf{设计考量}：
+\begin{itemize}
+\item 标签平滑防止模型对某个类别过于自信
+\item 提高模型的泛化能力
+\end{itemize}
 
 
 \subsubsection{优化算法}
@@ -1245,9 +1313,18 @@ v_{t} = \beta_{2}v_{t - 1} + \left( 1 - \beta_{2} \right)g_{t}^{2}
 \phi_{i} = \sum_{S \subseteq F \smallsetminus \{ i\}}^{}\frac{|S|!\left( |F| - |S| - 1 \right)!}{|F|!}\left\lbrack f_{S \cup \{ i\}}(x) - f_{S}(x) \right\rbrack
 \]
 
-其中： - $\phi_{i}$ 是特征 $i$ 的SHAP值 - $S$ 是特征子集 - $f_{S}(x)$ 是仅使用特征子集 $S$ 时的模型预测
+其中：
+\begin{itemize}
+\item $\phi_{i}$ 是特征 $i$ 的SHAP值
+\item $S$ 是特征子集
+\item $f_{S}(x)$ 是仅使用特征子集 $S$ 时的模型预测
+\end{itemize}
 
-\textbf{可视化}：生成特征贡献度条形图，例如： - "提问频率" → +0.25（正向贡献） - "静音比" → -0.12（负向贡献）
+\textbf{可视化}：生成特征贡献度条形图，例如：
+\begin{itemize}
+\item "提问频率" → +0.25（正向贡献）
+\item "静音比" → -0.12（负向贡献）
+\end{itemize}
 
 
 \subsubsection{(2) 注意力热图}
@@ -1262,7 +1339,11 @@ v_{t} = \beta_{2}v_{t - 1} + \left( 1 - \beta_{2} \right)g_{t}^{2}
 \end{bmatrix}
 \]
 
-\textbf{解释示例}： - 如果 $\alpha_{v \rightarrow a} = 0.78$，说明"视觉模态高度依赖音频信息" - 这在"情感表达型"教师中很常见（肢体语言与语调同步）
+\textbf{解释示例}：
+\begin{itemize}
+\item 如果 $\alpha_{v \rightarrow a} = 0.78$，说明"视觉模态高度依赖音频信息"
+\item 这在"情感表达型"教师中很常见（肢体语言与语调同步）
+\end{itemize}
 
 
 \subsubsection{(3) 模态重要和依赖性分析}
@@ -1368,7 +1449,11 @@ Cohen's Kappa系数：
 \kappa = \frac{p_{o} - p_{e}}{1 - p_{e}}
 \]
 
-其中： - $p_{o}$ 是观测一致性（Accuracy） - $p_{e} = \sum_{k = 1}^{K}\frac{n_{k,\text{true}} \cdot n_{k,\text{pred}}}{N^{2}}$ 是期望一致性
+其中：
+\begin{itemize}
+\item $p_{o}$ 是观测一致性（Accuracy）
+\item $p_{e} = \sum_{k = 1}^{K}\frac{n_{k,\text{true}} \cdot n_{k,\text{pred}}}{N^{2}}$ 是期望一致性
+\end{itemize}
 
 Kappa值解释：$\kappa < 0.4$（一致性差），$0.4 \leq \kappa < 0.75$（中等），$\kappa \geq 0.75$（实质性一致）。
 
@@ -1382,7 +1467,11 @@ Kappa值解释：$\kappa < 0.4$（一致性差），$0.4 \leq \kappa < 0.75$（�
 t = \frac{\bar{d}}{s_{d}/\sqrt{n}}
 \]
 
-其中： - $\bar{d} = \frac{1}{n}\sum_{i = 1}^{n}d_{i}$ 是均值差异 - $s_{d} = \sqrt{\frac{1}{n - 1}\sum_{i = 1}^{n}\left( d_{i} - \bar{d} \right)^{2}}$ 是标准差
+其中：
+\begin{itemize}
+\item $\bar{d} = \frac{1}{n}\sum_{i = 1}^{n}d_{i}$ 是均值差异
+\item $s_{d} = \sqrt{\frac{1}{n - 1}\sum_{i = 1}^{n}\left( d_{i} - \bar{d} \right)^{2}}$ 是标准差
+\end{itemize}
 
 在显著性水平 $\alpha = 0.05$ 下，当 $|t| > t_{\alpha/2,n - 1}$ 时，拒绝原假设（两模型无差异）。
 
@@ -1772,7 +1861,7 @@ r = \text{Pearson}\left( \phi_{\text{modal}}^{\text{SHAP}},\ w_{\text{modal}}^{\
 
 \section{本章小结}
 
-本章系统阐述了SHAPE（Style-aware Hierarchical Attention-based Profiling Engine）教师风格画像引擎的完整研究方法与实验设计。
+本章系统阐述了SHAPE（Semantic Hierarchical Attention Profiling Engine）教师风格画像引擎的完整研究方法与实验设计。
 
 在\textbf{技术方法}层面，本章提出了四项核心创新：
 

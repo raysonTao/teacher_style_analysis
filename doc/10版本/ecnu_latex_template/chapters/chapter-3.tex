@@ -146,9 +146,9 @@
 
 本研究以"基于课堂录像的教师风格画像分析"为核心目标，提出SHAPE (Semantic Hierarchical Attention Profiling Engine，语义层次化注意力画像引擎)，构建一个集多模态特征提取、风格映射建模、画像生成与可视化反馈于一体的分析体系（如图~\ref{fig:shape-overview}所示）。
 
-\textbf{3.1.1 现有方法的局限性分析}
+\subsubsection{现有方法的局限性分析}
 
-\textbf{(1) 固定分段导致语义割裂}
+\textbf{固定分段导致语义割裂}
 
 传统方法多采用固定时间窗口（如10秒）对课堂视频进行分段，这种机械式切分忽略了教学话语的语义边界。初步实验发现，固定10秒分段导致约25\%的样本出现语义割裂现象：
 
@@ -160,7 +160,7 @@
 \item \textbf{案例讲解跨段}：多句案例描述被人为分割
 
 \end{itemize}
-\textbf{(2) 粗粒度意图识别无法区分教学策略}
+\textbf{粗粒度意图识别无法区分教学策略}
 
 传统对话行为识别多采用粗粒度四分类（提问、指令、讲解、反馈），无法有效区分不同教学风格的特征性语言模式。
 
@@ -172,7 +172,7 @@
 \item "提问"类无法区分启发性提问与事实性提问，难以刻画"启发引导型"风格
 
 \end{itemize}
-\textbf{(3) 简单融合忽略模态交互}
+\textbf{简单融合忽略模态交互}
 
 早期融合（Early Fusion）直接拼接特征，晚期融合（Late Fusion）固定权重加权，均未考虑：
 
@@ -184,7 +184,7 @@
 \item 决策依据的可解释性（注意力权重可视化）
 
 \end{itemize}
-\textbf{3.1.2 四层系统架构}
+\subsubsection{四层系统架构}
 
 SHAPE引擎采用四层架构设计，如图~\ref{fig:shape-4layer}所示：
 
@@ -429,7 +429,7 @@ SHAPE引擎采用四层架构设计，如图~\ref{fig:shape-4layer}所示：
 \subsection{视频预处理}
 
 
-\subsubsection{（1）视频解码与抽帧}
+\subsubsection{视频解码与抽帧}
 
 使用FFmpeg库解码视频流，按25fps提取RGB帧：
 
@@ -440,7 +440,7 @@ V = \{ v_{1},v_{2},...,v_{T}\},\quad v_{i} \in \mathbb{R}^{720 \times 1280 \time
 其中，$v_{i}$ 表示第 $i$ 帧的RGB像素矩阵。
 
 
-\subsubsection{（2）视频增强}
+\subsubsection{视频增强}
 
 为提升模型鲁棒性，对训练数据应用以下增强策略：
 \begin{itemize}
@@ -477,9 +477,9 @@ S_{\text{clean}}(f) = \max\left( \left| S_{\text{noisy}}(f) \right| - \alpha \cd
 \subsection{文本预处理}
 
 
-\subsubsection{（1）语音转文本（ASR）}
+\subsubsection{语音转文本（ASR）}
 
-采用Whisper-medium模型进行语音识别，该模型支持中英混合识别：
+采用Whisper Large-v3模型进行语音识别，该模型支持中英混合识别：
 
 \[
 T = \text{Whisper}(A)
@@ -496,7 +496,7 @@ T = \text{Whisper}(A)
 其中，$S,D,I$ 分别是替换、删除、插入错误数，$N$ 是总字符数。
 
 
-\subsubsection{（2）文本清洗}
+\subsubsection{文本清洗}
 
 对转写文本进行以下处理：
 
@@ -505,11 +505,9 @@ T = \text{Whisper}(A)
 
 \item \textbf{句子分割}：按标点符号和停顿分割为句子
 
-\end{enumerate}
-\begin{itemize}
-\item 3. \textbf{错别字纠正}：使用拼音纠错模型（Pycorrector）
+\item \textbf{错别字纠正}：使用拼音纠错模型（Pycorrector）
 
-\end{itemize}
+\end{enumerate}
 
 \section{多模态数据特征提取}
 
@@ -585,10 +583,10 @@ p_{\text{emotion}} = [p_{\text{neutral}},\ p_{\text{happy}},\ p_{\text{sad}},\ p
 在6维情感分布的基础上，计算情感极性分数以量化教师的整体情感倾向：
 
 \[
-\text{EmotionPolarity} = p_{\text{happy}} + p_{\text{surprise}} - p_{\text{sad}} - p_{\text{angry}} - p_{\text{fear}}
+\text{EmotionPolarity} = p_{\text{happy}} + p_{\text{surprise}} - p_{\text{sad}} - p_{\text{angry}}
 \]
 
-值域为 $[-3,\ 2]$，正值表示积极情感主导，负值表示消极情感主导。该分数作为音频特征向量 $F_a$ 的第12维，在教师风格映射中直接关联"情感表达型"教师的识别。
+值域为 $[-2,\ 2]$，正值表示积极情感主导，负值表示消极情感主导。该分数作为音频特征向量 $F_a$ 的第12维，在教师风格映射中直接关联"情感表达型"教师的识别。
 
 最终编码为15维音频特征向量 $F_{a} \in \mathbb{R}^{15}$。
 
@@ -622,7 +620,7 @@ p_{\text{act}} = \text{softmax}\left( \text{MLP}\left( \text{BERT}(T) \right) \r
 其中，$N_{s}$ 是句子数量。
 
 
-\subsubsection{（1）细粒度对话行为分类体系}
+\subsubsection{细粒度对话行为分类体系}
 
 将教师话语分为\textbf{4个粗类、10个细类}：
 
@@ -669,7 +667,7 @@ p_{\text{act}} = \text{softmax}\left( \text{MLP}\left( \text{BERT}(T) \right) \r
 
 \end{itemize}
 
-\subsubsection{（2）层次化分类架构}
+\subsubsection{层次化分类架构}
 
 采用\textbf{两层分类器}：第1层进行粗分类（4类），第2层根据粗分类结果选择对应的细分类器（2-4个子类）。
 
@@ -1010,7 +1008,7 @@ SHAPE由五个核心模块组成：
 \end{figure}
 
 
-\subsubsection{模块1：特征投影层（Feature Projection Layer）}
+\subsubsection{特征投影层（Feature Projection Layer）}
 
 由于三个模态的原始特征维度不同（$F_{v} \in \mathbb{R}^{20},F_{a} \in \mathbb{R}^{15},F_{t} \in \mathbb{R}^{35}$），首先通过全连接层投影到统一维 度 $d = 512$：
 
@@ -1035,7 +1033,7 @@ F_{t}\prime = \text{ReLU}\left( W_{t}F_{t} + b_{t} \right),\quad F_{t}\prime \in
 \end{itemize}
 
 
-\subsubsection{模块2：跨模态注意力层（Cross-Modal Attention Layer）}
+\subsubsection{跨模态注意力层（Cross-Modal Attention Layer）}
 
 这是SHAPE的核心创新。对于每对模态 $(i,j)$，计算从模态 $i$ 到模态 $j$ 的注意力：
 
@@ -1100,7 +1098,7 @@ ${\widetilde{F}}_{i}^{(j)}$ 表示从模态 $j$ 中提取的、与模态 $i$ 相
 
 \end{itemize}
 
-\subsubsection{模块3：时序建模层（Temporal Modeling Layer）}
+\subsubsection{时序建模层（Temporal Modeling Layer）}
 
 课堂是一个时序过程，教师风格在时间维度上展现。我们使用\textbf{双向LSTM（BiLSTM）}建模时序依赖：
 
@@ -1133,7 +1131,7 @@ h_{n} = \left\lbrack {\overrightarrow{h}}_{n};{\overleftarrow{h}}_{n} \right\rbr
 \end{itemize}
 
 
-\subsubsection{模块4：注意力池化层（Attention Pooling Layer）}
+\subsubsection{注意力池化层（Attention Pooling Layer）}
 
 将所有片段的特征聚合为一个固定长度的向量：
 
@@ -1159,7 +1157,7 @@ F_{\text{pooled}} = \sum_{n = 1}^{N}\beta_{n}h_{n}
 \end{itemize}
 
 
-\subsubsection{模块5：风格分类器（Style Classifier）}
+\subsubsection{风格分类器（Style Classifier）}
 
 最终通过两层全连接网络进行分类：
 
@@ -1260,7 +1258,7 @@ v_{t} = \beta_{2}v_{t - 1} + \left( 1 - \beta_{2} \right)g_{t}^{2}
 对于一节完整的课堂，系统输出：
 
 
-\subsubsection{(1) 风格分类结果}
+\subsubsection{风格分类结果}
 
 \[
 \text{PrimaryStyle} = \arg\max_{k}P\left( y = k|X \right)
@@ -1269,7 +1267,7 @@ v_{t} = \beta_{2}v_{t - 1} + \left( 1 - \beta_{2} \right)g_{t}^{2}
 例如："该教师的主导风格为\textbf{启发引导型}（置信度89.3\%）"
 
 
-\subsubsection{(2) 风格雷达图}
+\subsubsection{风格雷达图}
 
 将7类风格的概率分布可视化为雷达图：
 
@@ -1280,7 +1278,7 @@ v_{t} = \beta_{2}v_{t - 1} + \left( 1 - \beta_{2} \right)g_{t}^{2}
 \textbf{设计考量}：大多数教师不是单一风格，雷达图能展示混合风格特征。
 
 
-\subsubsection{(3) 模态贡献度分析}
+\subsubsection{模态贡献度分析}
 
 通过跨模态注意力权重 $\alpha_{i \rightarrow j}$，计算每个模态的总贡献度：
 
@@ -1291,7 +1289,7 @@ v_{t} = \beta_{2}v_{t - 1} + \left( 1 - \beta_{2} \right)g_{t}^{2}
 例如："该课堂中，\textbf{视觉模态}贡献45\%，\textbf{音频模态}贡献32\%，\textbf{文本模态}贡献23\%"
 
 
-\subsubsection{(4) 典型片段回放}
+\subsubsection{典型片段回放}
 
 选择注意力池化权重 $\beta_{n}$ 最高的前3个片段，作为该风格的典型代表：
 
@@ -1305,7 +1303,7 @@ v_{t} = \beta_{2}v_{t - 1} + \left( 1 - \beta_{2} \right)g_{t}^{2}
 \subsection{可解释性分析}
 
 
-\subsubsection{(1) SHAP值分析}
+\subsubsection{SHAP值分析}
 
 使用SHAP（SHapley Additive exPlanations\cite{ref_lundberg2017}）分析每个特征对预测结果的边际贡献：
 
@@ -1327,7 +1325,7 @@ v_{t} = \beta_{2}v_{t - 1} + \left( 1 - \beta_{2} \right)g_{t}^{2}
 \end{itemize}
 
 
-\subsubsection{(2) 注意力热图}
+\subsubsection{注意力热图}
 
 将跨模态注意力权重矩阵 $\left\lbrack \alpha_{i \rightarrow j} \right\rbrack$ 可视化为3×3热图：
 
@@ -1346,7 +1344,7 @@ v_{t} = \beta_{2}v_{t - 1} + \left( 1 - \beta_{2} \right)g_{t}^{2}
 \end{itemize}
 
 
-\subsubsection{(3) 模态重要和依赖性分析}
+\subsubsection{模态重要性与依赖性分析}
 
 通过跨模态注意力权重$\alpha_{i \rightarrow j}$，我们可以计算每种教学风格对各模态的依赖程度：
 
@@ -1403,9 +1401,9 @@ v_{t} = \beta_{2}v_{t - 1} + \left( 1 - \beta_{2} \right)g_{t}^{2}
 
 \section{实验条件}
 
-\textbf{3.6.1 评价指标}
+\subsection{评价指标}
 
-（1）分类性能指标
+\subsubsection{分类性能指标}
 
 准确率（Accuracy）：
 
@@ -1457,7 +1455,7 @@ Cohen's Kappa系数：
 
 Kappa值解释：$\kappa < 0.4$（一致性差），$0.4 \leq \kappa < 0.75$（中等），$\kappa \geq 0.75$（实质性一致）。
 
-（2）统计显著性检验
+\subsubsection{统计显著性检验}
 
 配对t检验（Paired t-test）：
 
@@ -1499,7 +1497,7 @@ McNemar检验：
 
 当 $\chi^{2} > \chi_{0.05,1}^{2} = 3.84$ 时，认为模块移除的影响显著。
 
-\textbf{3.6.2 环境}
+\subsection{实验环境}
 
 关键配置：
 
@@ -1517,7 +1515,7 @@ McNemar检验：
 
 \subsection{数据集说明}
 
-本研究使用mm-tba 和来自网络的自建的教师风格数据集，样本分布见\textbf{表4.1}。
+本研究使用mm-tba 和来自网络的自建的教师风格数据集，样本分布见表~4.1。
 
 \textbf{数据集划分}：
 
@@ -1553,7 +1551,7 @@ $n_{k}$ 是类别 $k$ 的样本数，$N$ 是总样本数。
 
 各子模块使用领域相关数据集进行预训练，以获得良好的初始特征表示，然后再接入SHAPE融合网络。
 
-\textbf{（一）Wav2Vec 2.0情感识别模块}
+\textbf{Wav2Vec 2.0情感识别模块}
 
 使用CASIA中文情感数据集（9600条语音，6类情感：愤怒、厌恶、恐惧、高兴、伤心、惊喜）对Wav2Vec 2.0进行微调。训练策略采用\textbf{冻结主干、微调分类头}的方式：
 
@@ -1564,7 +1562,7 @@ $n_{k}$ 是类别 $k$ 的样本数，$N$ 是总样本数。
 \item 目标：在CASIA验证集上情感分类准确率 $\geq 75\%$
 
 \end{itemize}
-\textbf{（二）BERT层次对话行为识别（H-DAR）模块}
+\textbf{BERT层次对话行为识别（H-DAR）模块}
 
 使用人工标注的教师课堂话语语料（来自自建数据集，标注10类教学意图）进行微调。训练策略：
 
@@ -1575,7 +1573,7 @@ $n_{k}$ 是类别 $k$ 的样本数，$N$ 是总样本数。
 \item 目标：10类细粒度对话行为Macro-F1 $\geq 0.75$
 
 \end{itemize}
-\textbf{（三）ST-GCN动作识别模块}
+\textbf{ST-GCN动作识别模块}
 
 使用mm-tba数据集（6类教师动作：standing/\allowbreak{}walking/\allowbreak{}gesturing/\allowbreak{}writing/\allowbreak{}pointing/\allowbreak{}raise\_hand）进行端到端训练：
 
@@ -1587,7 +1585,7 @@ $n_{k}$ 是类别 $k$ 的样本数，$N$ 是总样本数。
 \item 目标：6类动作识别准确率 $\geq 85\%$
 
 \end{itemize}
-\textbf{预训练汇总}（见表3-A）：
+\textbf{预训练汇总}（见表~\ref{tab:pretrain}）：
 
 \begin{table}[htbp]
 \centering
@@ -1647,7 +1645,7 @@ ST-GCN动作识别 & mm-tba（6类教师动作） & 端到端训练 & $1 \times 
 
 \subsection{整体性能}
 
-SHAPE在测试集上的整体分类性能如表3-B所示。
+SHAPE在测试集上的整体分类性能如表~\ref{tab:overall-perf}所示。
 
 \begin{table}[htbp]
 \centering
@@ -1670,7 +1668,7 @@ Cohen's Kappa（$\kappa$） & \textbf{0.910} \\
 \end{tabular}
 \end{table}
 
-各类别分类性能详见表3-C（Per-class F1）：
+各类别分类性能详见表~\ref{tab:per-class}：
 
 \begin{table}[htbp]
 \centering
@@ -1795,9 +1793,9 @@ McNemar检验阈值：$\chi^2 > 3.84$（$\alpha = 0.05$，自由度df=1）时认
 
 本节从两个维度验证SHAPE的可解释性：SHAP特征归因分析与跨模态注意力模式分析。
 
-\textbf{（一）SHAP特征重要性分析}
+\textbf{SHAP特征重要性分析}
 
-对53个测试样本计算SHAP值（使用TreeExplainer），得到70维特征的贡献度排序。表3-F报告重要性Top-10特征：
+对53个测试样本计算SHAP值（使用TreeExplainer），得到70维特征的贡献度排序。表~\ref{tab:shap-top10}报告重要性Top-10特征：
 
 \begin{table}[htbp]
 \centering
@@ -1830,9 +1828,9 @@ McNemar检验阈值：$\chi^2 > 3.84$（$\alpha = 0.05$，自由度df=1）时认
 \end{tabular}
 \end{table}
 
-\textbf{（二）SHAP归因与跨模态注意力权重一致性}
+\textbf{SHAP归因与跨模态注意力权重一致性}
 
-3.5.2节报告了基于跨模态注意力权重$\alpha_{i \rightarrow j}$计算的模态依赖模式（表3-X）。本节验证SHAP归因结果与注意力权重之间的一致性，以交叉验证可解释性分析的可靠性：
+3.5.2节报告了基于跨模态注意力权重$\alpha_{i \rightarrow j}$计算的模态依赖模式（表~\ref{tab:modal-dependency}）。本节验证SHAP归因结果与注意力权重之间的一致性，以交叉验证可解释性分析的可靠性：
 
 \[
 r = \text{Pearson}\left( \phi_{\text{modal}}^{\text{SHAP}},\ w_{\text{modal}}^{\text{attention}} \right)
@@ -1846,7 +1844,7 @@ r = \text{Pearson}\left( \phi_{\text{modal}}^{\text{SHAP}},\ w_{\text{modal}}^{\
 \end{itemize}
 高相关性（预期$r > 0.8$）将证明SHAP归因与模型内部注意力机制在模态重要性判断上的一致性，从而增强可解释性分析的可信度。
 
-\textbf{（三）风格类别的模态激活差异}
+\textbf{风格类别的模态激活差异}
 
 参考表~\ref{tab:modal-dependency}的模态依赖模式，结合测试集的SHAP分析，验证以下预期模式：
 

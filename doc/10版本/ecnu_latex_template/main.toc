@@ -15,101 +15,109 @@
 \contentsline {subsection}{\numberline {2.1.1}教师教学风格的量化测量}{17}{subsection.2.1.1}%
 \contentsline {subsection}{\numberline {2.1.2}教学风格的理论分类}{21}{subsection.2.1.2}%
 \contentsline {subsection}{\numberline {2.1.3}教师教学风格的核心特征​}{25}{subsection.2.1.3}%
-\contentsline {section}{\numberline {2.2}教育场景中的多模态分析技术}{25}{section.2.2}%
+\contentsline {section}{\numberline {2.2}教育场景中的多模态分析技术}{26}{section.2.2}%
 \contentsline {subsection}{\numberline {2.2.1}视频行为识别的原理与关键技术}{26}{subsection.2.2.1}%
 \contentsline {subsection}{\numberline {2.2.2}音频识别与语音情绪分析}{30}{subsection.2.2.2}%
-\contentsline {subsection}{\numberline {2.2.3}文本语义分析与教学语言建模}{33}{subsection.2.2.3}%
-\contentsline {section}{\numberline {2.3}本章小结}{38}{section.2.3}%
-\contentsline {chapter}{\numberline {第三章\hspace {.3em}}研究方法与总体设计}{39}{chapter.3}%
-\contentsline {section}{\numberline {3.1}系统总体架构}{39}{section.3.1}%
-\contentsline {subsubsection}{第一层：数据采集与预处理层}{41}{subsubsection*.8}%
-\contentsline {subsubsection}{第二层：特征提取层（Feature Extraction Layer）}{42}{subsubsection*.9}%
-\contentsline {subsubsection}{第三层：融合分类层（Fusion \& Classification Layer）}{42}{subsubsection*.10}%
-\contentsline {subsubsection}{第四层：画像生成层（Profiling \& Application Layer）}{42}{subsubsection*.11}%
-\contentsline {section}{\numberline {3.2}多模态数据采集与预处理方法}{43}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}数据采集流程}{43}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}视频预处理}{45}{subsection.3.2.2}%
-\contentsline {subsubsection}{（1）视频解码与抽帧}{45}{subsubsection*.13}%
-\contentsline {subsubsection}{（2）视频增强}{45}{subsubsection*.14}%
-\contentsline {subsection}{\numberline {3.2.3}音频预处理}{45}{subsection.3.2.3}%
-\contentsline {subsubsection}{音频重采样与降噪}{45}{subsubsection*.15}%
-\contentsline {subsection}{\numberline {3.2.4}文本预处理}{46}{subsection.3.2.4}%
-\contentsline {subsubsection}{（1）语音转文本（ASR）}{46}{subsubsection*.16}%
-\contentsline {subsubsection}{（2）文本清洗}{46}{subsubsection*.17}%
-\contentsline {section}{\numberline {3.3}多模态数据特征提取}{46}{section.3.3}%
-\contentsline {subsection}{\numberline {3.3.1}音频模态特征提取}{46}{subsection.3.3.1}%
-\contentsline {subsubsection}{语音活动检测（VAD）}{46}{subsubsection*.18}%
-\contentsline {subsubsection}{情感特征提取}{47}{subsubsection*.19}%
-\contentsline {subsection}{\numberline {3.3.2}文本模态特征提取}{48}{subsection.3.3.2}%
-\contentsline {subsubsection}{（1）细粒度对话行为分类体系}{49}{subsubsection*.20}%
-\contentsline {subsubsection}{（2）层次化分类架构}{49}{subsubsection*.22}%
-\contentsline {subsection}{\numberline {3.3.3}音频特征编码汇总}{52}{subsection.3.3.3}%
-\contentsline {subsection}{\numberline {3.3.4}视频模态特征提取}{53}{subsection.3.3.4}%
-\contentsline {subsection}{\numberline {3.3.5}时序动作识别}{53}{subsection.3.3.5}%
-\contentsline {subsection}{\numberline {3.3.6}视频特征编码汇总}{54}{subsection.3.3.6}%
-\contentsline {section}{\numberline {3.4}SHAPE：教师风格画像引擎设计}{55}{section.3.4}%
-\contentsline {subsection}{\numberline {3.4.1}模态融合方法}{55}{subsection.3.4.1}%
-\contentsline {subsection}{\numberline {3.4.2}SHAPE网络架构}{56}{subsection.3.4.2}%
-\contentsline {subsubsection}{模块1：特征投影层（Feature Projection Layer）}{56}{subsubsection*.25}%
-\contentsline {subsubsection}{模块2：跨模态注意力层（Cross-Modal Attention Layer）}{57}{subsubsection*.26}%
-\contentsline {subsubsection}{模块3：时序建模层（Temporal Modeling Layer）}{58}{subsubsection*.27}%
-\contentsline {subsubsection}{模块4：注意力池化层（Attention Pooling Layer）}{59}{subsubsection*.28}%
-\contentsline {subsubsection}{模块5：风格分类器（Style Classifier）}{59}{subsubsection*.29}%
-\contentsline {subsection}{\numberline {3.4.3}损失函数与优化}{60}{subsection.3.4.3}%
-\contentsline {subsubsection}{损失函数}{60}{subsubsection*.30}%
-\contentsline {subsubsection}{优化算法}{60}{subsubsection*.31}%
-\contentsline {subsubsection}{学习率调度}{60}{subsubsection*.32}%
-\contentsline {section}{\numberline {3.5}教师风格画像与反馈机制设计}{61}{section.3.5}%
-\contentsline {subsection}{\numberline {3.5.1}风格画像生成}{61}{subsection.3.5.1}%
-\contentsline {subsubsection}{(1) 风格分类结果}{61}{subsubsection*.33}%
-\contentsline {subsubsection}{(2) 风格雷达图}{61}{subsubsection*.34}%
-\contentsline {subsubsection}{(3) 模态贡献度分析}{62}{subsubsection*.35}%
-\contentsline {subsubsection}{(4) 典型片段回放}{62}{subsubsection*.36}%
-\contentsline {subsection}{\numberline {3.5.2}可解释性分析}{62}{subsection.3.5.2}%
-\contentsline {subsubsection}{(1) SHAP值分析}{62}{subsubsection*.37}%
-\contentsline {subsubsection}{(2) 注意力热图}{62}{subsubsection*.38}%
-\contentsline {subsubsection}{(3) 模态重要和依赖性分析}{63}{subsubsection*.39}%
-\contentsline {section}{\numberline {3.6}实验条件}{64}{section.3.6}%
-\contentsline {section}{\numberline {3.7}数据集处理}{66}{section.3.7}%
-\contentsline {subsection}{\numberline {3.7.1}数据集说明}{66}{subsection.3.7.1}%
-\contentsline {section}{\numberline {3.8}实验过程}{66}{section.3.8}%
-\contentsline {subsection}{\numberline {3.8.1}子模块预训练设置}{66}{subsection.3.8.1}%
-\contentsline {subsection}{\numberline {3.8.2}SHAPE端到端训练设置}{68}{subsection.3.8.2}%
-\contentsline {section}{\numberline {3.9}实验结果分析}{69}{section.3.9}%
-\contentsline {subsection}{\numberline {3.9.1}整体性能}{69}{subsection.3.9.1}%
-\contentsline {subsection}{\numberline {3.9.2}多模态融合对比}{70}{subsection.3.9.2}%
-\contentsline {subsection}{\numberline {3.9.3}消融实验}{71}{subsection.3.9.3}%
-\contentsline {subsection}{\numberline {3.9.4}可解释性验证}{72}{subsection.3.9.4}%
-\contentsline {section}{\numberline {3.10}本章小结}{73}{section.3.10}%
-\contentsline {chapter}{\numberline {第四章\hspace {.3em}}教师风格画像分析系统设计与实现}{75}{chapter.4}%
-\contentsline {section}{\numberline {4.1}系统总体设计}{75}{section.4.1}%
-\contentsline {subsection}{\numberline {4.1.1}系统设计原则}{75}{subsection.4.1.1}%
-\contentsline {subsection}{\numberline {4.1.2}系统总体架构}{76}{subsection.4.1.2}%
-\contentsline {section}{\numberline {4.2}系统功能模块设计}{77}{section.4.2}%
-\contentsline {subsection}{\numberline {4.2.1}多模态特征提取流水线}{77}{subsection.4.2.1}%
-\contentsline {subsection}{\numberline {4.2.2}风格分类推理服务}{78}{subsection.4.2.2}%
-\contentsline {subsection}{\numberline {4.2.3}可解释性分析模块}{79}{subsection.4.2.3}%
-\contentsline {subsection}{\numberline {4.2.4}风格画像生成模块}{80}{subsection.4.2.4}%
-\contentsline {subsection}{\numberline {4.2.5}风格分析功能}{80}{subsection.4.2.5}%
-\contentsline {section}{\numberline {4.3}技术栈选型}{82}{section.4.3}%
-\contentsline {subsection}{\numberline {4.3.1}前端技术}{82}{subsection.4.3.1}%
-\contentsline {subsection}{\numberline {4.3.2}后端技术}{82}{subsection.4.3.2}%
-\contentsline {subsection}{\numberline {4.3.3}模型推理技术}{83}{subsection.4.3.3}%
-\contentsline {subsection}{\numberline {4.3.4}数据存储技术}{83}{subsection.4.3.4}%
-\contentsline {subsection}{\numberline {4.3.5}容器化与监控}{84}{subsection.4.3.5}%
-\contentsline {section}{\numberline {4.4}界面功能描述}{84}{section.4.4}%
-\contentsline {subsection}{\numberline {4.4.1}视频上传与任务管理页面}{84}{subsection.4.4.1}%
-\contentsline {subsection}{\numberline {4.4.2}风格画像综合展示页面}{87}{subsection.4.4.2}%
-\contentsline {subsection}{\numberline {4.4.3}可解释性与特征详情页面}{87}{subsection.4.4.3}%
-\contentsline {subsection}{\numberline {4.4.4}风格演变追踪页面}{90}{subsection.4.4.4}%
-\contentsline {section}{\numberline {4.5}系统测试与试运行}{91}{section.4.5}%
-\contentsline {subsection}{\numberline {4.5.1}测试环境}{91}{subsection.4.5.1}%
-\contentsline {subsection}{\numberline {4.5.2}功能性测试}{91}{subsection.4.5.2}%
-\contentsline {subsection}{\numberline {4.5.3}非功能性测试}{91}{subsection.4.5.3}%
-\contentsline {subsection}{\numberline {4.5.4}系统试运行}{93}{subsection.4.5.4}%
-\contentsline {section}{\numberline {4.6}本章小结}{94}{section.4.6}%
-\contentsline {chapter}{\numberline {第五章\hspace {.3em}}总结与展望}{95}{chapter.5}%
-\contentsline {section}{\numberline {5.1}工作总结}{95}{section.5.1}%
-\contentsline {section}{\numberline {5.2}未来展望}{96}{section.5.2}%
-\contentsline {chapter}{参考文献}{97}{section.5.2}%
+\contentsline {subsection}{\numberline {2.2.3}文本语义分析与教学语言建模}{34}{subsection.2.2.3}%
+\contentsline {section}{\numberline {2.3}本章小结}{39}{section.2.3}%
+\contentsline {chapter}{\numberline {第三章\hspace {.3em}}研究方法与总体设计}{40}{chapter.3}%
+\contentsline {section}{\numberline {3.1}系统总体架构}{40}{section.3.1}%
+\contentsline {subsubsection}{现有方法的局限性分析}{40}{subsubsection*.7}%
+\contentsline {subsubsection}{四层系统架构}{42}{subsubsection*.8}%
+\contentsline {subsubsection}{第一层：数据采集与预处理层}{42}{subsubsection*.10}%
+\contentsline {subsubsection}{第二层：特征提取层（Feature Extraction Layer）}{43}{subsubsection*.11}%
+\contentsline {subsubsection}{第三层：融合分类层（Fusion \& Classification Layer）}{43}{subsubsection*.12}%
+\contentsline {subsubsection}{第四层：画像生成层（Profiling \& Application Layer）}{43}{subsubsection*.13}%
+\contentsline {section}{\numberline {3.2}多模态数据采集与预处理方法}{44}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}数据采集流程}{44}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}数据分段处理}{44}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}视频预处理}{46}{subsection.3.2.3}%
+\contentsline {subsubsection}{视频解码与抽帧}{46}{subsubsection*.15}%
+\contentsline {subsubsection}{视频增强}{46}{subsubsection*.16}%
+\contentsline {subsection}{\numberline {3.2.4}音频预处理}{47}{subsection.3.2.4}%
+\contentsline {subsubsection}{音频重采样与降噪}{47}{subsubsection*.17}%
+\contentsline {subsection}{\numberline {3.2.5}文本预处理}{47}{subsection.3.2.5}%
+\contentsline {subsubsection}{语音转文本（ASR）}{47}{subsubsection*.18}%
+\contentsline {subsubsection}{文本清洗}{48}{subsubsection*.19}%
+\contentsline {section}{\numberline {3.3}多模态数据特征提取}{48}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}音频模态特征提取}{48}{subsection.3.3.1}%
+\contentsline {subsubsection}{语音活动检测（VAD）}{48}{subsubsection*.20}%
+\contentsline {subsubsection}{情感特征提取}{49}{subsubsection*.21}%
+\contentsline {subsection}{\numberline {3.3.2}文本模态特征提取}{50}{subsection.3.3.2}%
+\contentsline {subsubsection}{层次化细粒度对话行为识别（H-DAR）}{50}{subsubsection*.22}%
+\contentsline {subsubsection}{细粒度对话行为分类体系}{51}{subsubsection*.23}%
+\contentsline {subsubsection}{层次化分类架构}{52}{subsubsection*.25}%
+\contentsline {subsection}{\numberline {3.3.3}音频特征编码汇总}{54}{subsection.3.3.3}%
+\contentsline {subsection}{\numberline {3.3.4}视频模态特征提取}{54}{subsection.3.3.4}%
+\contentsline {subsection}{\numberline {3.3.5}时序动作识别}{55}{subsection.3.3.5}%
+\contentsline {subsection}{\numberline {3.3.6}视频特征编码汇总}{55}{subsection.3.3.6}%
+\contentsline {section}{\numberline {3.4}SHAPE：教师风格画像引擎设计}{56}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}模态融合方法}{56}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}SHAPE网络架构}{58}{subsection.3.4.2}%
+\contentsline {subsubsection}{特征投影层（Feature Projection Layer）}{58}{subsubsection*.28}%
+\contentsline {subsubsection}{双向差分跨模态注意力层（BD-CMA）}{59}{subsubsection*.29}%
+\contentsline {subsubsection}{时序建模层（Temporal Modeling Layer）}{61}{subsubsection*.30}%
+\contentsline {subsubsection}{注意力池化层（Attention Pooling Layer）}{63}{subsubsection*.31}%
+\contentsline {subsubsection}{风格分类器（Style Classifier）}{63}{subsubsection*.32}%
+\contentsline {subsection}{\numberline {3.4.3}损失函数与优化}{64}{subsection.3.4.3}%
+\contentsline {subsubsection}{损失函数}{64}{subsubsection*.33}%
+\contentsline {subsubsection}{优化算法}{64}{subsubsection*.34}%
+\contentsline {subsubsection}{学习率调度}{65}{subsubsection*.35}%
+\contentsline {section}{\numberline {3.5}教师风格画像与反馈机制设计}{65}{section.3.5}%
+\contentsline {subsection}{\numberline {3.5.1}风格画像生成}{65}{subsection.3.5.1}%
+\contentsline {subsubsection}{风格分类结果}{65}{subsubsection*.36}%
+\contentsline {subsubsection}{风格雷达图}{66}{subsubsection*.37}%
+\contentsline {subsubsection}{模态贡献度分析}{66}{subsubsection*.38}%
+\contentsline {subsubsection}{典型片段回放}{66}{subsubsection*.39}%
+\contentsline {subsection}{\numberline {3.5.2}可解释性分析}{66}{subsection.3.5.2}%
+\contentsline {subsubsection}{SHAP值分析}{66}{subsubsection*.40}%
+\contentsline {subsubsection}{注意力热图}{67}{subsubsection*.41}%
+\contentsline {subsubsection}{模态重要性与依赖性分析}{67}{subsubsection*.42}%
+\contentsline {section}{\numberline {3.6}实验条件}{68}{section.3.6}%
+\contentsline {subsection}{\numberline {3.6.1}评价指标}{68}{subsection.3.6.1}%
+\contentsline {subsubsection}{分类性能指标}{68}{subsubsection*.44}%
+\contentsline {subsubsection}{统计显著性检验}{69}{subsubsection*.45}%
+\contentsline {subsection}{\numberline {3.6.2}实验环境}{70}{subsection.3.6.2}%
+\contentsline {section}{\numberline {3.7}数据集处理}{70}{section.3.7}%
+\contentsline {subsection}{\numberline {3.7.1}数据集说明}{70}{subsection.3.7.1}%
+\contentsline {section}{\numberline {3.8}实验过程}{71}{section.3.8}%
+\contentsline {subsection}{\numberline {3.8.1}子模块预训练设置}{71}{subsection.3.8.1}%
+\contentsline {subsection}{\numberline {3.8.2}SHAPE端到端训练设置}{73}{subsection.3.8.2}%
+\contentsline {section}{\numberline {3.9}实验结果分析}{73}{section.3.9}%
+\contentsline {subsection}{\numberline {3.9.1}整体性能}{74}{subsection.3.9.1}%
+\contentsline {subsection}{\numberline {3.9.2}多模态融合对比}{74}{subsection.3.9.2}%
+\contentsline {subsection}{\numberline {3.9.3}消融实验}{75}{subsection.3.9.3}%
+\contentsline {subsection}{\numberline {3.9.4}可解释性验证}{77}{subsection.3.9.4}%
+\contentsline {section}{\numberline {3.10}本章小结}{79}{section.3.10}%
+\contentsline {chapter}{\numberline {第四章\hspace {.3em}}教师风格画像分析系统设计与实现}{81}{chapter.4}%
+\contentsline {section}{\numberline {4.1}系统总体设计}{81}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}系统设计原则}{81}{subsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.1.2}系统总体架构}{82}{subsection.4.1.2}%
+\contentsline {section}{\numberline {4.2}系统功能模块设计}{83}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}多模态特征提取流水线}{83}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}风格分类推理服务}{84}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}可解释性分析模块}{85}{subsection.4.2.3}%
+\contentsline {subsection}{\numberline {4.2.4}风格画像生成模块}{85}{subsection.4.2.4}%
+\contentsline {subsection}{\numberline {4.2.5}风格分析功能}{86}{subsection.4.2.5}%
+\contentsline {section}{\numberline {4.3}技术栈选型}{88}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}前端技术}{88}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}后端技术}{88}{subsection.4.3.2}%
+\contentsline {subsection}{\numberline {4.3.3}模型推理技术}{89}{subsection.4.3.3}%
+\contentsline {subsection}{\numberline {4.3.4}数据存储技术}{89}{subsection.4.3.4}%
+\contentsline {subsection}{\numberline {4.3.5}容器化与监控}{90}{subsection.4.3.5}%
+\contentsline {section}{\numberline {4.4}界面功能描述}{90}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}视频上传与任务管理页面}{90}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}风格画像综合展示页面}{93}{subsection.4.4.2}%
+\contentsline {subsection}{\numberline {4.4.3}可解释性与特征详情页面}{93}{subsection.4.4.3}%
+\contentsline {subsection}{\numberline {4.4.4}风格演变追踪页面}{96}{subsection.4.4.4}%
+\contentsline {section}{\numberline {4.5}系统测试与试运行}{97}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}测试环境}{97}{subsection.4.5.1}%
+\contentsline {subsection}{\numberline {4.5.2}功能性测试}{97}{subsection.4.5.2}%
+\contentsline {subsection}{\numberline {4.5.3}非功能性测试}{97}{subsection.4.5.3}%
+\contentsline {subsection}{\numberline {4.5.4}系统试运行}{99}{subsection.4.5.4}%
+\contentsline {section}{\numberline {4.6}本章小结}{100}{section.4.6}%
+\contentsline {chapter}{\numberline {第五章\hspace {.3em}}总结与展望}{101}{chapter.5}%
+\contentsline {section}{\numberline {5.1}工作总结}{101}{section.5.1}%
+\contentsline {section}{\numberline {5.2}未来展望}{102}{section.5.2}%
+\contentsline {chapter}{参考文献}{103}{section.5.2}%
 \contentsfinish 

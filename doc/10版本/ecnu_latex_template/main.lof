@@ -1,21 +1,21 @@
 \addvspace {10.0pt}
 \addvspace {10.0pt}
 \addvspace {10.0pt}
-\contentsline {figure}{\numberline {3.1}{\ignorespaces SHAPE系统整体架构（端到端流水线）}}{40}{figure.caption.6}%
-\contentsline {figure}{\numberline {3.2}{\ignorespaces SHAPE引擎四层架构}}{41}{figure.caption.7}%
-\contentsline {figure}{\numberline {3.3}{\ignorespaces 语义驱动分段处理流程}}{44}{figure.caption.12}%
-\contentsline {figure}{\numberline {3.4}{\ignorespaces H-DAR层次化对话行为识别架构（4粗类·10细类）}}{51}{figure.caption.23}%
-\contentsline {figure}{\numberline {3.5}{\ignorespaces SHAPE多模态网络详细架构}}{56}{figure.caption.24}%
-\contentsline {figure}{\numberline {3.6}{\ignorespaces SHAPE模型7类风格分类混淆矩阵（测试集，$N=53$）}}{70}{figure.caption.44}%
+\contentsline {figure}{\numberline {3.1}{\ignorespaces SHAPE系统整体架构（端到端流水线）}}{41}{figure.caption.6}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces SHAPE引擎四层架构}}{42}{figure.caption.9}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces 语义驱动分段处理流程}}{45}{figure.caption.14}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces H-DAR层次化对话行为识别架构（4粗类·10细类）}}{52}{figure.caption.26}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces SHAPE多模态网络详细架构}}{58}{figure.caption.27}%
+\contentsline {figure}{\numberline {3.6}{\ignorespaces SHAPE模型7类风格分类混淆矩阵（测试集，$N=53$）}}{75}{figure.caption.49}%
 \addvspace {10.0pt}
-\contentsline {figure}{\numberline {4.1}{\ignorespaces 教师风格画像分析系统五层架构}}{76}{figure.caption.48}%
-\contentsline {figure}{\numberline {4.2}{\ignorespaces 课程级风格评分向量七边形雷达图（张三，第3节课）}}{78}{figure.caption.49}%
-\contentsline {figure}{\numberline {4.3}{\ignorespaces 单片段预测"启发引导型"的SHAP特征贡献瀑布图（基准值=0.143）}}{79}{figure.caption.50}%
-\contentsline {figure}{\numberline {4.4}{\ignorespaces 张三跨学期8节课风格稳定性追踪折线图（含线性趋势线）}}{81}{figure.caption.51}%
-\contentsline {figure}{\numberline {4.5}{\ignorespaces 视频上传页面界面原型}}{85}{figure.caption.52}%
-\contentsline {figure}{\numberline {4.6}{\ignorespaces 分析任务管理页面界面原型}}{86}{figure.caption.53}%
-\contentsline {figure}{\numberline {4.7}{\ignorespaces 风格画像综合展示页面界面原型}}{88}{figure.caption.54}%
-\contentsline {figure}{\numberline {4.8}{\ignorespaces 可解释性与特征详情页面界面原型}}{89}{figure.caption.55}%
-\contentsline {figure}{\numberline {4.9}{\ignorespaces 风格演变追踪页面界面原型}}{90}{figure.caption.56}%
+\contentsline {figure}{\numberline {4.1}{\ignorespaces 教师风格画像分析系统五层架构}}{82}{figure.caption.53}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces 课程级风格评分向量七边形雷达图（张三，第3节课）}}{84}{figure.caption.54}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces 单片段预测"启发引导型"的SHAP特征贡献瀑布图（基准值=0.143）}}{86}{figure.caption.55}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces 张三跨学期8节课风格稳定性追踪折线图（含线性趋势线）}}{87}{figure.caption.56}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces 视频上传页面界面原型}}{91}{figure.caption.57}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces 分析任务管理页面界面原型}}{92}{figure.caption.58}%
+\contentsline {figure}{\numberline {4.7}{\ignorespaces 风格画像综合展示页面界面原型}}{94}{figure.caption.59}%
+\contentsline {figure}{\numberline {4.8}{\ignorespaces 可解释性与特征详情页面界面原型}}{95}{figure.caption.60}%
+\contentsline {figure}{\numberline {4.9}{\ignorespaces 风格演变追踪页面界面原型}}{96}{figure.caption.61}%
 \addvspace {10.0pt}
 \contentsfinish 

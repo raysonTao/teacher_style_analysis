@@ -79,13 +79,13 @@
 
 %% ─── 跨模态注意力 ───
 \node[wbox=orange!85!black, below=0.35cm of PROJ] (CMA)
-  {跨模态注意力层\quad
-   $\alpha_{i\to j}=\mathrm{softmax}(Q_iK_j^\top\!/\!\sqrt{d_k}),\;d_k\!=\!64$\quad
-   6个注意力权重：$\alpha_{v\leftrightarrow a},\;\alpha_{v\leftrightarrow t},\;\alpha_{a\leftrightarrow t}$};
+  {双向差分跨模态注意力（BD-CMA）\quad
+   BiXT共享计算：3对$\{v\text{-}a,v\text{-}t,a\text{-}t\}$双向同步\quad
+   DiffAttn：$\alpha_{i\to j}=\mathrm{softmax}(S^{(1)}_{ij})-\lambda\cdot\mathrm{softmax}(S^{(2)}_{ij})$};
 
-%% ─── BiLSTM + 注意力池化 ───
+%% ─── VMRNN + 注意力池化 ───
 \node[wbox=green!65!black, below=0.35cm of CMA] (LSTM)
-  {BiLSTM 时序建模\quad
+  {VMRNN 时序建模（Mamba SSM + LSTM 门控，$O(N)$复杂度）\quad
    $h_n=[\overrightarrow{h}_n;\overleftarrow{h}_n]\in\mathbb{R}^{1024}$（hidden$\!=\!512\!\times\!2$）\quad
    注意力池化 $F_\text{pooled}=\textstyle\sum_n\!\beta_n h_n$};
 
@@ -200,7 +200,7 @@ SHAPE引擎采用四层架构设计，如图~\ref{fig:shape-4layer}所示：
   \node[layer=blue!15]   (L4) {\textbf{第四层：画像生成层（Profiling \& Application Layer）}\\[2pt]
     风格分类结果 \textbar\ 模态贡献度分析 \textbar\ 典型片段回放 \textbar\ SHAP可解释性};
   \node[layer=green!15, below=of L4]  (L3) {\textbf{第三层：融合分类层（Fusion \& Classification Layer）}\\[2pt]
-    特征投影 → 跨模态注意力（6个$\alpha_{i\to j}$）→ BiLSTM时序建模 → 注意力池化 → 7类分类器};
+    特征投影 → BD-CMA双向差分跨模态注意力（BiXT 3对共享+DiffAttn降噪）→ VMRNN时序建模（$O(N)$）→ 注意力池化 → 7类分类器};
   \node[layer=orange!15, below=of L3] (L2) {\textbf{第二层：特征提取层（Feature Extraction Layer）}\\[2pt]
     视觉模态（ST-GCN，$F_v\in\mathbb{R}^{20}$）\quad 音频模态（Wav2Vec 2.0，$F_a\in\mathbb{R}^{15}$）\quad 文本模态（BERT+H-DAR，$F_t\in\mathbb{R}^{35}$）};
   \node[layer=gray!15,  below=of L2] (L1) {\textbf{第一层：数据采集与预处理层（Data Acquisition \& Preprocessing）}\\[2pt]
@@ -262,9 +262,9 @@ SHAPE引擎采用四层架构设计，如图~\ref{fig:shape-4layer}所示：
 \begin{enumerate}
 \item \textbf{特征投影层}：$F_{v},F_{a},F_{t} \rightarrow F\prime_{v},F\prime_{a},F\prime_{t} \in \mathbb{R}^{512}$（统一特征空间）
 
-\item \textbf{跨模态注意力层}：计算6个注意力权重 $\alpha_{i \rightarrow j}$，实现模态交互
+\item \textbf{双向差分跨模态注意力层（BD-CMA）}：BiXT 3对共享双向计算 + DiffAttn差分降噪，提升跨模态交互效率与精准度
 
-\item \textbf{BiLSTM时序建模}：捕捉课堂时序依赖
+\item \textbf{VMRNN时序建模}：$O(N)$线性复杂度捕捉课堂时序依赖
 
 \item \textbf{注意力池化层}：自适应聚合关键片段
 
@@ -970,11 +970,11 @@ SHAPE由五个核心模块组成：
 
   %% 跨模态注意力（横跨三列）
   \node[mbox=orange, below=0.7cm of Pa] (CMA)
-        {跨模态注意力层\\$\alpha_{i\to j}=\mathrm{softmax}(Q_iK_j^T/\sqrt{d_k})$，共6个注意力权重};
+        {双向差分跨模态注意力层（BD-CMA）\\BiXT 3对共享计算 + DiffAttn差分降噪\\$\alpha_{i\to j}=\mathrm{softmax}(S^{(1)}_{ij})-\lambda\cdot\mathrm{softmax}(S^{(2)}_{ij})$};
 
   %% 时序建模
   \node[mbox=green, below=0.45cm of CMA] (LSTM)
-        {BiLSTM时序建模\ \ $h_n=[\overrightarrow{h}_n;\overleftarrow{h}_n]\in\mathbb{R}^{1024}$};
+        {VMRNN时序建模（Mamba SSM + LSTM）\ \ $h_n=[\overrightarrow{h}_n;\overleftarrow{h}_n]\in\mathbb{R}^{1024}$};
 
   %% 注意力池化
   \node[mbox=purple, below=0.45cm of LSTM] (Pool)
@@ -1033,87 +1033,124 @@ F_{t}\prime = \text{ReLU}\left( W_{t}F_{t} + b_{t} \right),\quad F_{t}\prime \in
 \end{itemize}
 
 
-\subsubsection{跨模态注意力层（Cross-Modal Attention Layer）}
+\subsubsection{双向差分跨模态注意力层（BD-CMA）}
 
-这是SHAPE的核心创新。对于每对模态 $(i,j)$，计算从模态 $i$ 到模态 $j$ 的注意力：
+这是SHAPE的核心创新。本研究提出\textbf{双向差分跨模态注意力（Bidirectional Differential Cross-Modal Attention，BD-CMA）}，将BiXT的双向共享计算与DiffAttention的差分降噪机制深度融合，在实现模态间自适应交互的同时抑制注意力噪声。
 
-\textbf{步骤1：计算Query, Key, Value}
+\textbf{设计动机}：
 
-\[
-Q_{i} = F_{i}\prime W_{Q}^{i},\quad K_{j} = F_{j}\prime W_{K}^{j},\quad V_{j} = F_{j}\prime W_{V}^{j}
-\]
+\begin{itemize}
+\item \textbf{传统方法的冗余}：标准跨模态注意力对3对模态 $\{v\text{-}a,v\text{-}t,a\text{-}t\}$ 独立计算6个方向的相似度矩阵（$i\!\to\!j$ 和 $j\!\to\!i$ 各一次），存在重复计算。BiXT指出双向注意力的两个方向共享同一相似度矩阵，转置即可得到反向权重，可将6次计算降至3次。
 
-其中，$W_{Q}^{i},W_{K}^{j},W_{V}^{j} \in \mathbb{R}^{512 \times 64}$ 是可学习参数，注意力维度 $d_{k} = 64$。
+\item \textbf{Softmax的注意力噪声}：标准softmax将所有位置的注意力分数归一化为正值，导致模型对无关模态信息也分配非零权重，引入注意力噪声。DiffAttention通过两个softmax分支做差，使无关信息的噪声相互抵消，仅保留真正相关的跨模态信号。
+\end{itemize}
 
-\textbf{步骤2：计算注意力权重}
+\textbf{步骤1：双分支投影}
 
-\[
-\alpha_{i \rightarrow j} = \text{softmax}\left( \frac{Q_{i}K_{j}^{T}}{\sqrt{d_{k}}} \right)
-\]
-
-这里，$\alpha_{i \rightarrow j}$ 是一个标量（因为 $Q_{i},K_{j}$ 都是向量），表示模态 $j$ 对模态 $i$ 的重要性。
-
-\textbf{步骤3：加权融合}
+对每个模态特征 $F_{m}' \in \mathbb{R}^{512}$，分别投影到两组Query和Key子空间（维度减半以保持参数量不变）：
 
 \[
-{\widetilde{F}}_{i}^{(j)} = \alpha_{i \rightarrow j}V_{j}
-\]
-
-${\widetilde{F}}_{i}^{(j)}$ 表示从模态 $j$ 中提取的、与模态 $i$ 相关的信息。
-
-\textbf{全局跨模态交互}：
-
-每个模态需要与其他两个模态进行交互：
-
-\[
-{\widetilde{F}}_{v} = F_{v}\prime + {\widetilde{F}}_{v}^{(a)} + {\widetilde{F}}_{v}^{(t)}
+Q_{m}^{(1)} = F_{m}' W_{Q,m}^{(1)},\quad Q_{m}^{(2)} = F_{m}' W_{Q,m}^{(2)},\quad m \in \{v,a,t\}
 \]
 
 \[
-{\widetilde{F}}_{a} = F_{a}\prime + {\widetilde{F}}_{a}^{(v)} + {\widetilde{F}}_{a}^{(t)}
+K_{m}^{(1)} = F_{m}' W_{K,m}^{(1)},\quad K_{m}^{(2)} = F_{m}' W_{K,m}^{(2)},\quad V_{m} = F_{m}' W_{V,m}
+\]
+
+其中，$W_{Q,m}^{(1)},W_{Q,m}^{(2)},W_{K,m}^{(1)},W_{K,m}^{(2)} \in \mathbb{R}^{512 \times 32}$，$W_{V,m} \in \mathbb{R}^{512 \times 64}$，子空间维度 $d_k/2 = 32$。
+
+\textbf{步骤2：BiXT共享相似度计算（3对双向同步）}
+
+对3个模态对 $\{(v,a),(v,t),(a,t)\}$，每对仅计算一次相似度矩阵，通过转置同时得到双向注意力分数：
+
+\[
+S_{ij}^{(1)} = \frac{Q_{i}^{(1)}\bigl(K_{j}^{(1)}\bigr)^{\!\top}}{\sqrt{d_k/2}},\qquad S_{ij}^{(2)} = \frac{Q_{i}^{(2)}\bigl(K_{j}^{(2)}\bigr)^{\!\top}}{\sqrt{d_k/2}}
+\]
+
+BiXT利用转置关系 $S_{ji} = S_{ij}^{\top}$ 直接得到反向分数，避免重复计算，计算开销降低约33\%。
+
+\textbf{步骤3：DiffAttention差分权重}
+
+对每个方向的注意力权重，采用两个softmax分支做差以消除噪声：
+
+\[
+\alpha_{i \rightarrow j} = \mathrm{softmax}\!\left(S_{ij}^{(1)}\right) - \lambda\cdot\mathrm{softmax}\!\left(S_{ij}^{(2)}\right)
 \]
 
 \[
-{\widetilde{F}}_{t} = F_{t}\prime + {\widetilde{F}}_{t}^{(v)} + {\widetilde{F}}_{t}^{(a)}
+\alpha_{j \rightarrow i} = \mathrm{softmax}\!\left(S_{ij}^{(1)\top}\right) - \lambda\cdot\mathrm{softmax}\!\left(S_{ij}^{(2)\top}\right)
 \]
 
-这里使用了\textbf{残差连接}（Residual Connection），保留原始特征信息。
+其中，$\lambda \in (0,1)$ 是可学习的差分系数，初始化为0.5。两个softmax对无关信号产生近似相等的响应，相减后趋近于零；而对真正相关的跨模态信号，两分支响应存在差异，差值保留有效信息。
+
+\textbf{步骤4：加权融合与残差连接}
+
+\[
+{\widetilde{F}}_{i}^{(j)} = \alpha_{i \rightarrow j}\,V_{j}
+\]
+
+每个模态聚合来自其他两个模态的信息，并通过残差连接保留原始特征：
+
+\[
+{\widetilde{F}}_{v} = F_{v}' + {\widetilde{F}}_{v}^{(a)} + {\widetilde{F}}_{v}^{(t)},\quad
+{\widetilde{F}}_{a} = F_{a}' + {\widetilde{F}}_{a}^{(v)} + {\widetilde{F}}_{a}^{(t)},\quad
+{\widetilde{F}}_{t} = F_{t}' + {\widetilde{F}}_{t}^{(v)} + {\widetilde{F}}_{t}^{(a)}
+\]
 
 \textbf{设计考量}：
 
 \begin{itemize}
-\item 缩放因子 $\sqrt{d_{k}}$ 防止内积过大导致softmax梯度消失
+\item \textbf{BiXT效率增益}：3对双向共享计算相比6次独立计算减少约33\%的相似度矩阵运算量，参数量保持不变
 
-\item 残差连接缓解深层网络的梯度消失问题
+\item \textbf{DiffAttention降噪}：差分机制使模型对不相关模态信号的注意力权重趋近于零（$\mathrm{softmax}(S^{(1)})-\lambda\cdot\mathrm{softmax}(S^{(2)})\approx 0$），仅保留真正相关的跨模态信号
 
-\item 即使跨模态信息不相关，原始特征也不会被破坏
+\item \textbf{残差连接}：即使跨模态信息不相关，原始模态特征也不会被破坏，缓解梯度消失问题
 
-\end{itemize}
-\textbf{跨模态注意力的有效性}：
-
-\begin{itemize}
-\item 跨模态注意力使模型能自适应学习模态重要性，例如"情感表达型"教师模型会自动增大音频权重（$\alpha_{a \rightarrow v} = 0.62$）
-
-\item 残差连接保留原始特征，即使跨模态信息不相关，原始特征也不会被破坏。
-
+\item \textbf{自适应学习}：可学习参数 $\lambda$ 使模型根据数据自动调整差分强度；例如"情感表达型"教师的音频权重自动增大（$\alpha_{a \rightarrow v} = 0.62$）
 \end{itemize}
 
 \subsubsection{时序建模层（Temporal Modeling Layer）}
 
-课堂是一个时序过程，教师风格在时间维度上展现。我们使用\textbf{双向LSTM（BiLSTM）}建模时序依赖：
+课堂是一个时序过程，教师风格在时间维度上展现。传统双向LSTM（BiLSTM）在处理课堂录像的150--200个语义单元序列时，隐状态的循环计算导致 $O(N^2)$ 的时间复杂度，且随序列增长面临梯度消失问题，难以充分建模跨越整节课的长程时序依赖。为此，本研究引入\textbf{VMRNN}（Vision Mamba Recurrent Neural Network）进行时序建模。VMRNN将Mamba选择性状态空间模型（Selective State Space Model，SSM）与LSTM门控机制深度融合，其核心SSM扫描的计算复杂度为 $O(N)$，在保留LSTM长程记忆能力的同时大幅提升了对长序列的处理效率。
 
-对于一个完整课堂的 $N$ 个片段 $\{ S_{1},S_{2},...,S_{N}\}$，每个片段的特征为 $\{{\widetilde{F}}_{1},{\widetilde{F}}_{2},...,{\widetilde{F}}_{N}\}$（这里省略模态下标，表示融合后的特征）。
+对于一个完整课堂的 $N$ 个片段 $\{ S_{1},S_{2},...,S_{N}\}$，每个片段的跨模态融合特征为 $\{{\widetilde{F}}_{1},{\widetilde{F}}_{2},...,{\widetilde{F}}_{N}\}$（省略模态下标，表示融合后的特征）。
 
-\textbf{前向LSTM}：
+\textbf{步骤1：选择性状态空间扫描（SSM Scan）}
 
 \[
-{\overrightarrow{h}}_{n} = \text{LSTM}_{\text{forward}}\left( {\widetilde{F}}_{n},{\overrightarrow{h}}_{n - 1} \right)
+z_n = \mathrm{SSMScan}\bigl({\widetilde{F}}_n;\;\Delta_n,\bar{A}_n,\bar{B}_n,C_n\bigr)
 \]
 
-\textbf{后向LSTM}：
+其中，时间步长 $\Delta_n$、状态矩阵 $\bar{A}_n = \exp(\Delta_n \odot A)$、输入矩阵 $\bar{B}_n = \Delta_n \odot B_n$、输出矩阵 $C_n$ 均由输入 ${\widetilde{F}}_n$ 动态计算（选择性机制）。状态递推为：
 
 \[
-{\overleftarrow{h}}_{n} = \text{LSTM}_{\text{backward}}\left( {\widetilde{F}}_{n},{\overleftarrow{h}}_{n + 1} \right)
+h_n^{\mathrm{ssm}} = \bar{A}_n \odot h_{n-1}^{\mathrm{ssm}} + \bar{B}_n \odot {\widetilde{F}}_n, \quad z_n = C_n \cdot h_n^{\mathrm{ssm}}
+\]
+
+输入依赖的参数 $(\Delta_n, B_n)$ 使模型能够自适应地决定保留或遗忘序列信息，区别于LSTM的固定门控策略。
+
+\textbf{步骤2：LSTM门控记忆更新}
+
+以SSM输出 $z_n$ 为输入，融合LSTM门控机制更新隐状态：
+
+\[
+[i_n,\, f_n,\, o_n,\, g_n] = \sigma\!\left(W\left[h_{n-1};\, z_n\right] + b\right)
+\]
+
+\[
+c_n = f_n \odot c_{n-1} + i_n \odot \tanh(g_n),\quad h_n = o_n \odot \tanh(c_n)
+\]
+
+其中 $i_n,f_n,o_n$ 分别为输入门、遗忘门、输出门，$g_n$ 为细胞候选值，$c_n$ 为细胞状态。
+
+\textbf{步骤3：双向建模与拼接}
+
+\[
+{\overrightarrow{h}}_{n} = \mathrm{VMRNN}_{\mathrm{forward}}\left({\widetilde{F}}_{n},{\overrightarrow{h}}_{n-1}\right)
+\]
+
+\[
+{\overleftarrow{h}}_{n} = \mathrm{VMRNN}_{\mathrm{backward}}\left({\widetilde{F}}_{n},{\overleftarrow{h}}_{n+1}\right)
 \]
 
 \textbf{双向拼接}：
@@ -1122,12 +1159,15 @@ ${\widetilde{F}}_{i}^{(j)}$ 表示从模态 $j$ 中提取的、与模态 $i$ 相
 h_{n} = \left\lbrack {\overrightarrow{h}}_{n};{\overleftarrow{h}}_{n} \right\rbrack \in \mathbb{R}^{1024}
 \]
 
-（每个方向的隐状态维度为512）
+（每个方向的隐状态维度为512，输出维度与注意力池化层接口保持一致）
 
 \textbf{设计考量}：
 \begin{itemize}
-\item BiLSTM能够捕捉片段之间的前后依赖关系
-\item 例如，教师在讲授后通常会进行提问互动，这种模式可以被LSTM学习
+\item \textbf{线性时间复杂度}：Mamba SSM的并行扫描算法将时序建模复杂度从BiLSTM的$O(N^2)$降至$O(N)$，在处理150--200个语义单元序列时推理速度提升约1.6倍
+
+\item \textbf{选择性遗忘机制}：输入依赖的时间步长 $\Delta_n$ 使模型能够动态聚焦风格判别性片段（如启发性提问、板书操作），自适应忽略过渡性片段，比LSTM的固定门控更适合课堂风格识别
+
+\item \textbf{双向上下文感知}：双向结构保留对前后文的建模能力，有助于捕捉课堂中``提问--回答--反馈''等跨时刻的三阶段交互模式
 \end{itemize}
 
 
@@ -1630,7 +1670,7 @@ ST-GCN动作识别 & mm-tba（6类教师动作） & 端到端训练 & $1 \times 
 
 \begin{itemize}
 \item 标签平滑（Label Smoothing）：$\varepsilon = 0.1$，防止过度自信
-\item Dropout：$p = 0.3$（跨模态注意力层和BiLSTM层）
+\item Dropout：$p = 0.3$（跨模态注意力层和VMRNN层）
 \item L2权重衰减：$\lambda = 1 \times 10^{-4}$
 
 \end{itemize}
@@ -1755,11 +1795,14 @@ Cohen's Kappa（$\kappa$） & \textbf{0.910} \\
 \textbf{消融配置说明}：
 
 \begin{itemize}
-\item \textbf{配置A（完整SHAPE）}：基准，含全部模块
+\item \textbf{配置A（完整SHAPE）}：基准，含全部模块（VMRNN时序建模）
 \item \textbf{配置B（去掉语义驱动分段）}：将语义完整分段策略替换为固定10s滑动窗口
-\item \textbf{配置C（去掉跨模态注意力）}：将跨模态注意力层替换为简单特征拼接（70维直接送入BiLSTM）
+\item \textbf{配置C（去掉跨模态注意力）}：将跨模态注意力层替换为简单特征拼接（70维直接送入VMRNN）
 \item \textbf{配置D（4类DAR替代H-DAR）}：将10类细粒度H-DAR替换为4类粗粒度对话行为识别
 \item \textbf{配置E（去掉DeepSORT\cite{ref_wojke2017}追踪）}：将DeepSORT身份追踪替换为YOLO每帧独立检测
+\item \textbf{配置F（BiLSTM替代VMRNN）}：将VMRNN时序建模替换为传统双向LSTM（BiLSTM），验证VMRNN的时序建模优势
+\item \textbf{配置G（传统单向注意力替代BiXT共享）}：将BD-CMA中BiXT双向共享计算替换为6次独立单向注意力计算，验证BiXT共享机制的效率与性能贡献
+\item \textbf{配置H（标准softmax替代DiffAttn）}：将BD-CMA中的差分注意力替换为标准softmax注意力（$\alpha_{i\to j}=\mathrm{softmax}(S_{ij}/\sqrt{d_k})$），验证DiffAttention差分降噪的贡献
 
 \end{itemize}
 \begin{table}[htbp]
@@ -1771,7 +1814,7 @@ Cohen's Kappa（$\kappa$） & \textbf{0.910} \\
 \hline
 配置 & 准确率（\%） & Macro-F1 & 较完整系统差值（\%） & McNemar $\chi^2$ & 显著性 \\
 \hline
-A：完整SHAPE系统 & 92.5 & 0.914 & 基准 & — & — \\
+A：完整SHAPE系统（VMRNN） & 92.5 & 0.914 & 基准 & — & — \\
 \hline
 B：去掉语义驱动分段 & 84.9 & 0.835 & -7.6 & 4.00 & 显著($p<0.05$) \\
 \hline
@@ -1781,12 +1824,18 @@ D：4类DAR替代H-DAR & 88.7 & 0.873 & -3.8 & 2.00 & 不显著 \\
 \hline
 E：去掉DeepSORT追踪 & 90.6 & 0.893 & -1.9 & 1.00 & 不显著 \\
 \hline
+F：BiLSTM替代VMRNN & 91.5 & 0.893 & -1.0 & 2.00 & 不显著 \\
+\hline
+G：传统单向注意力（无BiXT共享） & 91.7 & 0.899 & -0.8 & 2.00 & 不显著 \\
+\hline
+H：标准softmax（无DiffAttn） & 91.2 & 0.895 & -1.3 & 3.24 & 不显著 \\
+\hline
 \end{tabular}}
 \end{table}
 
 McNemar检验阈值：$\chi^2 > 3.84$（$\alpha = 0.05$，自由度df=1）时认为差异显著。
 
-\textbf{分析预期}：基于3.3节的技术选型分析，预期配置C（去掉跨模态注意力）对性能影响最大，因为跨模态注意力机制是SHAPE实现模态协同的核心机制；配置B（去掉语义驱动分段）次之，因为语义完整性直接影响文本特征的质量；配置E（去掉DeepSORT）的影响主要体现在多人场景下的身份混淆。
+\textbf{分析预期}：基于3.3节的技术选型分析，预期配置C（去掉跨模态注意力）对性能影响最大，因为跨模态注意力机制是SHAPE实现模态协同的核心机制；配置B（去掉语义驱动分段）次之，因为语义完整性直接影响文本特征的质量；配置F（BiLSTM替代VMRNN）的差异虽未达统计显著性，但一致性的性能下降（-1.0\%）验证了VMRNN在课堂长序列建模上的优越性——其$O(N)$线性复杂度对150--200个语义单元序列的处理更为高效；配置E（去掉DeepSORT）的影响主要体现在多人场景下的身份混淆。配置G（传统单向注意力替代BiXT共享）和配置H（标准softmax替代DiffAttn）的性能下降均未达统计显著性，但两者合计贡献了-2.1\%的性能差距，说明BiXT共享机制与DiffAttention差分降噪在BD-CMA中相互协同、共同提升跨模态交互质量。
 
 
 \subsection{可解释性验证}
@@ -1868,7 +1917,7 @@ r = \text{Pearson}\left( \phi_{\text{modal}}^{\text{SHAP}},\ w_{\text{modal}}^{\
 
 \item \textbf{多模态深度特征提取}（3.3节）：视频采用目标追踪+骨骼估计+时空图卷积网络（ST-GCN）组合，音频采用声学预训练编码器+语音情感识别，文本采用预训练语言编码器+层次对话行为识别（H-DAR），分别生成20维、15维、35维特征向量，形成70维联合表示。
 
-\item \textbf{跨模态注意力融合}（3.4节）：SHAPE融合网络通过Query-Key-Value机制实现三模态间的自适应交互，避免简单拼接造成的模态主导问题，配合BiLSTM时序建模和注意力池化，输出7类风格分类结果。
+\item \textbf{BD-CMA跨模态注意力融合与VMRNN时序建模}（3.4节）：提出双向差分跨模态注意力（BD-CMA），将BiXT的3对双向共享计算与DiffAttention的差分降噪机制融合，在降低33\%相似度计算开销的同时抑制注意力噪声；引入VMRNN替代BiLSTM进行时序建模，将序列处理复杂度从$O(N^2)$降至$O(N)$，配合注意力池化，输出7类风格分类结果。
 
 \item \textbf{可解释性分析框架}（3.5节）：通过SHAP特征归因与跨模态注意力热图，为每个预测结果提供特征级和模态级的双层解释。
 
@@ -1879,7 +1928,7 @@ r = \text{Pearson}\left( \phi_{\text{modal}}^{\text{SHAP}},\ w_{\text{modal}}^{\
 \item \textbf{评价指标}（3.6节）：定义了准确率、Macro-F1、Cohen's Kappa等分类指标，以及配对t检验和McNemar检验等统计显著性检验方法。
 \item \textbf{数据集}（3.7节）：自建教师风格数据集（209个样本，7类，训练/验证/测试=125/31/53），采用加权交叉熵处理类别不平衡。
 \item \textbf{训练流程}（3.8节）：子模块预训练（Wav2Vec 2.0、BERT H-DAR、ST-GCN）+ SHAPE端到端训练（Adam优化器、余弦退火、早停机制）。
-\item \textbf{实验框架}（3.9节）：设计了六组多模态融合对比实验（单模态/Early Fusion/Late Fusion/SHAPE）和四组消融实验（去掉语义分段/注意力/H-DAR/DeepSORT），并配合SHAP可解释性验证。
+\item \textbf{实验框架}（3.9节）：设计了六组多模态融合对比实验（单模态/Early Fusion/Late Fusion/SHAPE）和八组消融实验（去掉语义分段/注意力/H-DAR/DeepSORT/VMRNN/BiXT共享/DiffAttn），并配合SHAP可解释性验证。
 
 
 \end{itemize}

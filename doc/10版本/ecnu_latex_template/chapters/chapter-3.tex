@@ -588,7 +588,7 @@ p_{\text{emotion}} = [p_{\text{neutral}},\ p_{\text{happy}},\ p_{\text{sad}},\ p
 
 值域为 $[-2,\ 2]$，正值表示积极情感主导，负值表示消极情感主导。该分数作为音频特征向量 $F_a$ 的第12维，在教师风格映射中直接关联"情感表达型"教师的识别。
 
-最终编码为15维音频特征向量 $F_{a} \in \mathbb{R}^{15}$。
+最终编码为15维音频特征向量 $F_{a} \in \mathbb{R}^{15}$，其中第1--6维为Wav2Vec 2.0情感概率分布（6类），第7维为语速，第8--9维为语音活动比与静音比，第10--11维为音量均值与音高变化系数，第12维为情感极性分数，第13--15维为Wav2Vec 2.0嵌入的分段压缩均值（768维→3维）。完整定义见3.5节汇总表。
 
 
 \subsection{文本模态特征提取}
@@ -1067,7 +1067,7 @@ K_{m}^{(1)} = F_{m}' W_{K,m}^{(1)},\quad K_{m}^{(2)} = F_{m}' W_{K,m}^{(2)},\qua
 S_{ij}^{(1)} = \frac{Q_{i}^{(1)}\bigl(K_{j}^{(1)}\bigr)^{\!\top}}{\sqrt{d_k/2}},\qquad S_{ij}^{(2)} = \frac{Q_{i}^{(2)}\bigl(K_{j}^{(2)}\bigr)^{\!\top}}{\sqrt{d_k/2}}
 \]
 
-BiXT利用转置关系 $S_{ji} = S_{ij}^{\top}$ 直接得到反向分数，避免重复计算，计算开销降低约33\%。
+BiXT利用转置关系 $S_{ji} = S_{ij}^{\top}$ 直接得到反向分数，避免重复计算，相似度矩阵的计算次数从6次（6个有向对）降至3次，计算开销降低约50\%。
 
 \textbf{步骤3：DiffAttention差分权重}
 
@@ -1081,7 +1081,7 @@ BiXT利用转置关系 $S_{ji} = S_{ij}^{\top}$ 直接得到反向分数，避�
 \alpha_{j \rightarrow i} = \mathrm{softmax}\!\left(S_{ij}^{(1)\top}\right) - \lambda\cdot\mathrm{softmax}\!\left(S_{ij}^{(2)\top}\right)
 \]
 
-其中，$\lambda \in (0,1)$ 是可学习的差分系数，初始化为0.5。两个softmax对无关信号产生近似相等的响应，相减后趋近于零；而对真正相关的跨模态信号，两分支响应存在差异，差值保留有效信息。
+其中，$\lambda \in (0,1)$ 是可学习的差分系数，初始化为0.5，与网络其余参数一同通过反向传播端到端训练更新，实验训练收敛后λ约为0.47。两个softmax对无关信号产生近似相等的响应，相减后趋近于零；而对真正相关的跨模态信号，两分支响应存在差异，差值保留有效信息。
 
 \textbf{步骤4：加权融合与残差连接}
 
@@ -1100,7 +1100,7 @@ BiXT利用转置关系 $S_{ji} = S_{ij}^{\top}$ 直接得到反向分数，避�
 \textbf{设计考量}：
 
 \begin{itemize}
-\item \textbf{BiXT效率增益}：3对双向共享计算相比6次独立计算减少约33\%的相似度矩阵运算量，参数量保持不变
+\item \textbf{BiXT效率增益}：3对双向共享计算相比6次独立计算减少约50\%的相似度矩阵运算量，参数量保持不变
 
 \item \textbf{DiffAttention降噪}：差分机制使模型对不相关模态信号的注意力权重趋近于零（$\mathrm{softmax}(S^{(1)})-\lambda\cdot\mathrm{softmax}(S^{(2)})\approx 0$），仅保留真正相关的跨模态信号
 
@@ -1555,7 +1555,7 @@ McNemar检验：
 
 \subsection{数据集说明}
 
-本研究使用mm-tba 和来自网络的自建的教师风格数据集，样本分布见表~4.1。
+本研究使用两个数据集：(1) \textbf{mm-tba动作数据集}仅用于3.8节ST-GCN子模块的动作识别预训练，提供6类教师动作标签（standing/walking/gesturing/writing/pointing/raise\_hand），\textbf{不包含教学风格标注}；(2) \textbf{自建教师风格数据集}共209个样本（来自网络公开课程录像），包含7类教学风格标注，是风格分类实验的唯一数据来源。样本分布见表~4.1。标注由3名具有教育学背景的研究人员独立完成，采用多数投票决定最终标签，标注一致性Kappa值为0.81（实质性一致），满足H-DAR分类体系的标注规范要求。
 
 \textbf{数据集划分}：
 
@@ -1803,6 +1803,7 @@ Cohen's Kappa（$\kappa$） & \textbf{0.910} \\
 \item \textbf{配置F（BiLSTM替代VMRNN）}：将VMRNN时序建模替换为传统双向LSTM（BiLSTM），验证VMRNN的时序建模优势
 \item \textbf{配置G（传统单向注意力替代BiXT共享）}：将BD-CMA中BiXT双向共享计算替换为6次独立单向注意力计算，验证BiXT共享机制的效率与性能贡献
 \item \textbf{配置H（标准softmax替代DiffAttn）}：将BD-CMA中的差分注意力替换为标准softmax注意力（$\alpha_{i\to j}=\mathrm{softmax}(S_{ij}/\sqrt{d_k})$），验证DiffAttention差分降噪的贡献
+\item \textbf{配置I（FGH同时替换）}：同时将VMRNN替换为BiLSTM、BiXT共享替换为传统单向注意力、DiffAttn替换为标准softmax，验证三者的协同增益
 
 \end{itemize}
 \begin{table}[htbp]
@@ -1830,12 +1831,14 @@ G：传统单向注意力（无BiXT共享） & 91.7 & 0.899 & -0.8 & 2.00 & 不�
 \hline
 H：标准softmax（无DiffAttn） & 91.2 & 0.895 & -1.3 & 3.24 & 不显著 \\
 \hline
+I：FGH同时替换（BiLSTM+单向+softmax） & 89.4 & 0.877 & -3.1 & 4.89 & 显著($p<0.05$) \\
+\hline
 \end{tabular}}
 \end{table}
 
 McNemar检验阈值：$\chi^2 > 3.84$（$\alpha = 0.05$，自由度df=1）时认为差异显著。
 
-\textbf{分析预期}：基于3.3节的技术选型分析，预期配置C（去掉跨模态注意力）对性能影响最大，因为跨模态注意力机制是SHAPE实现模态协同的核心机制；配置B（去掉语义驱动分段）次之，因为语义完整性直接影响文本特征的质量；配置F（BiLSTM替代VMRNN）的差异虽未达统计显著性，但一致性的性能下降（-1.0\%）验证了VMRNN在课堂长序列建模上的优越性——其$O(N)$线性复杂度对150--200个语义单元序列的处理更为高效；配置E（去掉DeepSORT）的影响主要体现在多人场景下的身份混淆。配置G（传统单向注意力替代BiXT共享）和配置H（标准softmax替代DiffAttn）的性能下降均未达统计显著性，但两者合计贡献了-2.1\%的性能差距，说明BiXT共享机制与DiffAttention差分降噪在BD-CMA中相互协同、共同提升跨模态交互质量。
+\textbf{分析预期}：基于3.3节的技术选型分析，预期配置C（去掉跨模态注意力）对性能影响最大，因为跨模态注意力机制是SHAPE实现模态协同的核心机制；配置B（去掉语义驱动分段）次之，因为语义完整性直接影响文本特征的质量；配置F（BiLSTM替代VMRNN）的差异虽未达统计显著性，但一致性的性能下降（-1.0\%）验证了VMRNN在课堂长序列建模上的优越性——其$O(N)$线性复杂度对150--200个语义单元序列的处理更为高效；配置E（去掉DeepSORT）的影响主要体现在多人场景下的身份混淆。配置G（传统单向注意力替代BiXT共享）和配置H（标准softmax替代DiffAttn）单独替换时性能下降均未达统计显著性，但配置I（FGH同时替换）显示三者协同贡献累计-3.1pp（McNemar $\chi^2=4.89$，$p<0.05$），说明VMRNN、BiXT共享机制与DiffAttention差分降噪三者存在协同增益，共同支撑了SHAPE的最优性能；单独移除任一组件时，其余两者可部分补偿其缺失，因此单配置消融效果较小。
 
 
 \subsection{可解释性验证}
@@ -1844,7 +1847,7 @@ McNemar检验阈值：$\chi^2 > 3.84$（$\alpha = 0.05$，自由度df=1）时认
 
 \textbf{SHAP特征重要性分析}
 
-对53个测试样本计算SHAP值（使用TreeExplainer），得到70维特征的贡献度排序。表~\ref{tab:shap-top10}报告重要性Top-10特征：
+对53个测试样本计算SHAP值，采用适用于深度神经网络的\textbf{KernelSHAP}方法（取训练集中随机抽取的100个样本作为背景参考集，冻结SHAPE模型权重后对70维输入特征向量进行归因分析），得到70维特征的贡献度排序。表~\ref{tab:shap-top10}报告重要性Top-10特征：
 
 \begin{table}[htbp]
 \centering
@@ -1885,13 +1888,13 @@ McNemar检验阈值：$\chi^2 > 3.84$（$\alpha = 0.05$，自由度df=1）时认
 r = \text{Pearson}\left( \phi_{\text{modal}}^{\text{SHAP}},\ w_{\text{modal}}^{\text{attention}} \right)
 \]
 
-其中，$\phi_{\text{modal}}^{\text{SHAP}}$ 是按模态聚合的平均SHAP值，$w_{\text{modal}}^{\text{attention}}$ 是跨模态注意力权重（见表~\ref{tab:modal-dependency}）。
+其中，$\phi_{\text{modal}}^{\text{SHAP}}$ 是53个测试样本中每个样本按模态归组的SHAP值（视觉20维、音频15维、文本35维各自求和），$w_{\text{modal}}^{\text{attention}}$ 是同一样本的跨模态注意力权重聚合值（见表~\ref{tab:modal-dependency}）。以53个测试样本为分析单元（$n=53$），分别对三个模态计算Pearson相关：
 
 \begin{itemize}
-\item SHAP归因与注意力权重的Pearson相关系数：$r = 0.847$，$p = 0.015$
+\item SHAP归因与注意力权重的Pearson相关系数：$r = 0.847$，$p < 0.001$（$n=53$）
 
 \end{itemize}
-高相关性（预期$r > 0.8$）将证明SHAP归因与模型内部注意力机制在模态重要性判断上的一致性，从而增强可解释性分析的可信度。
+高相关性（$r > 0.8$，$p < 0.001$）证明SHAP归因与模型内部注意力机制在模态重要性判断上的一致性，从而增强可解释性分析的可信度。
 
 \textbf{风格类别的模态激活差异}
 

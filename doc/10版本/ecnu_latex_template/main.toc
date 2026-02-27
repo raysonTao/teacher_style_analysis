@@ -78,16 +78,16 @@
 \contentsline {subsubsection}{分类性能指标}{68}{subsubsection*.44}%
 \contentsline {subsubsection}{统计显著性检验}{69}{subsubsection*.45}%
 \contentsline {subsection}{\numberline {3.6.2}实验环境}{70}{subsection.3.6.2}%
-\contentsline {section}{\numberline {3.7}数据集处理}{70}{section.3.7}%
-\contentsline {subsection}{\numberline {3.7.1}数据集说明}{70}{subsection.3.7.1}%
+\contentsline {section}{\numberline {3.7}数据集处理}{71}{section.3.7}%
+\contentsline {subsection}{\numberline {3.7.1}数据集说明}{71}{subsection.3.7.1}%
 \contentsline {section}{\numberline {3.8}实验过程}{71}{section.3.8}%
-\contentsline {subsection}{\numberline {3.8.1}子模块预训练设置}{71}{subsection.3.8.1}%
+\contentsline {subsection}{\numberline {3.8.1}子模块预训练设置}{72}{subsection.3.8.1}%
 \contentsline {subsection}{\numberline {3.8.2}SHAPE端到端训练设置}{73}{subsection.3.8.2}%
-\contentsline {section}{\numberline {3.9}实验结果分析}{73}{section.3.9}%
+\contentsline {section}{\numberline {3.9}实验结果分析}{74}{section.3.9}%
 \contentsline {subsection}{\numberline {3.9.1}整体性能}{74}{subsection.3.9.1}%
 \contentsline {subsection}{\numberline {3.9.2}多模态融合对比}{74}{subsection.3.9.2}%
-\contentsline {subsection}{\numberline {3.9.3}消融实验}{75}{subsection.3.9.3}%
-\contentsline {subsection}{\numberline {3.9.4}可解释性验证}{77}{subsection.3.9.4}%
+\contentsline {subsection}{\numberline {3.9.3}消融实验}{76}{subsection.3.9.3}%
+\contentsline {subsection}{\numberline {3.9.4}可解释性验证}{78}{subsection.3.9.4}%
 \contentsline {section}{\numberline {3.10}本章小结}{79}{section.3.10}%
 \contentsline {chapter}{\numberline {第四章\hspace {.3em}}教师风格画像分析系统设计与实现}{81}{chapter.4}%
 \contentsline {section}{\numberline {4.1}系统总体设计}{81}{section.4.1}%

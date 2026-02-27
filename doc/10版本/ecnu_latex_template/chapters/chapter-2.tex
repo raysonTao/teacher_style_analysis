@@ -205,7 +205,7 @@ Grasha提出了基于得分阈值的分类规则：
 这表示教师以专家型为主导，辅以权威型和示范型特征。
 
 
-信息技术的发展推动了课堂分析方法的革新。顾小清等（2007）基于Flanders互动分析系统\cite{ref_intent}，针对多媒体教学环境的特点，设计出了ITIAS（Information Technology-based Interaction Analysis System，基于信息技术的互动分析编码系统）。
+信息技术的发展推动了课堂分析方法的革新。顾小清等（2007）\cite{ref_gu2007itias}基于Flanders互动分析系统\cite{ref_intent}，针对多媒体教学环境的特点，设计出了ITIAS（Information Technology-based Interaction Analysis System，基于信息技术的互动分析编码系统）。
 
 \textbf{ITIAS的"师-生-技"三元互动模型}
 
@@ -383,13 +383,13 @@ f\left( \mathbf{x} \right) = \text{sign}\left( \sum_{i = 1}^{N}\alpha_{i}y_{i}K\
 
 其中，$i,j$ 是空间坐标，$t$ 是时间维度，$m,n,\tau$ 分别是卷积核在空间和时间维度上的索引。
 
-Tran等人(2015)提出的C3D（3D Convolutional Networks）通过3×3×3的3D卷积核同时在空间和时间维度进行特征提取，学习到了通用的视频表征。Carreira \& Zisserman(2017)提出的I3D（Inflated 3D ConvNet）将在ImageNet上预训练的2D卷积网络"膨胀"为3D卷积网络，通过在Kinetics大规模视频数据集上进行预训练，实现了更好的时空建模能力。
+Tran等人(2015)\cite{ref_tran2015c3d}提出的C3D（3D Convolutional Networks）通过3×3×3的3D卷积核同时在空间和时间维度进行特征提取，学习到了通用的视频表征。Carreira \& Zisserman(2017)\cite{ref_carreira2017i3d}提出的I3D（Inflated 3D ConvNet）将在ImageNet上预训练的2D卷积网络"膨胀"为3D卷积网络，通过在Kinetics大规模视频数据集上进行预训练，实现了更好的时空建模能力。
 
 \textbf{（3）双流网络与时序建模}
 
-Simonyan \& Zisserman(2014)提出的双流网络（Two-Stream Network）是视频分析的重要里程碑。该方法通过两条并行的卷积神经网络分别处理RGB外观信息和光流运动信息：空间流网络（Spatial Stream）从单帧RGB图像中学习外观特征，时间流网络（Temporal Stream）从堆叠的光流图像中学习运动特征，最后融合两路特征进行动作识别。这一创新有效地结合了静态外观和动态运动信息，显著提升了动作识别性能。
+Simonyan \& Zisserman(2014)\cite{ref_simonyan2014twostream}提出的双流网络（Two-Stream Network）是视频分析的重要里程碑。该方法通过两条并行的卷积神经网络分别处理RGB外观信息和光流运动信息：空间流网络（Spatial Stream）从单帧RGB图像中学习外观特征，时间流网络（Temporal Stream）从堆叠的光流图像中学习运动特征，最后融合两路特征进行动作识别。这一创新有效地结合了静态外观和动态运动信息，显著提升了动作识别性能。
 
-Wang等人(2016)提出的时序分段网络（TSN，Temporal Segment Networks）在双流网络基础上引入了稀疏采样策略，将长视频分为若干段，在每段中随机采样一帧，通过分段共识函数（segment consensus function）聚合多段的预测结果，实现了长时序建模。Feichtenhofer等人(2019)提出的SlowFast网络通过双路径设计，Slow路径以低帧率捕捉语义信息，Fast路径以高帧率捕捉运动信息，两路径通过横向连接进行信息交互，实现了效率和性能的平衡。
+Wang等人(2016)\cite{ref_wang2016tsn}提出的时序分段网络（TSN，Temporal Segment Networks）在双流网络基础上引入了稀疏采样策略，将长视频分为若干段，在每段中随机采样一帧，通过分段共识函数（segment consensus function）聚合多段的预测结果，实现了长时序建模。Feichtenhofer等人(2019)\cite{ref_feichtenhofer2019slowfast}提出的SlowFast网络通过双路径设计，Slow路径以低帧率捕捉语义信息，Fast路径以高帧率捕捉运动信息，两路径通过横向连接进行信息交互，实现了效率和性能的平衡。
 
 循环神经网络（RNN）和长短期记忆网络（LSTM）被广泛应用于视频的时序建模。Donahue等人(2015)提出的LRCN（Long-term Recurrent Convolutional Networks）将CNN提取的帧级特征输入LSTM进行时序建模，实现了端到端的视频理解。注意力机制的引入使得模型能够动态地关注视频中的关键帧和关键区域。Wang等人(2018)提出的Non-local Neural Networks通过计算特征图中任意两个位置的相似度，捕捉长程时空依赖。
 
@@ -411,7 +411,7 @@ Ziyu Liu等人(2020)提出的MS-G3D（Multi-Scale Graph Convolutional Networks�
 
 \textbf{（5）Transformer与可解释建模型}
 
-Transformer架构的引入进一步提升了视频理解能力。Dosovitskiy等人(2021)提出的ViT（Vision Transformer）将图像分割为patch序列，通过Transformer编码器进行建模，在图像分类任务上取得了与CNN相当甚至更好的性能。Liu等人(2021)提出的Video Swin Transformer将窗口注意力机制扩展到视频领域，通过局部窗口和跨窗口的注意力计算，在保持高效计算的同时建模长程时空依赖。Bertasius等人(2021)提出的TimeSformer通过分解的时空注意力机制（先空间注意力再时间注意力），实现了高效的视频理解。
+Transformer架构的引入进一步提升了视频理解能力。Dosovitskiy等人(2021)\cite{ref_dosovitskiy2021vit}提出的ViT（Vision Transformer）将图像分割为patch序列，通过Transformer编码器进行建模，在图像分类任务上取得了与CNN相当甚至更好的性能。Liu等人(2021)\cite{ref_liu2022videoswin}提出的Video Swin Transformer将窗口注意力机制扩展到视频领域，通过局部窗口和跨窗口的注意力计算，在保持高效计算的同时建模长程时空依赖。Bertasius等人(2021)提出的TimeSformer通过分解的时空注意力机制（先空间注意力再时间注意力），实现了高效的视频理解。
 
 这些基于Transformer的方法通过自注意力机制实现长时依赖建模，适合捕捉教师在课堂中持续性的讲解、互动与空间移动模式。此外，引入可解释模块（如Grad-CAM可视化、Attention Heatmap）可在教育场景下直观呈现模型关注的行为区域，增强结果解释性与信任度。
 
@@ -444,7 +444,7 @@ P\left( O|\lambda \right) = \sum_{Q}^{}P\left( O|Q,\lambda \right)P\left( Q|\lam
 
 \textbf{（2）深度学习方法：端到端语音识别}
 
-深度学习的兴起带来了语音识别的革命性变化。Hannun等人(2014)提出的DeepSpeech系统采用循环神经网络（RNN）实现了端到端的语音识别，直接从原始音频波形学习到文本的映射，无需人工设计中间特征表示。RNN通过隐状态的循环连接建模语音序列的时序依赖。
+深度学习的兴起带来了语音识别的革命性变化。Hannun等人(2014)\cite{ref_hannun2014deepspeech}提出的DeepSpeech系统采用循环神经网络（RNN）实现了端到端的语音识别，直接从原始音频波形学习到文本的映射，无需人工设计中间特征表示。RNN通过隐状态的循环连接建模语音序列的时序依赖。
 
 长短期记忆网络（LSTM）通过门控机制解决了RNN的梯度消失问题，能够捕捉语音信号的长程时序依赖：
 
@@ -491,7 +491,7 @@ Wav2Vec 2.0在仅使用少量标注数据的情况下，在多种下游任务（
 
 \textbf{（4）端到端语音识别模型：Whisper与课堂适配}
 
-端到端语音识别模型的发展达到了新的高度。Radford等人(2022)提出的Whisper模型通过在68万小时多语言多任务数据上进行弱监督训练，实现了接近人类水平的语音识别能力。Whisper采用Transformer编码器-解码器架构，支持多语言识别、语音翻译、语言识别、语音活动检测等多个任务，在真实场景的鲁棒性上表现出色。
+端到端语音识别模型的发展达到了新的高度。Radford等人(2022)\cite{ref_radford2022whisper}提出的Whisper模型通过在68万小时多语言多任务数据上进行弱监督训练，实现了接近人类水平的语音识别能力。Whisper采用Transformer编码器-解码器架构，支持多语言识别、语音翻译、语言识别、语音活动检测等多个任务，在真实场景的鲁棒性上表现出色。
 
 当前主流模型包括基于Transformer的Conformer、RNN-Transducer（RNN-T）等。它们通过注意力机制和声学建模实现语音到文本的高精度转换，在噪声课堂环境中表现出较强鲁棒性。
 
@@ -522,7 +522,7 @@ Wav2Vec 2.0在仅使用少量标注数据的情况下，在多种下游任务（
 
 早期的课堂对话分析主要依赖关键词匹配和规则方法。通过预定义的词表和句式模板，研究者可以识别教师话语的类型，例如包含"为什么""怎么"等疑问词的句子被标记为提问，包含"请""大家"等词的句子被标记为指令。TF-IDF（Term Frequency-Inverse Document Frequency）方法通过统计词频和逆文档频率，提取文档的关键词特征。词袋模型（Bag of Words）和N-gram模型则通过统计词语或词语序列的出现频率进行文本分类。这些方法实现简单，但难以捕捉语言的深层语义、上下文依赖和语序信息。
 
-词嵌入技术（Word Embedding）的出现标志着文本表征的重要进步。Mikolov等人(2013)提出的Word2Vec通过神经网络学习词语的分布式表示，将词语映射到连续的低维向量空间。Word2Vec包括两种训练方式：CBOW（Continuous Bag of Words）通过上下文词预测中心词，Skip-gram通过中心词预测上下文词。Pennington等人(2014)提出的GloVe（Global Vectors）结合了全局矩阵分解和局部上下文窗口方法，通过共现矩阵的对数双线性回归学习词向量。Bojanowski等人(2017)提出的FastText进一步引入了子词（subword）信息，通过字符级N-gram增强了对低频词和词形变化的建模能力。这些词嵌入方法使得语义相近的词语在向量空间中距离更近，为后续的文本分析任务奠定了基础。
+词嵌入技术（Word Embedding）的出现标志着文本表征的重要进步。Mikolov等人(2013)\cite{ref_mikolov2013word2vec}提出的Word2Vec通过神经网络学习词语的分布式表示，将词语映射到连续的低维向量空间。Word2Vec包括两种训练方式：CBOW（Continuous Bag of Words）通过上下文词预测中心词，Skip-gram通过中心词预测上下文词。Pennington等人(2014)提出的GloVe（Global Vectors）结合了全局矩阵分解和局部上下文窗口方法，通过共现矩阵的对数双线性回归学习词向量。Bojanowski等人(2017)提出的FastText进一步引入了子词（subword）信息，通过字符级N-gram增强了对低频词和词形变化的建模能力。这些词嵌入方法使得语义相近的词语在向量空间中距离更近，为后续的文本分析任务奠定了基础。
 
 \textbf{（2）序列建模：RNN、LSTM与BiLSTM}
 

@@ -479,7 +479,7 @@ S_{\text{clean}}(f) = \max\left( \left| S_{\text{noisy}}(f) \right| - \alpha \cd
 
 \subsubsection{语音转文本（ASR）}
 
-采用Whisper Large-v3模型进行语音识别，该模型支持中英混合识别：
+采用Whisper Large-v3模型\cite{ref_radford2022whisper}进行语音识别，该模型支持中英混合识别：
 
 \[
 T = \text{Whisper}(A)
@@ -856,7 +856,7 @@ F_{a} = \left\lbrack \underset{\text{6维情感}}{\underbrace{p_{\text{neutral}}
 
 \textbf{人员身份追踪识别}
 
-课堂场景存在多人干扰（学生走动、举手），单纯依赖YOLO检测会导致教师ID在遮挡后跳变为学生ID。本研究采用DeepSORT\cite{ref_wojke2017}算法，通过结合外观特征（ReID）和运动模型（卡尔曼滤波）实现稳定追踪。
+课堂场景存在多人干扰（学生走动、举手），单纯依赖YOLO\cite{ref_yolov8}检测会导致教师ID在遮挡后跳变为学生ID。本研究采用DeepSORT\cite{ref_wojke2017}算法，通过结合外观特征（ReID）和运动模型（卡尔曼滤波）实现稳定追踪。
 
 
 \subsection{时序动作识别}
@@ -1035,7 +1035,7 @@ F_{t}\prime = \text{ReLU}\left( W_{t}F_{t} + b_{t} \right),\quad F_{t}\prime \in
 
 \subsubsection{双向差分跨模态注意力层（BD-CMA）}
 
-这是SHAPE的核心创新。本研究提出\textbf{双向差分跨模态注意力（Bidirectional Differential Cross-Modal Attention，BD-CMA）}，将BiXT的双向共享计算与DiffAttention的差分降噪机制深度融合，在实现模态间自适应交互的同时抑制注意力噪声。
+这是SHAPE的核心创新。本研究提出\textbf{双向差分跨模态注意力（Bidirectional Differential Cross-Modal Attention，BD-CMA）}，将BiXT的双向共享计算与DiffAttention\cite{ref_ye2024diff}的差分降噪机制深度融合，在实现模态间自适应交互的同时抑制注意力噪声。
 
 \textbf{设计动机}：
 
@@ -1111,7 +1111,7 @@ BiXT利用转置关系 $S_{ji} = S_{ij}^{\top}$ 直接得到反向分数，避�
 
 \subsubsection{时序建模层（Temporal Modeling Layer）}
 
-课堂是一个时序过程，教师风格在时间维度上展现。传统双向LSTM（BiLSTM）在处理课堂录像的150--200个语义单元序列时，隐状态的循环计算导致 $O(N^2)$ 的时间复杂度，且随序列增长面临梯度消失问题，难以充分建模跨越整节课的长程时序依赖。为此，本研究引入\textbf{VMRNN}（Vision Mamba Recurrent Neural Network）进行时序建模。VMRNN将Mamba选择性状态空间模型（Selective State Space Model，SSM）与LSTM门控机制深度融合，其核心SSM扫描的计算复杂度为 $O(N)$，在保留LSTM长程记忆能力的同时大幅提升了对长序列的处理效率。
+课堂是一个时序过程，教师风格在时间维度上展现。传统双向LSTM（BiLSTM）在处理课堂录像的150--200个语义单元序列时，隐状态的循环计算导致 $O(N^2)$ 的时间复杂度，且随序列增长面临梯度消失问题，难以充分建模跨越整节课的长程时序依赖。为此，本研究引入\textbf{VMRNN}\cite{ref_vmrnn2024}（Vision Mamba Recurrent Neural Network）进行时序建模。VMRNN将Mamba\cite{ref_gu2023mamba}选择性状态空间模型（Selective State Space Model，SSM）与LSTM门控机制深度融合，其核心SSM扫描的计算复杂度为 $O(N)$，在保留LSTM长程记忆能力的同时大幅提升了对长序列的处理效率。
 
 对于一个完整课堂的 $N$ 个片段 $\{ S_{1},S_{2},...,S_{N}\}$，每个片段的跨模态融合特征为 $\{{\widetilde{F}}_{1},{\widetilde{F}}_{2},...,{\widetilde{F}}_{N}\}$（省略模态下标，表示融合后的特征）。
 

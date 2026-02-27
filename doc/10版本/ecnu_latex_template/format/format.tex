@@ -19,7 +19,6 @@ urlcolor=black
 % \usepackage[numbers]{natbib} %sort&compress
 \usepackage{geometry}
 \usepackage{url}
-\usepackage{times}
 \usepackage{fontspec}
 \usepackage{makecell,rotating,multirow,diagbox}
 \usepackage{booktabs}
@@ -125,6 +124,8 @@ urlcolor=black
 \setlength{\oddsidemargin}{0.57cm} 
 \setlength{\evensidemargin}{\oddsidemargin}
 \voffset-6mm \textwidth=150mm \textheight=230mm \headwidth=150mm
+\setlength{\headheight}{18.52pt}
+\addtolength{\topmargin}{-6.52pt}
 %\rightmargin=35mm
 %                                                                       %
 
@@ -152,7 +153,12 @@ urlcolor=black
 \renewcommand{\contentsname}{\heiti \sanhao {目\quad 录}}
 \renewcommand{\listfigurename}{\heiti \sanhao {图目录}}
 \renewcommand{\listtablename}{\heiti \sanhao {表目录}}
-\IfFontExistsTF{Times New Roman}{\setmainfont{Times New Roman}}{\setmainfont{Liberation Serif}}
+\IfFontExistsTF{Times New Roman}{%
+  \setmainfont{Times New Roman}[%
+    SmallCapsFont   = {Times New Roman},%
+    SmallCapsFeatures = {Scale=0.8}%
+  ]%
+}{\setmainfont{Liberation Serif}}
 \dottedcontents{chapter}[1.5cm]{\sihao\heiti}{3.8em}{9.5pt}
 \dottedcontents{section}[1.5cm]{\xiaosi\heiti}{2.8em}{9.5pt}
 \DeclareRobustCommand\nobreakspace{\leavevmode\nobreak\ }
@@ -212,6 +218,7 @@ urlcolor=black
             \let\p@enumiv\@empty
             \renewcommand\theenumiv{\@arabic\c@enumiv}}%
       \sloppy
+      \hbadness=10000
       \clubpenalty4000
       \@clubpenalty \clubpenalty
       \widowpenalty4000%
@@ -270,4 +277,23 @@ urlcolor=black
               {\ \titlerule*[0.4pc]{$\cdot$}\contentspage}{} %引导线为"...1"
 
 % Activate all \makeatletter script
+\makeatother
+
+% 为黑体（STHeiti）和楷体等CJK无衬线字体启用伪粗体，消除 "TU/STHeiti(0)/b/n undefined" 警告
+% 使用 \AtBeginDocument 确保在 CTex 字体初始化之后执行，避免被覆盖
+\AtBeginDocument{%
+  \IfFontExistsTF{STHeiti}{%
+    % 用 AutoFakeBold 重新声明 zhhei 族（即 \heiti 命令所用的族），
+    % 消除 "TU/STHeiti(0)/b/n undefined" 警告
+    \setCJKfamilyfont{zhhei}[AutoFakeBold=2]{STHeiti}%
+    \setCJKsansfont[AutoFakeBold=2]{STHeiti}%
+  }{}%
+}
+
+% 消除 "Font shape OMS/TimesNewRoman(0)/m/n undefined" 警告
+% \textcircled 等命令需要 OMS 编码；Times New Roman 无 OMS 字形，须先声明族再声明形状，回退到 cmsy
+\makeatletter
+\DeclareFontFamily{OMS}{TimesNewRoman(0)}{\skewchar\font=48 }
+\DeclareFontShape{OMS}{TimesNewRoman(0)}{m}{n}{<->ssub*cmsy/m/n}{}
+\DeclareFontShape{OMS}{TimesNewRoman(0)}{b}{n}{<->ssub*cmsy/b/n}{}
 \makeatother
